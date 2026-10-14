@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { QueueKind, ServerMsg } from '@contaminant/engine';
 import type { Nav } from '../App.tsx';
 import { activeDeck, connectOnline, disconnectOnline, getApi, getSocket, toast, useProfile } from '../store.ts';
 import { defaultServerUrl, Api } from '../net/api.ts';
 import { t } from '../i18n.ts';
+import { PeerLink, startP2P, type P2PMatch, type PeerInfo } from '../game/p2p.ts';
 
 interface Me {
   player: { name: string; mmr: number; division: string; divisionId: string; games: number; wins: number; losses: number; titles: string[] };
@@ -175,6 +176,7 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
           </div>
           <p className="small muted">Friendly matches run every card at Level 10.</p>
         </div>
+        <PeerPanel nav={nav} />
         <div className="panel grow" style={{ minWidth: 280 }}>
           <h3>Party (Team Battle)</h3>
           {party ? (
@@ -222,4 +224,65 @@ function QueueTimer({ since }: { since: number }) {
     return () => clearInterval(i);
   }, []);
   return <span className="num">{Math.floor((Date.now() - since) / 1000)}s</span>;
+}
+
+/** Peer-to-peer friendly: a direct WebRTC connection, the server only introduces the two players. */
+function PeerPanel({ nav }: { nav: Nav }) {
+  const p = useProfile();
+  const [status, setStatus] = useState<{ s: string; detail?: string }>({ s: 'idle' });
+  const [friend, setFriend] = useState('');
+  const link = useRef<PeerLink | null>(null);
+  useEffect(
+    () => () => {
+      // keep the link alive once a match runs on it (the match screen owns it then)
+      if (link.current && link.current.status !== 'connected') link.current.close();
+    },
+    [],
+  );
+  if (!p.online) return null;
+  const deck = activeDeck(p);
+  const mine: PeerInfo = { name: p.online.name, deck: { characters: deck.characters.map((c) => ({ defId: c.defId, level: 10 })), items: deck.items } };
+  const open = (role: 'host' | 'joiner') => {
+    const s = getSocket();
+    if (!s) return toast('Not connected to the server', 'bad');
+    link.current?.close();
+    const l = new PeerLink(s);
+    link.current = l;
+    l.onStatus = (st, detail) => setStatus({ s: st, detail });
+    l.onOpen = (r) =>
+      startP2P(l, r, mine, (m: P2PMatch) => {
+        if (import.meta.env.DEV) (window as unknown as { __p2p?: P2PMatch }).__p2p = m;
+        nav({ name: 'match', ctrl: m, back: { name: 'online' } });
+      });
+    if (role === 'host') l.host();
+    else void l.connect(friend.trim()).catch((e: Error) => setStatus({ s: 'failed', detail: e.message }));
+  };
+  return (
+    <div className="panel grow" style={{ minWidth: 280 }}>
+      <h3>Direct match (P2P)</h3>
+      <p className="small muted">Play a friend over a direct connection. Plans are sealed with a hash before they are revealed, so nobody can react to the other side.</p>
+      <div className="row wrap">
+        <span className="chip neutral">
+          Your code: <b className="num p2p-code">{p.online.playerId}</b>
+        </span>
+        <button className="btn secondary small" onClick={() => void navigator.clipboard?.writeText(p.online!.playerId).then(() => toast('Code copied', 'good'))}>
+          Copy
+        </button>
+        <button className="btn primary small" onClick={() => open('host')}>
+          Wait for a friend
+        </button>
+      </div>
+      <div className="row wrap" style={{ marginTop: 8 }}>
+        <input type="text" placeholder="Friend’s code" aria-label="Friend’s P2P code" value={friend} onChange={(e) => setFriend(e.target.value)} style={{ width: 170 }} />
+        <button className="btn secondary small" disabled={!friend.trim()} onClick={() => open('joiner')}>
+          Connect
+        </button>
+      </div>
+      {status.s !== 'idle' && (
+        <p className={`small ${status.s === 'failed' ? 'bad-text' : 'muted'}`} aria-live="polite">
+          {status.s === 'waiting' ? 'Waiting for your friend to connect…' : status.s === 'connecting' ? 'Connecting…' : status.s === 'connected' ? 'Connected' : status.detail ?? 'Connection failed'}
+        </p>
+      )}
+    </div>
+  );
 }

@@ -57,7 +57,7 @@ export interface MatchController {
   op(op: PlanningOp): { ok: boolean; error?: string } | Promise<{ ok: boolean; error?: string }>;
   surrender(): void;
   dispose(): void;
-  readonly kind: 'local' | 'online' | 'tutorial';
+  readonly kind: 'local' | 'online' | 'tutorial' | 'p2p';
 }
 
 abstract class Base implements MatchController {
