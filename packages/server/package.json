@@ -1,0 +1,25 @@
+{
+  "name": "@contaminant/server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Authoritative game server: matches, ranked ladder, tournaments, World Cup, telemetry and meta analysis",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "start": "node src/main.ts",
+    "dev": "node --watch src/main.ts",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "build": "esbuild src/main.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/server.mjs --external:ws --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@contaminant/engine": "*",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.12",
+    "esbuild": "^0.25.0"
+  }
+}

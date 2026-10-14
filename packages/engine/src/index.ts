@@ -45,6 +45,7 @@ export {
   fieldTileAllowed,
   trapTileAllowed,
   freeRequirementMet,
+  discardFromHand,
 } from './itemfx.ts';
 export * from './planning.ts';
 export { startRound, resolveRound, endPhase, checkWin, nexusCorruptTiles, MODE_TARGET, type RoundResult } from './resolve.ts';
@@ -54,3 +55,5 @@ export * from './deck.ts';
 export * from './ai.ts';
 export { MAX_TRAPS, TRAP_LIFETIME, trapAt } from './traps.ts';
 export * from './sandbox.ts';
+export * from './progression.ts';
+export * from './protocol.ts';

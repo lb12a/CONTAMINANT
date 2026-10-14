@@ -1,0 +1,24 @@
+{
+  "name": "@contaminant/client",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contaminant game client (web, desktop shell and mobile PWA)",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@contaminant/engine": "*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "vite": "^7.1.0"
+  }
+}

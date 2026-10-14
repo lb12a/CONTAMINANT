@@ -4,6 +4,7 @@ import { CHARACTERS } from './data/characters.ts';
 import { ITEMS, ITEM_LIST } from './data/items.ts';
 import { validateTuning } from './formulas.ts';
 import type { CharCard, Rarity, Tuning } from './types.ts';
+import * as rngFns from './rng.ts';
 
 export const CHAR_DECK_SIZE = 10;
 export const ITEM_DECK_SIZE = 20;
@@ -128,4 +129,36 @@ export function deckToCards(deck: DeckDef | { characters: string[] }, level = 1,
 /** All items of the catalog in deck-legal quantities (for sandbox/collection views). */
 export function catalogItems(): string[] {
   return ITEM_LIST.map((i) => i.id);
+}
+
+/** Random legal decks (bots, simulations, meta seeding). */
+export function randomDeck(rng: rngFns.RngState, owned?: { chars?: string[]; items?: string[] }): DeckDef {
+  const { rand } = rngFns;
+  const charPool = Object.values(CHARACTERS).filter((c) => !owned?.chars || owned.chars.includes(c.id));
+  for (let attempt = 0; attempt < 200; attempt++) {
+    const chars: string[] = [];
+    const shuffled = rngFns.shuffle(rng, charPool.slice());
+    for (const c of shuffled) {
+      if (chars.length >= CHAR_DECK_SIZE) break;
+      const copies = c.maxCopies > 1 && rand(rng) < 0.35 ? Math.min(c.maxCopies, 1 + Math.floor(rand(rng) * c.maxCopies)) : 1;
+      for (let k = 0; k < copies && chars.length < CHAR_DECK_SIZE; k++) {
+        const trial = [...chars, c.id];
+        if (validateCharDeck(trial.map((defId) => ({ defId }))).errors.every((e) => e.startsWith('Character Deck needs'))) chars.push(c.id);
+      }
+    }
+    if (!validateCharDeck(chars.map((defId) => ({ defId }))).ok) continue;
+    const items: string[] = [];
+    const itemPool = rngFns.shuffle(rng, ITEM_LIST.filter((i) => !owned?.items || owned.items.includes(i.id)));
+    for (const it of itemPool) {
+      if (items.length >= ITEM_DECK_SIZE) break;
+      const max = ITEM_COPIES[it.rarity];
+      const n = 1 + Math.floor(rand(rng) * max);
+      for (let k = 0; k < n && items.length < ITEM_DECK_SIZE; k++) {
+        if (validateItemDeck([...items, it.id]).errors.every((e) => e.startsWith('Item Deck needs'))) items.push(it.id);
+      }
+    }
+    if (!validateItemDeck(items).ok) continue;
+    return { id: `random-${attempt}`, name: 'Random Deck', plan: 'Random legal deck', characters: chars, items };
+  }
+  return EXAMPLE_DECKS[0]!;
 }
