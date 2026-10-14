@@ -25,7 +25,7 @@ import type { MatchController } from './game/controller.ts';
 
 export type Route =
   | { name: 'menu' }
-  | { name: 'match'; ctrl?: MatchController; back?: Route; tutorial?: string }
+  | { name: 'match'; ctrl?: MatchController; back?: Route; tutorial?: string; training?: boolean }
   | { name: 'collection' }
   | { name: 'deck'; deckId?: string }
   | { name: 'shop' }

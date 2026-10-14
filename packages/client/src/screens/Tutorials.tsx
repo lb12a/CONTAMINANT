@@ -19,6 +19,14 @@ export function TutorialsScreen({ nav }: { nav: Nav; defId?: string }) {
           {done}/{TUTORIALS.length}
         </b>
       </p>
+      <div className="paper row wrap" style={{ padding: 12, justifyContent: 'space-between' }}>
+        <span>
+          <b>{de ? 'Grundausbildung' : 'Basic Training'}</b> · {de ? 'eine geführte erste Runde: Einsetzen, Bewegen, Angreifen, Karten, Versiegeln.' : 'a guided first match: deploy, move, attack, cards, sealing your plan.'}
+        </span>
+        <button className="btn primary small" onClick={() => nav({ name: 'match', training: true })}>
+          {p.trainingDone ? (de ? 'Wiederholen' : 'Replay training') : de ? 'Starten' : 'Start'}
+        </button>
+      </div>
       <div className="grid-cards">
         {TUTORIALS.map((tu) => {
           const owned = !!p.collection.chars[tu.id];

@@ -60,3 +60,4 @@ export * from './protocol.ts';
 export * from './data/tutorials.ts';
 export * from './tutorial.ts';
 export * from './replay.ts';
+export * from './training.ts';

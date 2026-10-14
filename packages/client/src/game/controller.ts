@@ -93,11 +93,14 @@ export class LocalMatch extends Base {
   private planningSeconds: number;
   private bot: BotOptions;
   private serial = 0;
+  /** scripted opponent (Basic Training); defaults to the bot */
+  private opponent?: (s: GameState) => Plan;
 
-  constructor(opts: CreateMatchOptions & { bot?: BotOptions; planningSeconds?: number; existing?: GameState }) {
+  constructor(opts: CreateMatchOptions & { bot?: BotOptions; planningSeconds?: number; existing?: GameState; opponent?: (s: GameState) => Plan }) {
     super();
     this.state = opts.existing ?? newMatch(opts);
     this.bot = opts.bot ?? { difficulty: 'normal' };
+    this.opponent = opts.opponent;
     this.planningSeconds = opts.planningSeconds ?? this.state.settings.planningSeconds;
     const info: MatchInfo = { match: this.state.id, kind: 'bot', you: 0, names: [this.state.players[0].name, this.state.players[1].name], planningSeconds: this.planningSeconds };
     this.snap = { info, view: viewFor(this.state, 0), prevView: null, roundEvents: [], deadline: this.deadline(), opponentReady: true, ended: null, ack: null, watch: null, roundSerial: 0 };
@@ -137,7 +140,7 @@ export class LocalMatch extends Base {
     if (this.state.phase !== 'planning') return;
     if (this.timer) clearTimeout(this.timer);
     const prev = viewFor(this.state, 0);
-    const p1 = botPlan(this.state, 1, this.bot);
+    const p1 = this.opponent ? this.opponent(this.state) : botPlan(this.state, 1, this.bot);
     const before = this.state.events.length;
     playRound(this.state, [this.plan ? { ...this.plan, player: 0 } : emptyPlan(0), p1]);
     this.plan = null;

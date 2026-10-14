@@ -49,6 +49,8 @@ export interface Profile {
   settings: Settings;
   online: OnlineAccount | null;
   onboarded: boolean;
+  /** Basic Training finished (its reward is paid once) */
+  trainingDone?: boolean;
 }
 
 const KEY = 'contaminant.profile.v1';

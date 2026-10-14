@@ -54,3 +54,28 @@ test('Piggybank chamber: Shake Down twice reaches 4 Coins (final test check)', (
   assert.ok(r.passed, JSON.stringify(r.tasks));
   assert.ok(sess.passed);
 });
+
+test('Basic Training: the guided path (deploy Vile, walk up, Reaper\'s Slash + Whetstone) works', async () => {
+  const { createTraining, trainingWardenPlan, TRAINING, playRound, validatePlan, findTagged } = await import('../src/index.ts');
+  const s = createTraining();
+  const vileCard = s.players[0].offered.map((o) => s.players[0].cards.find((c) => c.uid === o.cardUid)!).find((c) => c.defId === 'vile')!;
+  assert.ok(vileCard, 'Vile is offered');
+  const r1 = { player: 0 as const, commands: [{ kind: 'deploy' as const, card: vileCard.uid, tile: TRAINING.deployTiles[0]! }], rest: [] };
+  assert.equal(validatePlan(s, r1).ok, true);
+  playRound(s, [r1, trainingWardenPlan(s)]);
+  const vile = s.units.find((u) => u.defId === 'vile' && u.owner === 0)!;
+  const dummy = findTagged(s, 'dummy')!;
+  const hp0 = dummy.hp;
+  const r2 = {
+    player: 0 as const,
+    commands: [
+      { kind: 'move' as const, unit: vile.uid, path: [{ c: 5, r: 4 }, { c: 6, r: 4 }] },
+      { kind: 'attack' as const, unit: vile.uid, attack: TRAINING.attack, target: { unit: dummy.uid }, item: s.players[0].hand.find((c) => c.itemId === 'whetstone')!.uid },
+    ],
+    rest: [],
+  };
+  const chk = validatePlan(s, r2);
+  assert.equal(chk.ok, true, chk.issues.map((i) => i.error).join('; '));
+  playRound(s, [r2, trainingWardenPlan(s)]);
+  assert.ok(findTagged(s, 'dummy')!.hp < hp0, 'the dummy took damage');
+});

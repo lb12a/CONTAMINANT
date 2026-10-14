@@ -14,7 +14,7 @@ import {
 } from '@contaminant/engine';
 import { BoardCanvas } from '../render/BoardCanvas.tsx';
 import type { DioramaRenderer } from '../render/diorama.ts';
-import type { Floater, Flash, Insets, Overlay, Pulse } from '../render/types.ts';
+import type { Floater, Flash, HighlightKind, Insets, Overlay, Pulse } from '../render/types.ts';
 import { computeOverlay, emptyPlanner, plannedPos, tapTile, toPlan, unitActions, commandLabel, type PlannerState } from '../game/planner.ts';
 import type { MatchController, MatchSnapshot } from '../game/controller.ts';
 import { ApBattery, CharTraits, Fuse, HpBar, IdleSteps, ItemCard, Modal, StatusChips, VpRace, secondsLeft } from '../ui/components.tsx';
@@ -29,11 +29,14 @@ interface Props {
   onExit: (summary: { won: boolean | null; snap: MatchSnapshot; log: string[] }) => void;
   tutorialPanel?: React.ReactNode;
   hideHand?: boolean;
+  /** Basic Training: the coach follows the planner and marks tiles */
+  onPlanner?: (ps: PlannerState, snap: MatchSnapshot, playing: boolean) => void;
+  coachTiles?: Map<string, HighlightKind>;
 }
 
 const EVENT_DELAY = 280;
 
-export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
+export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, coachTiles }: Props) {
   const [snap, setSnap] = useState<MatchSnapshot>(ctrl.snapshot());
   const [ps, setPs] = useState<PlannerState>(emptyPlanner());
   const [hover, setHover] = useState<Hex | null>(null);
@@ -186,7 +189,12 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
 
   // ---------------------------------------------------------------- planning
   const pv = useMemo(() => computeOverlay(view, me, ps, hover), [view, me, ps, hover]);
-  const overlay: Overlay = playing ? { highlights: new Map(), paths: [], targets: [], ghosts: [], ...play } : pv.overlay;
+  const overlay: Overlay = useMemo(() => {
+    if (playing) return { highlights: new Map(), paths: [], targets: [], ghosts: [], ...play };
+    if (!coachTiles?.size) return pv.overlay;
+    return { ...pv.overlay, highlights: new Map([...pv.overlay.highlights, ...coachTiles]) };
+  }, [playing, play, pv.overlay, coachTiles]);
+  useEffect(() => onPlanner?.(ps, snap, playing), [ps, snap, playing, onPlanner]);
   const selected = view.units.find((u) => u.uid === ps.selected);
 
   const submit = useCallback(

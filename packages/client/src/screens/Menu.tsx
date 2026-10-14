@@ -34,14 +34,19 @@ export function MenuScreen({ nav }: { nav: Nav }) {
           <p className="muted" style={{ marginTop: 0 }}>
             Plan in secret. Everything resolves at once — Priority first, then Speed. First to 100 Victory Points wins.
           </p>
-          {!p.onboarded && (
+          {!p.trainingDone && (
             <div className="paper" style={{ padding: 12 }}>
-              <b>Welcome, Subject.</b> Your starter archive holds the <i>{deck.name}</i> deck. Try a Testing Chamber to learn a character, then play a bot.
-              <div className="row" style={{ marginTop: 8 }}>
+              <b>Welcome, Subject.</b> Before your first real match, Basic Training walks you through a round: you deploy, move, attack and seal your plan yourself. It takes about five minutes and pays 200 gold.
+              <div className="row wrap" style={{ marginTop: 8 }}>
                 <input type="text" placeholder="Your name" defaultValue={p.name === 'Subject' ? '' : p.name} onBlur={(e) => e.target.value.trim() && setProfile((x) => ({ ...x, name: e.target.value.trim().slice(0, 20) }))} />
-                <button className="btn tutorial" onClick={() => setProfile((x) => ({ ...x, onboarded: true }))}>
-                  {t('Next')}
+                <button className="btn primary" onClick={() => nav({ name: 'match', training: true })}>
+                  Start Basic Training
                 </button>
+                {!p.onboarded && (
+                  <button className="btn secondary small" onClick={() => setProfile((x) => ({ ...x, onboarded: true, trainingDone: true }))}>
+                    I know how to play
+                  </button>
+                )}
               </div>
             </div>
           )}
