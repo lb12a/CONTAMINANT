@@ -19,3 +19,4 @@ tools/assetgen/.cache/
 tools/assetgen/raw/
 tools/assetgen/.venv/
 tools/qa/shots/
+apps/desktop/release/

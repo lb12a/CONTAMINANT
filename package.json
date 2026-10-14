@@ -2,7 +2,7 @@
   "name": "contaminant",
   "private": true,
   "version": "0.1.0",
-  "description": "Contaminant – dark horror laboratory tactics with simultaneous planning on a hex grid",
+  "description": "Contaminant \u2013 dark horror laboratory tactics with simultaneous planning on a hex grid",
   "type": "module",
   "workspaces": [
     "packages/*",
@@ -25,10 +25,15 @@
     "build:client": "npm run build -w @contaminant/client",
     "build:server": "npm run build -w @contaminant/server",
     "desktop": "npm run start -w @contaminant/desktop",
-    "desktop:dist": "npm run build:client && npm run dist -w @contaminant/desktop",
+    "desktop:dist": "npm run build:client && npm run build:server && npm run dist -w @contaminant/desktop",
     "assets:manifest": "node tools/assetgen/src/manifest.ts",
     "assets:generate": "node tools/assetgen/src/generate.ts",
-    "assets:status": "node tools/assetgen/src/generate.ts --check"
+    "assets:status": "node tools/assetgen/src/generate.ts --check",
+    "desktop:pack": "npm run build:client && npm run build:server && npm run pack -w @contaminant/desktop",
+    "smoke": "npm run build:server && npm run smoke -w @contaminant/server",
+    "qa:shots": "node tools/qa/shots.ts",
+    "qa:training": "node tools/qa/training.ts",
+    "qa:desktop": "node tools/qa/desktop.ts"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

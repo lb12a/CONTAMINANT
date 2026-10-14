@@ -1,0 +1,82 @@
+{
+  "name": "@contaminant/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contaminant for Windows, macOS and Linux (Electron shell around the web client, with an optional built-in LAN server)",
+  "author": "Contaminant",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --publish never",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:linux": "electron-builder --linux --publish never"
+  },
+  "build": {
+    "appId": "game.contaminant.desktop",
+    "productName": "Contaminant",
+    "copyright": "Contaminant",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.cjs",
+      "preload.cjs",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "../../packages/client/dist",
+        "to": "client"
+      },
+      {
+        "from": "../../packages/server/dist/server.mjs",
+        "to": "server/server.mjs"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Contaminant",
+      "artifactName": "Contaminant-Setup-${version}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg",
+        "zip"
+      ],
+      "category": "public.app-category.strategy-games",
+      "icon": "build/icon.png"
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "Game",
+      "icon": "build/icon.png"
+    },
+    "electronVersion": "38.8.6"
+  },
+  "devDependencies": {
+    "electron": "38.8.6",
+    "electron-builder": "^26.15.3"
+  }
+}
