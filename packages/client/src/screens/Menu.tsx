@@ -41,7 +41,7 @@ export function MenuScreen({ nav }: { nav: Nav }) {
         <div className="hero-art" style={backdrop ? { backgroundImage: `url(${backdrop})` } : undefined} aria-hidden />
         <div className="hero-copy">
           <h1 className="hero-title">Contaminant</h1>
-          <p className="hero-tag">Plan in secret. Everything resolves at once: Priority first, then Speed. First to 100 Victory Points wins.</p>
+          <p className="hero-tag">{t('Plan in secret. Everything resolves at once: Priority first, then Speed. First to 100 Victory Points wins.')}</p>
           <div className="row wrap" style={{ gap: 10 }}>
             <button className="btn seal l" onClick={() => play('contamination')}>
               {t('Play vs Bot')}
@@ -52,15 +52,15 @@ export function MenuScreen({ nav }: { nav: Nav }) {
           </div>
           {!p.trainingDone && (
             <div className="paper hero-note">
-              <b>Welcome, Subject.</b> Basic Training walks you through your first round: you deploy, move, attack and seal your plan yourself. About five minutes, 200 gold.
+              <b>{t('Welcome, Subject.')}</b> {t('Basic Training walks you through your first round: you deploy, move, attack and seal your plan yourself. About five minutes, 200 gold.')}
               <div className="row wrap" style={{ marginTop: 8 }}>
-                <input type="text" placeholder="Your name" aria-label="Your name" defaultValue={p.name === 'Subject' ? '' : p.name} onBlur={(e) => e.target.value.trim() && setProfile((x) => ({ ...x, name: e.target.value.trim().slice(0, 20) }))} />
+                <input type="text" placeholder={t('Your name')} aria-label={t('Your name')} defaultValue={p.name === 'Subject' ? '' : p.name} onBlur={(e) => e.target.value.trim() && setProfile((x) => ({ ...x, name: e.target.value.trim().slice(0, 20) }))} />
                 <button className="btn primary" onClick={() => nav({ name: 'match', training: true })}>
-                  Start Basic Training
+                  {t('Start Basic Training')}
                 </button>
                 {!p.onboarded && (
                   <button className="btn secondary small" onClick={() => setProfile((x) => ({ ...x, onboarded: true, trainingDone: true }))}>
-                    I know how to play
+                    {t('I know how to play')}
                   </button>
                 )}
               </div>
