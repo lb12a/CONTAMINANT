@@ -55,6 +55,8 @@ const de: Record<string, string> = {
   'Buy': 'Kaufen',
   'Level up': 'Aufwerten',
   'Queue': 'Warteschlange',
+  'Teams': 'Teams',
+  'Replays': 'Wiederholungen',
   'Leave queue': 'Warteschlange verlassen',
   'Register': 'Anmelden',
   'Check in': 'Einchecken',

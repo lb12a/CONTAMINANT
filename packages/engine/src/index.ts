@@ -59,3 +59,4 @@ export * from './progression.ts';
 export * from './protocol.ts';
 export * from './data/tutorials.ts';
 export * from './tutorial.ts';
+export * from './replay.ts';

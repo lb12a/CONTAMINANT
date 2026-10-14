@@ -2,23 +2,17 @@
 // validates everything (anti-cheat), resolves rounds and sends each player only their fog-of-war view.
 
 import {
-  applyImmediateItem,
+  applyPlanningOp,
+  buildMatchState,
   botPlan,
   emptyPlan,
   eventsFor,
-  freeRequirementMet,
-  isImmediateItem,
-  ITEMS,
-  lockOffer,
-  newMatch,
-  paidReroll,
   planCommit,
   playRound,
   spectatorView,
   stateHash,
   validatePlan,
   viewFor,
-  discardFromHand,
   type BotOptions,
   type DeckCardInput,
   type GameEvent,
@@ -28,6 +22,8 @@ import {
   type Plan,
   type PlanningOp,
   type PlayerId,
+  type ReplayLog,
+  type ReplayRound,
   type ServerMsg,
   type Zone,
 } from '@contaminant/engine';
@@ -101,19 +97,7 @@ interface Frame {
   events: GameEvent[];
 }
 
-export interface ReplayRound {
-  ops: { seat: PlayerId; op: PlanningOp }[];
-  plans: [Plan, Plan];
-  hash: string;
-}
-
-export interface ReplayLog {
-  seed: number;
-  settings: { mode: ModeId; planningSeconds: number; friendly: boolean; zone: Zone };
-  seats: { name: string; deck: { characters: DeckCardInput[]; items: string[] }; bot?: boolean }[];
-  rounds: ReplayRound[];
-  finalHash?: string;
-}
+export type { ReplayRound, ReplayLog } from '@contaminant/engine';
 
 export interface RoomHost {
   clock: Clock;
@@ -450,52 +434,7 @@ export class RoomManager {
 
 // ---------------------------------------------------------------- shared helpers (rooms + replay verification)
 
-export function buildMatchState(id: string, seed: number, settings: ReplayLog['settings'], seats: { name: string; deck: { characters: DeckCardInput[]; items: string[] }; bot?: unknown }[]): GameState {
-  return newMatch({
-    id,
-    seed,
-    settings: { mode: settings.mode, planningSeconds: settings.planningSeconds, friendly: settings.friendly, zone: settings.zone, maxRounds: 40 },
-    players: seats.map((s) => ({
-      name: s.name,
-      cards: s.deck.characters.map((c, i) => ({ uid: `c${i + 1}`, defId: c.defId, level: c.level ?? 1, tuning: c.tuning ?? {} })),
-      items: s.deck.items,
-      isBot: !!s.bot,
-    })) as [never, never],
-  });
-}
-
-/** Planning-phase operations that change state immediately (offer locks, paid re-rolls, instant Intel cards). */
-export function applyPlanningOp(state: GameState, p: PlayerId, op: PlanningOp, plannedCards: number): { ok: boolean; error?: string } {
-  const pl = state.players[p];
-  switch (op.kind) {
-    case 'lock':
-      return lockOffer(state, p, op.card, !!op.locked) ? { ok: true } : { ok: false, error: 'card not offered' };
-    case 'reroll':
-      return paidReroll(state, p, op.card);
-    case 'watch':
-      return { ok: true };
-    case 'immediate': {
-      const card = pl.hand.find((c) => c.uid === op.card);
-      const it = card ? ITEMS[card.itemId] : undefined;
-      if (!card || !it || card.tarnished) return { ok: false, error: 'card not playable' };
-      if (!isImmediateItem(it.id)) return { ok: false, error: 'not an instant card' };
-      if (pl.cardsPlayedThisRound >= 3) return { ok: false, error: 'at most 3 cards per round' };
-      if (it.cost === 0 && pl.freeCardsThisRound >= 2) return { ok: false, error: 'at most 2 Free cards per round' };
-      if (pl.itemNamesThisRound.includes(it.name)) return { ok: false, error: 'same card name once per round' };
-      const cmd = { kind: 'item' as const, card: card.uid, target: { choice: op.choice } };
-      const req = it.cost === 0 ? freeRequirementMet(state, p, it.id, cmd, { cards: pl.cardsPlayedThisRound + plannedCards, others: [] }) : null;
-      if (req) return { ok: false, error: req };
-      if (it.cost > pl.ap) return { ok: false, error: 'not enough AP' };
-      pl.ap -= it.cost;
-      pl.apSpentThisRound += it.cost;
-      discardFromHand(state, p, card.uid);
-      pl.cardsPlayedThisRound++;
-      if (it.cost === 0) pl.freeCardsThisRound++;
-      pl.itemNamesThisRound.push(it.name);
-      return applyImmediateItem(state, p, card, cmd);
-    }
-  }
-}
+export { buildMatchState, applyPlanningOp };
 
 /** Re-simulates a stored match from seed + ops + plans and compares the per-round state hashes. */
 export function verifyReplay(id: string, log: ReplayLog): { ok: boolean; rounds: number; mismatchAt?: number; finalHash: string } {

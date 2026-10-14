@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Nav } from '../App.tsx';
 import { getApi, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 
@@ -16,7 +17,7 @@ interface Row {
   ended: number;
 }
 
-export function HistoryScreen() {
+export function HistoryScreen({ nav }: { nav: Nav }) {
   const p = useProfile();
   const [open, setOpen] = useState<string | null>(null);
   const [online, setOnline] = useState<Row[]>([]);
@@ -82,6 +83,9 @@ export function HistoryScreen() {
                   </td>
                   <td className="num">{r.rounds}</td>
                   <td>
+                    <button className="btn primary small" onClick={() => nav({ name: 'replay', match: r.id })}>
+                      ▶ Replay
+                    </button>{' '}
                     <button
                       className="btn secondary small"
                       onClick={async () => {

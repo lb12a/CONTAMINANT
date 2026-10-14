@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 
@@ -21,7 +22,7 @@ interface Division {
   reward: { gold: number; trophies: number; cardBack?: string; skin?: string; title?: string };
 }
 
-export function LadderScreen() {
+export function LadderScreen({ nav }: { nav: Nav }) {
   const p = useProfile();
   const [rows, setRows] = useState<Row[]>([]);
   const [divs, setDivs] = useState<Division[]>([]);
@@ -84,7 +85,11 @@ export function LadderScreen() {
             {rows.map((r) => (
               <tr key={r.id} style={r.id === p.online?.playerId ? { background: '#8cff5a14' } : undefined}>
                 <td className="num">{r.rank}</td>
-                <td>{r.name}</td>
+                <td>
+                  <button className="link-name" onClick={() => nav({ name: 'profile', id: r.id })}>
+                    {r.name}
+                  </button>
+                </td>
                 <td>
                   <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: color(r.divisionId), marginRight: 6 }} />
                   {r.division}

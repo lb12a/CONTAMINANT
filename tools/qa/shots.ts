@@ -6,6 +6,9 @@ import { mkdirSync } from 'node:fs';
 const base = process.argv[2] ?? 'http://localhost:5173';
 const out = process.argv[3] ?? 'tools/qa/shots';
 const only = process.argv.find((a) => a.startsWith('--only='))?.slice(7).split(',');
+// --online=<file.json> with { server, token, playerId, name }: screenshots of the online screens
+const onlineFile = process.argv.find((a) => a.startsWith('--online='))?.slice(9);
+const online = onlineFile ? JSON.parse((await import('node:fs')).readFileSync(onlineFile, 'utf8')) : null;
 mkdirSync(out, { recursive: true });
 
 const sizes = [
@@ -29,6 +32,23 @@ const screens: { id: string; run: (p: Page) => Promise<void> }[] = [
   { id: 'missions', run: (p) => navTo(p, 'Missions') },
   { id: 'online', run: (p) => navTo(p, 'Online') },
   { id: 'settings', run: (p) => navTo(p, 'Settings') },
+  { id: 'worldcup', run: (p) => navTo(p, 'World Cup') },
+  { id: 'teams', run: (p) => navTo(p, 'Teams') },
+  { id: 'replays', run: (p) => navTo(p, 'Replays') },
+  { id: 'ladder', run: (p) => navTo(p, 'Ladder') },
+  { id: 'tournaments', run: (p) => navTo(p, 'Tournaments') },
+  { id: 'meta', run: (p) => navTo(p, 'Meta') },
+  {
+    id: 'replay',
+    run: async (p) => {
+      await navTo(p, 'Replays');
+      await p.getByRole('button', { name: /▶/ }).first().click();
+      await p.waitForTimeout(2500);
+      await p.getByRole('button', { name: 'Next round' }).click();
+      await p.getByRole('button', { name: 'Next round' }).click();
+      await p.waitForTimeout(900);
+    },
+  },
   {
     id: 'chamber',
     run: async (p) => {
@@ -55,14 +75,15 @@ for (const s of sizes) {
     const errors: string[] = [];
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
-    await page.addInitScript(() => {
+    await page.addInitScript((acc) => {
       const raw = localStorage.getItem('contaminant.profile.v1');
-      const p = raw ? JSON.parse(raw) : null;
-      if (!p) return;
+      const p = raw ? JSON.parse(raw) : { settings: {} };
       p.settings.lang = 'en';
       p.onboarded = true;
+      if (acc) p.online = acc;
       localStorage.setItem('contaminant.profile.v1', JSON.stringify(p));
-    });
+      if (acc) localStorage.setItem('contaminant.server', acc.server);
+    }, online);
     await page.goto(base, { waitUntil: 'networkidle' });
     // a fresh profile is created on first load (German by default): patch it and reload once
     const patched = await page.evaluate(() => {

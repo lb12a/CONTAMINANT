@@ -18,6 +18,9 @@ import { HistoryScreen } from './screens/History.tsx';
 import { SpectateScreen } from './screens/Spectate.tsx';
 import { TutorialsScreen } from './screens/Tutorials.tsx';
 import { MissionsScreen } from './screens/Missions.tsx';
+import { ProfileScreen } from './screens/Profile.tsx';
+import { TeamsScreen } from './screens/Teams.tsx';
+import { ReplayScreen } from './screens/Replay.tsx';
 import type { MatchController } from './game/controller.ts';
 
 export type Route =
@@ -35,7 +38,10 @@ export type Route =
   | { name: 'history' }
   | { name: 'spectate'; match?: string }
   | { name: 'tutorials'; defId?: string }
-  | { name: 'missions' };
+  | { name: 'missions' }
+  | { name: 'profile'; id?: string }
+  | { name: 'teams'; id?: string }
+  | { name: 'replay'; match?: string };
 
 export type Nav = (r: Route) => void;
 
@@ -82,8 +88,10 @@ export function App() {
     ['online', t('Online')],
     ['tournaments', t('Tournaments')],
     ['worldcup', t('World Cup')],
-    ['meta', t('Meta')],
+    ['teams', t('Teams')],
     ['ladder', t('Ladder')],
+    ['replay', t('Replays')],
+    ['meta', t('Meta')],
     ['history', t('History')],
     ['settings', t('Settings')],
   ];
@@ -97,7 +105,7 @@ export function App() {
         </span>
         <div className="navlinks row wrap" style={{ gap: 4 }}>
           {links.map(([n, label]) => (
-            <button key={n} className={`btn secondary small${route.name === n ? ' active' : ''}`} onClick={() => nav({ name: n } as Route)}>
+            <button key={n} className={`navlink${route.name === n ? ' current' : ''}`} aria-current={route.name === n ? 'page' : undefined} onClick={() => nav({ name: n } as Route)}>
               {label}
             </button>
           ))}
@@ -105,7 +113,13 @@ export function App() {
         <span className="spacer" />
         <span className="chip num" title="Gold">🪙 {profile.collection.gold}</span>
         <span className="chip num" title="Trophies">🏆 {profile.collection.trophies}</span>
-        <span className={`chip ${profile.online ? 'buff' : 'neutral'}`}>{profile.online ? `● ${profile.online.name}` : t('Offline')}</span>
+        {profile.online ? (
+          <button className="chip buff" style={{ cursor: 'pointer' }} onClick={() => nav({ name: 'profile' })} title="Your public profile">
+            ● {profile.online.name}
+          </button>
+        ) : (
+          <span className="chip neutral">{t('Offline')}</span>
+        )}
         <button className="icon-btn menu-burger" onClick={() => setMenuOpen((v) => !v)} aria-label="menu">
           ☰
         </button>
@@ -120,8 +134,11 @@ export function App() {
         {route.name === 'tournaments' && <TournamentsScreen nav={nav} id={route.id} />}
         {route.name === 'worldcup' && <WorldCupScreen nav={nav} />}
         {route.name === 'meta' && <MetaScreen />}
-        {route.name === 'ladder' && <LadderScreen />}
-        {route.name === 'history' && <HistoryScreen />}
+        {route.name === 'ladder' && <LadderScreen nav={nav} />}
+        {route.name === 'profile' && <ProfileScreen nav={nav} id={route.id} />}
+        {route.name === 'teams' && <TeamsScreen nav={nav} id={route.id} />}
+        {route.name === 'replay' && <ReplayScreen nav={nav} match={route.match} />}
+        {route.name === 'history' && <HistoryScreen nav={nav} />}
         {route.name === 'spectate' && <SpectateScreen nav={nav} match={route.match} />}
         {route.name === 'tutorials' && <TutorialsScreen nav={nav} defId={route.defId} />}
         {route.name === 'missions' && <MissionsScreen />}

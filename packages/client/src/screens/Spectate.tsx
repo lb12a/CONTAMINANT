@@ -80,7 +80,7 @@ export function SpectateScreen({ match }: { nav: Nav; match?: string }) {
               <b>{frame.names[1]}</b>
             </div>
             <VpRace me={frame.view.players[0].vp} them={frame.view.players[1].vp} />
-            <div style={{ height: 'min(60vh, 520px)' }}>
+            <div style={{ height: 'min(60vh, 520px)', position: 'relative', borderRadius: 10, overflow: 'hidden' }}>
               <BoardCanvas state={frame.view} me={0} overlay={{ highlights: new Map(), paths: [], targets: [], ghosts: [] }} />
             </div>
           </div>
