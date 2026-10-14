@@ -51,6 +51,8 @@ export interface PlannerState {
   commands: Command[];
   rest: string[];
   speedShift: Record<string, number>;
+  /** Ghost Train Mind's Eye: tie order with a friendly character */
+  mindsEye?: Record<string, { after: string; action?: number }>;
   watch?: string;
   selected?: string;
   mode: Mode;
@@ -65,6 +67,7 @@ export function toPlan(ps: PlannerState, me: PlayerId): Plan {
     commands: ps.commands.map((c) => (c.kind === 'deploy' && ps.deployChoices[c.card] ? { ...c, choice: { ...c.choice, ...ps.deployChoices[c.card] } } : c)),
     rest: ps.rest,
     speedShift: ps.speedShift,
+    mindsEye: ps.mindsEye,
     watch: ps.watch,
   };
 }
@@ -216,7 +219,8 @@ export function computeOverlay(view: GameState, me: PlayerId, ps: PlannerState, 
     if (it?.targeting === 'trap-tile') for (const t of view.tiles) if (trapTileAllowed(view, me, t)) highlights.set(key(t), 'deploy');
     if (it && ['unit', 'ally', 'enemy'].includes(it.targeting)) for (const o of view.units) if (!o.isObject && (it.targeting !== 'ally' || o.owner === me)) highlights.set(key(o.pos), o.owner === me ? 'ally' : 'target');
   }
-  const apLeft = view.players[me].ap - chk.cost;
+  // refunds planned earlier (Evacuation Order, Spare Battery) raise the budget for later commands
+  const apLeft = view.players[me].ap + chk.credit - chk.cost;
   return {
     overlay: { highlights, paths, targets, ghosts, selected: ps.selected, hover },
     cost: chk.cost,

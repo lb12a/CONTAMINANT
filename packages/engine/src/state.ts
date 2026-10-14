@@ -295,6 +295,7 @@ function makePlayer(s: GameState, id: PlayerId, setup: PlayerSetup, side: 'left'
     customsTaxType: null,
     customsTaxRound: -1,
     apPenaltyNext: 0,
+    apBorrowed: 0,
     falseAlarmRound: -1,
     spyDroneUntil: -1,
     feastThisRound: 0,
@@ -387,3 +388,13 @@ export function cloneState(s: GameState): GameState {
 }
 
 export { key };
+
+/** Refunds AP during resolution: first repays AP borrowed by the plan, the rest is usable this round only on paper
+ * (unspent AP does not carry over) but lowers the AP counted as spent for the Idle Bonus. */
+export function refundAp(s: GameState, p: PlayerId, amount: number, why: string): void {
+  const pl = s.players[p];
+  pl.ap += amount;
+  pl.apSpentThisRound = Math.max(0, pl.apSpentThisRound - amount);
+  pl.apBorrowed = Math.max(0, pl.apBorrowed - amount);
+  addEvent(s, { kind: 'ap', text: `${why}: +${amount} AP`, owner: p, privateTo: p, amount });
+}

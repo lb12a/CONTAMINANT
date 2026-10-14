@@ -1247,7 +1247,6 @@ export function executeAbility(s: GameState, actor: Unit, cmd: AbilityCmd, hooks
   if (!ok) return false;
   if (def.ability.oncePerGame) actor.once.push(id);
   if (echo && ok && !def.ability.oncePerGame && id !== 'zombie_limb.fuse') run(0.5);
-  if (ab?.id === 'spare_battery') s.players[actor.owner].queuedAp += 0; // refunded at resolution via planner bookkeeping
   return true;
 }
 

@@ -288,6 +288,8 @@ export interface PlayerState {
   customsTaxType: ItemType | null;
   customsTaxRound: number;
   apPenaltyNext: number;
+  /** AP borrowed this round against planned refunds (Evacuation Order, Spare Battery); unpaid rest becomes next round's penalty */
+  apBorrowed: number;
   falseAlarmRound: number;
   spyDroneUntil: number;
   feastThisRound: number;
@@ -485,6 +487,9 @@ export interface Plan {
   rest: string[];
   /** Ghost Train Mind's Eye speed shift, −15..+15 (percent) */
   speedShift?: Record<string, number>;
+  /** Ghost Train Mind's Eye tie order: in a Speed tie with friendly `after`, she acts right after
+   * that character's `action`-th action (0 = before all of them, default 1) */
+  mindsEye?: Record<string, { after: string; action?: number }>;
   /** Scarecrow Watchful Eye target */
   watch?: string;
 }

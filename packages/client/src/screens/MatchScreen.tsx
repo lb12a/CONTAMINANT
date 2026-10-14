@@ -637,6 +637,43 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
               <input className="spine" type="range" min={-15} max={15} value={ps.speedShift[u.uid] ?? 0} onChange={(e) => setPs((p) => ({ ...p, speedShift: { ...p.speedShift, [u.uid]: Number(e.target.value) } }))} />
             </label>
           )}
+          {u.defId === 'ghost_train' && (
+            <label className="small col">
+              Mind's Eye: on a Speed tie, act after
+              <div className="row" style={{ gap: 6 }}>
+                <select
+                  value={ps.mindsEye?.[u.uid]?.after ?? ''}
+                  onChange={(e) =>
+                    setPs((p) => {
+                      const next = { ...(p.mindsEye ?? {}) };
+                      if (e.target.value) next[u.uid] = { after: e.target.value, action: next[u.uid]?.action ?? 1 };
+                      else delete next[u.uid];
+                      return { ...p, mindsEye: next };
+                    })
+                  }
+                >
+                  <option value="">nobody (random)</option>
+                  {view.units
+                    .filter((x) => x.owner === me && x.uid !== u.uid && !x.isObject)
+                    .map((x) => (
+                      <option key={x.uid} value={x.uid}>
+                        {x.name}
+                      </option>
+                    ))}
+                </select>
+                {ps.mindsEye?.[u.uid] && (
+                  <select value={ps.mindsEye[u.uid]!.action ?? 1} onChange={(e) => setPs((p) => ({ ...p, mindsEye: { ...p.mindsEye, [u.uid]: { after: p.mindsEye![u.uid]!.after, action: Number(e.target.value) } } }))}>
+                    <option value={0}>before its actions</option>
+                    {[1, 2, 3, 4].map((n) => (
+                      <option key={n} value={n}>
+                        after its action {n}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            </label>
+          )}
           {u.defId === 'scarecrow' && (
             <label className="small col">
               Watchful Eye target

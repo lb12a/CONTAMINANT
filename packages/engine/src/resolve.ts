@@ -18,6 +18,7 @@ import {
   getUnit,
   isFree,
   other,
+  refundAp,
   tileAt,
 } from './state.ts';
 import { effectiveSpeed, getStatus, hasChar, hasStatus, hpPct, onMoonlit } from './stats.ts';
@@ -193,6 +194,8 @@ interface Stream {
   actions: Action[];
   waited: boolean;
   firstDone: boolean;
+  /** actions of this stream already executed this round */
+  done?: number;
 }
 
 export interface RoundResult {
@@ -217,6 +220,7 @@ export function resolveRound(s: GameState, rawPlans: [Plan, Plan]): RoundResult 
     const pl = s.players[p];
     pl.ap -= checks[i]!.cost;
     pl.apSpentThisRound += checks[i]!.cost;
+    pl.apBorrowed = checks[i]!.borrowed;
     for (const cmd of plan.commands) {
       const cardUid = cmd.kind === 'item' ? cmd.card : cmd.kind === 'attack' || cmd.kind === 'ability' ? cmd.item : undefined;
       if (!cardUid) continue;
@@ -313,6 +317,17 @@ export function resolveRound(s: GameState, rawPlans: [Plan, Plan]): RoundResult 
   };
 
   const reversed = s.backwardsClockRound === s.round;
+  // Mind's Eye: a Ghost Train tied on Speed with the chosen friend acts right after that friend's chosen action
+  const mindsEye = new Map<string, { after: string; action: number }>();
+  for (const plan of plans) for (const [uid, v] of Object.entries(plan.mindsEye ?? {})) mindsEye.set(uid, { after: v.after, action: v.action ?? 1 });
+  const eyeOrder = (a: Stream, b: Stream): number => {
+    // >0: a first, <0: b first, 0: no Mind's Eye rule between them
+    const ea = a.unit ? mindsEye.get(a.unit) : undefined;
+    if (ea && ea.after === b.unit) return (b.done ?? 0) >= ea.action ? 1 : -1;
+    const eb = b.unit ? mindsEye.get(b.unit) : undefined;
+    if (eb && eb.after === a.unit) return (a.done ?? 0) >= eb.action ? -1 : 1;
+    return 0;
+  };
   let guard = 0;
   while (guard++ < 500) {
     const live = streams.filter((st) => st.actions.length);
@@ -327,13 +342,15 @@ export function resolveRound(s: GameState, rawPlans: [Plan, Plan]): RoundResult 
       if (st.waited) sp -= 10000;
       const tie = (u && hasChar(u, 'chronal') ? 1 : 0) + rand(s.rng) * 0.5;
       const k: [number, number, number] = [a.priority, sp, tie];
-      if (k[0] > bestKey[0] || (k[0] === bestKey[0] && (k[1] > bestKey[1] || (k[1] === bestKey[1] && k[2] > bestKey[2])))) {
+      const speedTie = best && k[0] === bestKey[0] && Math.round(k[1]) === Math.round(bestKey[1]) ? eyeOrder(st, best) : 0;
+      if (speedTie > 0 || (speedTie === 0 && (k[0] > bestKey[0] || (k[0] === bestKey[0] && (k[1] > bestKey[1] || (k[1] === bestKey[1] && k[2] > bestKey[2])))))) {
         best = st;
         bestKey = k;
       }
     }
     if (!best) break;
     const a = best.actions.shift()!;
+    best.done = (best.done ?? 0) + 1;
     runAction(s, a, best, hooks, attached, pending);
     if (!best.actions.length && best.unit) {
       const u = getUnit(s, best.unit);
@@ -455,8 +472,7 @@ function runAction(s: GameState, a: Action, st: Stream, hooks: SchedulerHooks, a
     const ok = executeAbility(s, u, cmd, hooks, card?.itemId);
     if (!ok) returnAttachedCard(s, a, attached);
     else if (card?.itemId === 'spare_battery') {
-      s.players[a.player].queuedAp += 1;
-      s.players[a.player].queuedApNotes.push('Spare Battery');
+      refundAp(s, a.player, 1, 'Spare Battery');
     } else if (card?.itemId === 'overcharge_valve') {
       fieldTickDamage(s, u, 0.08, null, 'Overcharge Valve');
     }
@@ -666,6 +682,12 @@ export function endPhase(s: GameState): void {
   expireTraps(s);
   for (const pl of s.players) {
     while (pl.hand.length > 6) pl.discard.push(pl.hand.pop()!);
+    if (pl.apBorrowed > 0) {
+      // a planned refund never happened (target died, ability fizzled): the borrowed AP is owed next round
+      pl.apPenaltyNext += pl.apBorrowed;
+      addEvent(s, { kind: 'ap', text: `${pl.name} owes ${pl.apBorrowed} borrowed AP next round`, owner: pl.id, privateTo: pl.id, amount: -pl.apBorrowed });
+      pl.apBorrowed = 0;
+    }
     pl.lastRoundApTotal = pl.apThisRound;
     pl.lastRoundApSpent = pl.apSpentThisRound;
     pl.idleBonus = nextIdleBonus(pl.idleBonus, pl.apSpentThisRound, pl.apThisRound);

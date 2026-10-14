@@ -26,7 +26,12 @@ export interface PlanIssue {
 export interface PlanCheck {
   ok: boolean;
   issues: PlanIssue[];
+  /** gross AP cost of the kept commands */
   cost: number;
+  /** AP refunds the plan earns during resolution (Evacuation Order, Spare Battery) */
+  credit: number;
+  /** part of the cost that exceeds the player's AP and is paid back by those refunds */
+  borrowed: number;
   costs: number[];
   /** the plan with invalid commands removed */
   plan: Plan;
@@ -114,6 +119,8 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
   const kept: Command[] = [];
   const costs: number[] = [];
   let total = 0;
+  /** refunds earned by earlier commands of this plan (usable by the commands after them) */
+  let credit = 0;
   const perUnit = new Map<string, { cmds: number; moves: number; moveDist: number; actions: number; uses: Record<string, number>; pos: Hex; hold: boolean; abilityUses: Record<string, number> }>();
   const usedCards = new Set<string>();
   const itemNames = new Set<string>(pl.itemNamesThisRound);
@@ -170,6 +177,7 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
 
   plan.commands.forEach((cmd, i) => {
     let cost = 0;
+    let refund = 0;
     if (cmd.kind === 'deploy') {
       const card = pl.cards.find((c) => c.uid === cmd.card);
       if (!card) return fail(i, 'unknown card');
@@ -201,6 +209,9 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
       if (!useCard(i, cmd.card)) return;
       if ((it.id === 'mirror_charm' || it.id === 'reroll_ticket') && cmd.target.choice) usedCards.add(cmd.target.choice);
       cost = commandCost(s, p, cmd, ctx);
+      if (it.id === 'evacuation_order' && target && target.owner === p && !target.isSummon && !target.isObject && target.cardUid) {
+        refund = Math.ceil((CHARACTERS[target.defId]?.deploy ?? 0) / 2);
+      }
     } else {
       const u = getUnit(s, cmd.unit);
       if (!u || u.owner !== p) return fail(i, 'not your unit');
@@ -260,6 +271,7 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
         if ((st.abilityUses[cmd.ability] ?? 0) >= maxPer) return fail(i, 'ability already planned this round');
         if (cmd.item && !useCard(i, cmd.item, { u, cmd })) return;
         cost = commandCost(s, p, cmd, ctx);
+        if (cmd.item && pl.hand.find((x) => x.uid === cmd.item)?.itemId === 'spare_battery') refund = 1;
         st.abilityUses[cmd.ability] = (st.abilityUses[cmd.ability] ?? 0) + 1;
         st.actions++;
       } else if (cmd.kind === 'hold') {
@@ -268,18 +280,27 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
       }
       st.cmds++;
     }
-    if (total + cost > pl.ap) return fail(i, `not enough AP (${pl.ap - total} left, needs ${cost})`);
+    if (total + cost > pl.ap + credit) return fail(i, `not enough AP (${pl.ap + credit - total} left, needs ${cost})`);
     total += cost;
+    credit += refund;
     costs.push(cost);
     kept.push(cmd);
   });
+  // only the part of the credit that was actually spent is borrowed
+  const borrowed = Math.max(0, total - pl.ap);
   const rest = (plan.rest ?? []).filter((uid) => getUnit(s, uid)?.owner === p);
   const speedShift: Record<string, number> = {};
   for (const [uid, v] of Object.entries(plan.speedShift ?? {})) {
     const u = getUnit(s, uid);
     if (u?.owner === p && u.defId === 'ghost_train') speedShift[uid] = Math.max(-15, Math.min(15, Math.round(v)));
   }
-  return { ok: issues.length === 0, issues, cost: total, costs, plan: { player: p, commands: kept, rest, speedShift, watch: plan.watch } };
+  const mindsEye: Record<string, { after: string; action: number }> = {};
+  for (const [uid, v] of Object.entries(plan.mindsEye ?? {})) {
+    const u = getUnit(s, uid);
+    const friend = getUnit(s, v.after);
+    if (u?.owner === p && u.defId === 'ghost_train' && friend && friend.owner === p && friend.uid !== uid) mindsEye[uid] = { after: friend.uid, action: Math.max(0, Math.min(4, Math.round(v.action ?? 1))) };
+  }
+  return { ok: issues.length === 0, issues, cost: total, credit, borrowed, costs, plan: { player: p, commands: kept, rest, speedShift, mindsEye, watch: plan.watch } };
 }
 
 /** Shrink Heads share 5 free tiles of movement per round. */

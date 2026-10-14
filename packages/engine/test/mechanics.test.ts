@@ -396,3 +396,87 @@ test('determinism: the same seed and plans give the same final state hash', () =
     assert.equal(stateHash(a), stateHash(b), `round ${i + 1}`);
   }
 });
+
+test('Evacuation Order: half the Deploy AP comes back at once and pays for commands planned after it', () => {
+  const s = createSandbox({
+    units: [
+      { owner: 0, defId: 'arachnia', pos: { c: 2, r: 4 }, tag: 'spider' },
+      { owner: 0, defId: 'vile', pos: { c: 3, r: 2 }, tag: 'vile' },
+      { owner: 1, defId: 'scarecrow', pos: { c: 12, r: 4 }, tag: 'enemy' },
+    ],
+    hands: [['evacuation_order'], []],
+    ap: [4, 10],
+  });
+  const plan: Command[] = [
+    { kind: 'item', card: 'h0-0', target: { unit: T(s, 'spider').uid } },
+    { kind: 'move', unit: T(s, 'vile').uid, path: [{ c: 4, r: 2 }, { c: 5, r: 2 }] },
+  ];
+  const chk = validatePlan(s, { player: 0, commands: plan, rest: [] });
+  assert.equal(chk.ok, true, chk.issues.map((i) => i.error).join('; '));
+  assert.equal(chk.credit, 3); // Arachnia deploys for 6
+  // 3 AP card + 2 AP move on 4 AP: one AP is borrowed against the refund
+  assert.equal(chk.cost, 5);
+  assert.equal(chk.borrowed, 1);
+  const { events } = run(s, plan);
+  assert.ok(!s.units.some((u) => u.defId === 'arachnia'));
+  assert.ok(events.some((e) => e.text === 'Evacuation: +3 AP'));
+  assert.equal(s.players[0].apPenaltyNext, 0);
+});
+
+test('Spare Battery: the refund pays for a later command in the same plan', () => {
+  const s = createSandbox({
+    units: [
+      { owner: 0, defId: 'werewolf', pos: { c: 3, r: 4 }, tag: 'wolf' },
+      { owner: 1, defId: 'scarecrow', pos: { c: 12, r: 4 } },
+    ],
+    hands: [['spare_battery'], []],
+    ap: [4, 10],
+  });
+  const wolf = T(s, 'wolf');
+  const plan: Command[] = [
+    { kind: 'ability', unit: wolf.uid, ability: 'werewolf.moon_pull', target: {}, item: 'h0-0' },
+    { kind: 'move', unit: wolf.uid, path: [{ c: 4, r: 4 }] },
+  ];
+  const chk = validatePlan(s, { player: 0, commands: plan, rest: [] });
+  assert.equal(chk.ok, true, chk.issues.map((i) => i.error).join('; '));
+  assert.equal(chk.credit, 1);
+  assert.equal(chk.cost, 5);
+  assert.equal(chk.borrowed, 1);
+  const { events } = run(s, plan);
+  assert.ok(events.some((e) => e.text === 'Spare Battery: +1 AP'));
+  assert.equal(s.players[0].apPenaltyNext, 0);
+});
+
+test("Mind's Eye: in a Speed tie the Ghost Train acts right after the chosen action of her friend", () => {
+  const mk = () =>
+    createSandbox({
+      units: [
+        { owner: 0, defId: 'ghost_train', pos: { c: 2, r: 2 }, tag: 'eye' },
+        { owner: 0, defId: 'ghost_train', pos: { c: 2, r: 6 }, tag: 'friend' },
+        { owner: 1, defId: 'scarecrow', pos: { c: 12, r: 4 } },
+      ],
+      ap: [20, 10],
+    });
+  const order = (action: number) => {
+    const s = mk();
+    const eye = T(s, 'eye');
+    const friend = T(s, 'friend');
+    const { events } = playRound(s, [
+      {
+        player: 0,
+        commands: [
+          { kind: 'move', unit: friend.uid, path: [{ c: 3, r: 6 }] },
+          { kind: 'move', unit: friend.uid, path: [{ c: 4, r: 6 }] },
+          { kind: 'move', unit: eye.uid, path: [{ c: 3, r: 2 }] },
+        ],
+        rest: [],
+        mindsEye: { [eye.uid]: { after: friend.uid, action } },
+      },
+      { player: 1, commands: [], rest: [] },
+    ]);
+    return events.filter((e) => e.kind === 'move').map((e) => (e.actor === eye.uid ? 'eye' : 'friend'));
+  };
+  assert.deepEqual(order(0), ['eye', 'friend', 'friend']);
+  assert.deepEqual(order(1), ['friend', 'eye', 'friend']);
+  assert.deepEqual(order(2), ['friend', 'friend', 'eye']);
+});

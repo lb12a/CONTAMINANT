@@ -6,7 +6,7 @@ import { ITEMS } from './data/items.ts';
 import { ANTIDOTE_REMOVES, NEGATIVE_STATUSES, SALTS_REMOVES } from './data/statuses.ts';
 import { burst, distance, eq, neighbors, ring, straight, type Hex } from './hex.ts';
 import { pick, shuffle } from './rng.ts';
-import { addEvent, bounds, charactersOnBoard, drawItem, getUnit, inZone, other, tileAt } from './state.ts';
+import { addEvent, bounds, charactersOnBoard, drawItem, getUnit, inZone, other, refundAp, tileAt } from './state.ts';
 import { gearStrength, hasChar, hasStatus } from './stats.ts';
 import { applyStatus, cleanse, removeStatus } from './status.ts';
 import { addField, connectedWater, removeField } from './fields.ts';
@@ -250,9 +250,8 @@ export function resolveItem(s: GameState, p: PlayerId, card: ItemCard, cmd: Item
         slot.cardUid = target!.cardUid!;
       } else pl.offered.push({ cardUid: target!.cardUid!, locked: false });
       const back = Math.ceil(def.deploy / 2);
-      pl.queuedAp += back;
-      pl.queuedApNotes.push('Evacuation');
-      addEvent(s, { kind: 'item', text: `${target!.name} is evacuated (+${back} AP)`, target: target!.uid, owner: p });
+      addEvent(s, { kind: 'item', text: `${target!.name} is evacuated`, target: target!.uid, owner: p });
+      refundAp(s, p, back, 'Evacuation');
       return true;
     }
     case 'false_alarm':
