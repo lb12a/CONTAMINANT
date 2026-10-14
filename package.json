@@ -1,0 +1,37 @@
+{
+  "name": "contaminant",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Contaminant – dark horror laboratory tactics with simultaneous planning on a hex grid",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*",
+    "tools/*"
+  ],
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "npm run dev -w @contaminant/client",
+    "dev:server": "npm run dev -w @contaminant/server",
+    "start:server": "npm run start -w @contaminant/server",
+    "test": "npm run test -w @contaminant/engine && npm run test -w @contaminant/server",
+    "test:engine": "npm run test -w @contaminant/engine",
+    "test:server": "npm run test -w @contaminant/server",
+    "typecheck": "tsc -p packages/engine && tsc -p packages/server && tsc -p packages/client",
+    "simulate": "node packages/engine/scripts/simulate.ts",
+    "build": "npm run build -w @contaminant/client && npm run build -w @contaminant/server",
+    "build:client": "npm run build -w @contaminant/client",
+    "build:server": "npm run build -w @contaminant/server",
+    "desktop": "npm run start -w @contaminant/desktop",
+    "desktop:dist": "npm run build:client && npm run dist -w @contaminant/desktop",
+    "assets:manifest": "node tools/assetgen/src/manifest.ts",
+    "assets:generate": "node tools/assetgen/src/generate.ts",
+    "assets:status": "node tools/assetgen/src/generate.ts --check"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "typescript": "5.9"
+  }
+}

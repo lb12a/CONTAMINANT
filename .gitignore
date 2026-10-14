@@ -1,0 +1,19 @@
+node_modules/
+dist/
+dist-electron/
+release/
+out/
+coverage/
+*.log
+.DS_Store
+Thumbs.db
+.env
+.env.*
+# runtime data
+packages/server/data/
+*.sqlite
+*.sqlite-journal
+*.db
+# generated asset staging (final assets live in packages/client/public/assets/gen)
+tools/assetgen/.cache/
+tools/assetgen/raw/

@@ -1,0 +1,14 @@
+{
+  "name": "@contaminant/engine",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Deterministic rules engine for Contaminant (shared by client, server and bots)",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "node --test \"test/**/*.test.ts\"",
+    "typecheck": "tsc -p ."
+  }
+}
