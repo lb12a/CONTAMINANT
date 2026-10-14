@@ -22,7 +22,8 @@ export const STYLE =
 export const NEGATIVE =
   'photo, photorealistic, realistic, 3d render, cgi, octane, blurry, soft focus, text, letters, words, watermark, signature, logo, frame, border, ' +
   'multiple characters, duplicate, collage, cropped, cut off, out of frame, scenery, landscape, room, ground plane, cast shadow, gradient background, ' +
-  'astronaut, spacesuit, crewmate, visor, cute chibi, anime girl, low quality, worst quality, jpeg artifacts, deformed, extra limbs, sketch lines';
+  'astronaut, spacesuit, crewmate, visor, cute chibi, anime girl, low quality, worst quality, jpeg artifacts, deformed, extra limbs, sketch lines, ' +
+  'nude, naked, nudity, nsfw, nipples, breasts, cleavage, bikini, lingerie, sexy, revealing clothes, photo of a figurine, glossy 3d porcelain render';
 
 const ISOLATED = 'centered, full body visible with margin, isolated on a plain flat light grey background';
 
@@ -39,32 +40,33 @@ const CHARACTERS: Record<string, string> = {
     'a sinister handmade plush toy bunny doll of worn faded pink felt, visible stitched seams, mismatched black sewn-on button eyes, stitched grin, torn seam leaking white stuffing, a bloody knife claw in its paw',
   pumpkin:
     'a carved jack-o-lantern pumpkin plant monster with twisting green vines for limbs, jagged grin with candy and sweets spilling from its mouth, orange glow inside',
-  steak: 'a giant rotten raw steak monster with a row of sharp teeth, buzzing flies, rusty forks stuck in its flesh, green rot patches',
+  steak:
+    'a living slab of raw rotten meat shaped like a giant t-bone steak with a bone sticking out, a wide mouth full of sharp teeth across the meat, stubby meat legs, buzzing flies, rusty forks stuck in it, green mold patches, not a humanoid',
   ballerina:
     'a rusted metal music box ballerina doll in a pirouette pose, cracked porcelain face with empty eyes, rusty wind-up key in her back, torn tutu',
   piggybank:
-    'a white porcelain piggy bank with sad painted eyes and tears, cracks across its body, gold coins leaking from a crack, coin slot on its back',
+    'a flat cartoon drawing of a cracked white porcelain piggy bank creature with sad painted eyes and painted tears, black cracks across its body, gold coins leaking from a crack, coin slot on its back, bold black outlines',
   scarecrow:
     'a menacing scarecrow of wood and straw, burlap sack head with a stitched grin, wide tattered straw hat, holding a harvest hook sickle, black ravens perched on its shoulders',
   frankenstein:
     'a hulking semi-mechanical frankenstein monster, green stitched skin, riveted metal plates, electrodes and copper coils on his neck and back, crackling blue electricity',
   ghost_train:
-    'a gaunt ghostly train conductor in a navy uniform and peaked cap, open eyes in the palms of his raised hands, pale glowing yellow eyes, spectral mist',
+    'a creepy ghost of a train conductor, translucent pale blue spectral body fading into mist below the waist, skeletal gaunt face with hollow glowing eyes, tattered navy conductor uniform and peaked cap, raising both hands with a wide open eyeball in each palm',
   pokerface:
     'a sinister music box clown springing out of a jack-in-the-box on a coiled spring, porcelain mask with three faces happy sad and angry, red and blue harlequin costume',
   shrink_heads:
     'a tribal witch doctor wearing a headdress of shrunken heads, four small stitched shrunken heads floating around him, bone necklace, glowing eyes',
   swamp_siren:
-    'a swamp siren woman half submerged in murky water, mossy green skin, hair full of reeds and moss, singing with an open mouth, webbed hands, pale glowing eyes',
+    'an eerie swamp siren creature fully clothed in a long tattered dress of rotting seaweed and moss, mossy green scaly skin, long hair full of reeds, singing with a wide open mouth, webbed hands, pale glowing eyes, rising from a murky puddle',
   wisp: 'a will-o-wisp spirit made of candle smoke and pale flame, its body a cracked glass gas bottle, curling wisps of yellow gas',
   crystal_eye:
     'a floating crystal ball with a single giant bloodshot eye inside, two disembodied pale floating hands beside it, violet magical glow',
   termite_mound:
-    'a tall termite mound creature of cracked earth with screaming faces in its tunnels, lines of ants marching down its sides',
+    'a tall cone shaped termite mound made of cracked brown clay, an earthen structure not an insect, several screaming faces molded into the clay around its tunnel holes, lines of tiny black ants marching down its sides',
   cymbal_chimp:
-    'a broken wind-up toy monkey with brass cymbals, torn matted fur, exposed gears in its back, manic grin with yellowed teeth, glassy staring eyes',
+    'a broken wind-up toy monkey clashing two big brass cymbals held in its hands, torn matted fur, a wind-up key and exposed gears in its back, manic grin with yellowed teeth, glassy staring eyes',
   mambo:
-    'a voodoo witch priestess with a tall feather headdress, bone staff, painted skull face, layered colorful robes, holding a small cloth voodoo doll with pins',
+    'a voodoo witch priestess fully covered in long layered purple and gold robes and a shawl, tall feather headdress, skull face paint, holding a bone staff and a small cloth voodoo doll with pins',
   calaca:
     'a flaming skeleton woman in a red ruffled flamenco dress, wreath of orange marigold flowers on her skull, fire flickering from her bones, dia de los muertos',
   werewolf:
@@ -246,10 +248,11 @@ export function catalog(): AssetSpec[] {
     out.push({ path: `backdrops/${id}`, kind: 'backdrop', prompt: `${d}, ${STYLE}, cinematic composition, empty space in the middle`, width: 1536, height: 640, candidates: 1 });
   }
   for (const [id, d] of Object.entries(OBJECTIVES)) {
-    out.push({ path: `objectives/${id}`, kind: 'objective', prompt: `a single game prop, ${d}, three-quarter view, ${STYLE}, ${ISOLATED}`, width: 1024, height: 1024, candidates: 1 });
+    out.push({ path: `objectives/${id}`, kind: 'objective', prompt: `a single game prop, ${d}, three-quarter view, ${STYLE}, ${ISOLATED}`, width: 832, height: 832, candidates: 1 });
   }
   for (const [id, d] of Object.entries(ITEMS)) {
-    out.push({ path: `items/${id}`, kind: 'item', prompt: `game inventory item icon of ${d}, single object, ${STYLE}, ${ISOLATED}`, width: 1024, height: 1024, candidates: 1 });
+    // icons end up at 256 px, so they render at 832 px (about half the time of a 1024 px image)
+    out.push({ path: `items/${id}`, kind: 'item', prompt: `game inventory item icon of ${d}, single object, ${STYLE}, ${ISOLATED}`, width: 832, height: 832, candidates: 1 });
   }
   return out;
 }

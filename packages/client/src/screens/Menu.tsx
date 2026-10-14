@@ -4,8 +4,16 @@ import type { Nav } from '../App.tsx';
 import { activeDeck, setProfile, useProfile } from '../store.ts';
 import { startBotMatch } from '../game/offline.ts';
 import { t } from '../i18n.ts';
-import { figureCanvas } from '../render/art.ts';
-import { useEffect, useRef } from 'react';
+import { assetUrl } from '../render/assets.ts';
+
+/** Creatures standing in the menu hero (back row first). */
+const CAST = [
+  { id: 'cruorina', h: 250, z: 1 },
+  { id: 'frankenstein', h: 270, z: 2 },
+  { id: 'vile', h: 300, z: 4 },
+  { id: 'arachnia', h: 230, z: 3 },
+  { id: 'calaca', h: 260, z: 2 },
+];
 
 const MODES: [ModeId, string, string][] = [
   ['contamination', '☣ Contamination', 'First to 100 VP, or wipe the enemy out'],
@@ -21,24 +29,32 @@ export function MenuScreen({ nav }: { nav: Nav }) {
   const deck = activeDeck(p);
   const [diff, setDiff] = useState<Difficulty>(p.settings.difficulty);
   const next = nextMilestone(p.collection.bestTrophies);
+  const backdrop = assetUrl('backdrops/menu');
+  const cast = CAST.map((c) => ({ ...c, url: assetUrl(`tokens/${c.id}`) })).filter((c): c is typeof c & { url: string } => !!c.url);
   const play = (mode: ModeId) => {
     setProfile((x) => ({ ...x, settings: { ...x.settings, mode, difficulty: diff } }));
     nav({ name: 'match', ctrl: startBotMatch({ mode, difficulty: diff }) });
   };
   return (
     <div className="col" style={{ gap: 18 }}>
-      <section className="row wrap" style={{ gap: 20, alignItems: 'center' }}>
-        <Logo />
-        <div className="col grow" style={{ minWidth: 260 }}>
-          <h1 style={{ margin: 0 }}>The archive is leaking.</h1>
-          <p className="muted" style={{ marginTop: 0 }}>
-            Plan in secret. Everything resolves at once — Priority first, then Speed. First to 100 Victory Points wins.
-          </p>
+      <section className="hero">
+        <div className="hero-art" style={backdrop ? { backgroundImage: `url(${backdrop})` } : undefined} aria-hidden />
+        <div className="hero-copy">
+          <h1 className="hero-title">Contaminant</h1>
+          <p className="hero-tag">Plan in secret. Everything resolves at once: Priority first, then Speed. First to 100 Victory Points wins.</p>
+          <div className="row wrap" style={{ gap: 10 }}>
+            <button className="btn seal l" onClick={() => play('contamination')}>
+              {t('Play vs Bot')}
+            </button>
+            <button className="btn secondary" onClick={() => nav({ name: 'online' })}>
+              {p.online ? t('Ranked') : t('Go online')}
+            </button>
+          </div>
           {!p.trainingDone && (
-            <div className="paper" style={{ padding: 12 }}>
-              <b>Welcome, Subject.</b> Before your first real match, Basic Training walks you through a round: you deploy, move, attack and seal your plan yourself. It takes about five minutes and pays 200 gold.
+            <div className="paper hero-note">
+              <b>Welcome, Subject.</b> Basic Training walks you through your first round: you deploy, move, attack and seal your plan yourself. About five minutes, 200 gold.
               <div className="row wrap" style={{ marginTop: 8 }}>
-                <input type="text" placeholder="Your name" defaultValue={p.name === 'Subject' ? '' : p.name} onBlur={(e) => e.target.value.trim() && setProfile((x) => ({ ...x, name: e.target.value.trim().slice(0, 20) }))} />
+                <input type="text" placeholder="Your name" aria-label="Your name" defaultValue={p.name === 'Subject' ? '' : p.name} onBlur={(e) => e.target.value.trim() && setProfile((x) => ({ ...x, name: e.target.value.trim().slice(0, 20) }))} />
                 <button className="btn primary" onClick={() => nav({ name: 'match', training: true })}>
                   Start Basic Training
                 </button>
@@ -51,11 +67,16 @@ export function MenuScreen({ nav }: { nav: Nav }) {
             </div>
           )}
         </div>
+        <div className="hero-cast" aria-hidden>
+          {cast.map((c, i) => (
+            <img key={c.id} src={c.url} alt="" className="hero-creature" style={{ ['--h' as string]: `${c.h}px`, ['--d' as string]: `${i * 0.37}s`, zIndex: c.z }} draggable={false} />
+          ))}
+        </div>
       </section>
 
       <section className="panel rivets">
         <div className="row wrap" style={{ justifyContent: 'space-between' }}>
-          <h2 style={{ margin: 0 }}>{t('Play vs Bot')}</h2>
+          <h2 style={{ margin: 0 }}>{t('Game modes')}</h2>
           <div className="row small">
             Deck: <b>{deck.name}</b>
             <button className="btn secondary small" onClick={() => nav({ name: 'deck', deckId: deck.id })}>
@@ -124,60 +145,20 @@ export function MenuScreen({ nav }: { nav: Nav }) {
 function TrophyLadder({ trophies }: { trophies: number }) {
   const max = MILESTONES[MILESTONES.length - 1]!.trophies * 1.15;
   return (
-    <div style={{ position: 'relative', height: 54, marginTop: 6 }}>
-      <div className="bar" style={{ position: 'absolute', left: 0, right: 0, top: 30, height: 16 }}>
+    <div style={{ position: 'relative', height: 92, marginTop: 6 }}>
+      <div className="bar" style={{ position: 'absolute', left: 0, right: 0, top: 38, height: 16 }}>
         <div className="fill" style={{ width: `${Math.min(100, (trophies / max) * 100)}%`, background: 'linear-gradient(180deg,#c8ffad,#8CFF5A)' }} />
         <div className="shine" />
       </div>
-      {MILESTONES.map((m) => (
-        <div key={m.zone} title={`${m.name}: ${m.cards.length} characters`} style={{ position: 'absolute', left: `calc(${(m.trophies / max) * 100}% - 10px)`, top: 0, fontSize: 11, textAlign: 'center', opacity: trophies >= m.trophies ? 1 : 0.45 }}>
-          <div className="paper" style={{ padding: '1px 4px', fontFamily: 'var(--font-display)' }}>
+      {MILESTONES.map((m, i) => (
+        // labels alternate above and below the bar so close milestones never overlap
+        <div key={m.zone} title={`${m.name}: ${m.cards.length} characters`} style={{ position: 'absolute', left: `${(m.trophies / max) * 100}%`, transform: 'translateX(-50%)', top: i % 2 ? 58 : 0, fontSize: 12, textAlign: 'center', opacity: trophies >= m.trophies ? 1 : 0.5, display: 'flex', flexDirection: i % 2 ? 'column-reverse' : 'column', alignItems: 'center' }}>
+          <div className="paper" style={{ padding: '1px 5px', fontWeight: 700, whiteSpace: 'nowrap' }}>
             {m.name.split(' ')[0]}
           </div>
-          <div>{m.trophies}</div>
+          <div className="num">{m.trophies}</div>
         </div>
       ))}
-    </div>
-  );
-}
-
-function portraitFigure(): string {
-  return figureCanvas('vile', 128).toDataURL();
-}
-
-function Logo() {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const c = ref.current!;
-    const ctx = c.getContext('2d')!;
-    const S = 220;
-    c.width = S;
-    c.height = S;
-    const draw = () => {
-      ctx.clearRect(0, 0, S, S);
-      ctx.save();
-      ctx.translate(S / 2, S / 2);
-      ctx.strokeStyle = '#8CFF5A';
-      ctx.lineWidth = 10;
-      ctx.shadowColor = '#8CFF5A';
-      ctx.shadowBlur = 14;
-      for (let i = 0; i < 3; i++) {
-        ctx.rotate((Math.PI * 2) / 3);
-        ctx.beginPath();
-        ctx.arc(0, -42, 38, Math.PI * 0.15, Math.PI * 1.85);
-        ctx.stroke();
-      }
-      ctx.beginPath();
-      ctx.arc(0, 0, 18, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-    };
-    draw();
-  }, []);
-  return (
-    <div style={{ position: 'relative', width: 180, height: 180 }}>
-      <canvas ref={ref} className="spin-slow" style={{ width: 180, height: 180 }} aria-label="Contaminant biohazard logo" />
-      <img src={portraitFigure()} alt="" style={{ position: 'absolute', left: 40, top: 36, width: 100, height: 100 }} />
     </div>
   );
 }

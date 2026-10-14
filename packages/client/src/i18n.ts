@@ -56,6 +56,7 @@ const de: Record<string, string> = {
   'Level up': 'Aufwerten',
   'Queue': 'Warteschlange',
   'Teams': 'Teams',
+  'Game modes': 'Spielmodi',
   'Replays': 'Wiederholungen',
   'Leave queue': 'Warteschlange verlassen',
   'Register': 'Anmelden',
