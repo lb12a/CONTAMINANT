@@ -13,8 +13,7 @@ import {
   type Unit,
 } from '@contaminant/engine';
 import { BoardCanvas } from '../render/BoardCanvas.tsx';
-import type { Floater, Flash, Overlay } from '../render/board.ts';
-import { BoardRenderer } from '../render/board.ts';
+import type { Floater, Flash, Overlay, Pulse } from '../render/types.ts';
 import { computeOverlay, emptyPlanner, plannedPos, tapTile, toPlan, unitActions, commandLabel, type PlannerState } from '../game/planner.ts';
 import type { MatchController, MatchSnapshot } from '../game/controller.ts';
 import { ApBattery, CharTraits, Fuse, HpBar, IdleSteps, ItemCard, Modal, StatusChips, VpRace, secondsLeft } from '../ui/components.tsx';
@@ -74,8 +73,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
     const floaters: Floater[] = [];
     const flashes: Flash[] = [];
     const tombs: Hex[] = [];
-    const renderer = new BoardRenderer(document.createElement('canvas'));
-    void renderer;
+    const pulses: Pulse[] = [];
     const unitPos = (uid?: string) => (uid ? pos.get(uid) ?? base.units.find((u) => u.uid === uid)?.pos : undefined);
     let cancelled = false;
     skipRef.current = false;
@@ -91,7 +89,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
         if (skipRef.current) continue;
         const now = performance.now();
         const at = unitPos(e.target) ?? e.to ?? unitPos(e.actor);
-        const px = at ? { x: 0, y: 0, h: at } : null;
+        const px = at ? { h: at } : null;
         switch (e.kind) {
           case 'move':
             if (e.actor && e.to) pos.set(e.actor, e.to);
@@ -103,7 +101,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
             if (e.target && e.amount) {
               const u = base.units.find((x) => x.uid === e.target);
               if (u) hp.set(u.uid, (hp.get(u.uid) ?? u.hp) - e.amount);
-              if (px) floaters.push({ ...anchor(px.h), text: `-${e.amount}`, color: '#ff5a5a', t0: now, big: e.amount >= 60 });
+              if (px) floaters.push({ h: px.h, text: `-${e.amount}`, color: '#ff5a5a', t0: now, big: e.amount >= 60 });
+              pulses.push({ uid: e.target, kind: 'hit', t0: now });
               sfx('hit');
             }
             break;
@@ -111,22 +110,27 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
             if (e.target && e.amount) {
               const u = base.units.find((x) => x.uid === e.target);
               if (u) hp.set(u.uid, Math.min(u.maxHp, (hp.get(u.uid) ?? u.hp) + e.amount));
-              if (px) floaters.push({ ...anchor(px.h), text: `+${e.amount}`, color: '#8CFF5A', t0: now });
+              if (px) floaters.push({ h: px.h, text: `+${e.amount}`, color: '#8CFF5A', t0: now });
+              pulses.push({ uid: e.target, kind: 'heal', t0: now });
             }
             break;
           case 'miss':
-            if (px) floaters.push({ ...anchor(px.h), text: 'miss', color: '#e8dfc8', t0: now });
+            if (px) floaters.push({ h: px.h, text: 'miss', color: '#e8dfc8', t0: now });
             sfx('miss');
             break;
           case 'crit':
             if (px) flashes.push({ tiles: [px.h], color: 'rgba(255,207,58,0.8)', t0: now, dur: 450 });
-            if (px) floaters.push({ ...anchor(px.h), text: 'CRIT', color: '#D9A93A', t0: now, big: true });
+            if (px) floaters.push({ h: px.h, text: 'CRIT', color: '#D9A93A', t0: now, big: true });
+            if (e.target) pulses.push({ uid: e.target, kind: 'crit', t0: now });
             sfx('crit');
             break;
-          case 'attack':
+          case 'attack': {
+            const to = unitPos(e.target) ?? e.to ?? e.tiles?.[0];
+            if (e.actor && to) pulses.push({ uid: e.actor, kind: 'lunge', to, t0: now });
             if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,90,90,0.45)', t0: now, dur: 500 });
             else if (px) flashes.push({ tiles: [px.h], color: 'rgba(255,90,90,0.45)', t0: now, dur: 350 });
             break;
+          }
           case 'ko':
             if (e.target) gone.add(e.target);
             if (e.to) tombs.push(e.to);
@@ -136,11 +140,12 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
             if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,154,31,0.45)', t0: now, dur: 700 });
             break;
           case 'status':
-            if (px && e.status && STATUS_GLYPH[e.status]) floaters.push({ ...anchor(px.h), text: STATUS_GLYPH[e.status]!, color: '#e8dfc8', t0: now });
+            if (px && e.status && STATUS_GLYPH[e.status]) floaters.push({ h: px.h, text: STATUS_GLYPH[e.status]!, color: '#e8dfc8', t0: now });
             break;
           case 'deploy':
             if (e.privateTo === me) setPopups((n) => n + 1);
             if (e.to) flashes.push({ tiles: [e.to], color: 'rgba(140,255,90,0.6)', t0: now, dur: 700 });
+            if (e.actor) pulses.push({ uid: e.actor, kind: 'deploy', t0: now });
             sfx('deploy');
             break;
           case 'trap':
@@ -151,7 +156,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
           default:
             break;
         }
-        setPlay({ pos: new Map(pos), hp: new Map(hp), gone: new Set(gone), floaters: floaters.slice(-30), flashes: flashes.slice(-20), tombs: [...tombs] });
+        setPlay({ pos: new Map(pos), hp: new Map(hp), gone: new Set(gone), floaters: floaters.slice(-30), flashes: flashes.slice(-20), pulses: pulses.slice(-30), tombs: [...tombs] });
         const relevant = ['move', 'damage', 'heal', 'miss', 'crit', 'ko', 'field', 'deploy', 'trap', 'attack'].includes(e.kind);
         if (relevant) await sleep(EVENT_DELAY / speed);
       }
@@ -167,23 +172,10 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
     return () => {
       cancelled = true;
     };
-    function anchor(h: Hex) {
-      // pixel position is resolved by the renderer each frame; store tile-relative coordinates
-      const r = rendererFor(h);
-      return { x: r.x, y: r.y };
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [snap.roundSerial]);
 
-  // board pixel lookup for floaters: computed lazily against the live canvas size
   const boardRef = useRef<HTMLDivElement>(null);
-  const rendererFor = (h: Hex) => {
-    const el = boardRef.current?.querySelector('canvas');
-    if (!el) return { x: 0, y: 0 };
-    const r = new BoardRenderer(el as HTMLCanvasElement);
-    r.layout(display);
-    return r.center(h);
-  };
 
   useEffect(() => {
     if (snap.ended) sfx(snap.ended.winner === me ? 'win' : 'lose');

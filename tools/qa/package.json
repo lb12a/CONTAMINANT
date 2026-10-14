@@ -1,0 +1,13 @@
+{
+  "name": "@contaminant/qa",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Visual QA: Playwright screenshots of every screen at desktop and mobile sizes",
+  "type": "module",
+  "scripts": {
+    "shots": "node shots.ts"
+  },
+  "devDependencies": {
+    "playwright": "^1.55.0"
+  }
+}

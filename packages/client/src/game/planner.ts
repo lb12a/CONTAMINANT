@@ -36,7 +36,7 @@ import {
   type PlayerId,
   type Unit,
 } from '@contaminant/engine';
-import type { HighlightKind, Overlay } from '../render/board.ts';
+import type { HighlightKind, Overlay } from '../render/types.ts';
 
 export type Mode =
   | { kind: 'idle' }

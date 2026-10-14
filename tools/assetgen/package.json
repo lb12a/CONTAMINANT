@@ -1,0 +1,13 @@
+{
+  "name": "@contaminant/assetgen",
+  "version": "0.1.0",
+  "private": true,
+  "description": "ComfyUI asset pipeline: generates the hand-drawn creepy character, prop, ground and item art",
+  "type": "module",
+  "scripts": {
+    "generate": "node src/generate.ts",
+    "post": "node src/generate.ts --post-only",
+    "manifest": "node src/manifest.ts",
+    "sheet": "node src/generate.ts --sheet"
+  }
+}
