@@ -204,6 +204,12 @@ const ITEMS: Record<string, string> = {
   midas_touch_card: 'a golden playing card wrapped in mummy bandages',
 };
 
+const CHESTS: Record<string, string> = {
+  small: 'a small battered wooden chest with rusty iron bands and a dripping green stain',
+  medium: 'an iron-bound chest wrapped in chains with a heavy skull padlock',
+  large: 'a black coffin-shaped treasure chest with gold trim and glowing green light leaking from the lid',
+};
+
 const OBJECTIVES: Record<string, string> = {
   control: 'a tattered golden war banner on a pole with a skull emblem',
   terminal: 'an old crt computer terminal with a glowing green screen on a metal stand',
@@ -249,6 +255,9 @@ export function catalog(): AssetSpec[] {
   }
   for (const [id, d] of Object.entries(OBJECTIVES)) {
     out.push({ path: `objectives/${id}`, kind: 'objective', prompt: `a single game prop, ${d}, three-quarter view, ${STYLE}, ${ISOLATED}`, width: 832, height: 832, candidates: 1 });
+  }
+  for (const [id, d] of Object.entries(CHESTS)) {
+    out.push({ path: `ui/chest_${id}`, kind: 'objective', prompt: `a single game loot chest, ${d}, three-quarter view, ${STYLE}, ${ISOLATED}`, width: 832, height: 832, candidates: 1 });
   }
   for (const [id, d] of Object.entries(ITEMS)) {
     // icons end up at 256 px, so they render at 832 px (about half the time of a 1024 px image)

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { assetUrl } from '../render/assets.ts';
 import { CHARACTERS, CHESTS, hashString, makeRng, openChest, type ChestResult, type ChestSize } from '@contaminant/engine';
 import { CharacterCard, ItemCard, Modal } from '../ui/components.tsx';
 import { getApi, setProfile, toast, useProfile } from '../store.ts';
@@ -6,6 +7,12 @@ import { t } from '../i18n.ts';
 import { sfx } from '../audio.ts';
 
 const CHEST_GLYPH: Record<ChestSize, string> = { small: '🧰', medium: '🗄️', large: '⚰️' };
+
+/** Generated chest art when available, the emoji otherwise. */
+function ChestArt({ size, px }: { size: ChestSize; px: number }) {
+  const url = assetUrl(`ui/chest_${size}`);
+  return url ? <img src={url} alt="" style={{ height: px, width: 'auto', filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.55))' }} draggable={false} /> : <span style={{ fontSize: px * 0.8 }}>{CHEST_GLYPH[size]}</span>;
+}
 
 export function ShopScreen() {
   const p = useProfile();
@@ -58,7 +65,7 @@ export function ShopScreen() {
       <div className="row wrap">
         {(Object.keys(CHESTS) as ChestSize[]).map((size) => (
           <div key={size} className="panel rivets col" style={{ width: 230, alignItems: 'center' }}>
-            <div style={{ fontSize: 64 }}>{CHEST_GLYPH[size]}</div>
+            <ChestArt size={size} px={110} />
             <b className="display">{CHESTS[size].name}</b>
             <span className="small muted">
               {CHESTS[size].cards} cards · {CHESTS[size].gold[0]}–{CHESTS[size].gold[1]} gold
@@ -86,7 +93,9 @@ export function ShopScreen() {
         <Modal title={CHESTS[opening.size].name} onClose={() => opening.result && setOpening(null)}>
           <div className="chest-stage">
             {!opening.result ? (
-              <div className="chest">{CHEST_GLYPH[opening.size]}</div>
+              <div className="chest">
+                <ChestArt size={opening.size} px={160} />
+              </div>
             ) : (
               <div className="col" style={{ alignItems: 'center', width: '100%' }}>
                 <div className="fog-burst" />

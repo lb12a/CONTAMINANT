@@ -33,6 +33,8 @@ interface Tournament {
   bracket?: { matches: BMatch[]; rounds: number; entrants: { id: string; name: string; seed: number }[]; current?: number };
   prizes: { place: number; gold: number; trophies: number; title?: string; chest?: string }[];
   placements?: { playerId: string; name: string; place: number }[];
+  requirement?: { minMmr?: number };
+  circuit?: { season: number; month: number; year: number };
 }
 
 export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
@@ -101,6 +103,16 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
                     <button className="btn secondary small" onClick={() => setSel(tr.id)}>
                       {tr.name}
                     </button>
+                    {tr.circuit && (
+                      <span className="chip buff" style={{ marginLeft: 6 }} title="Monthly Major: earns Circuit Points towards the Halloween World Cup">
+                        Major · World Cup points
+                      </span>
+                    )}
+                    {tr.requirement?.minMmr && (
+                      <span className="chip neutral" style={{ marginLeft: 6 }}>
+                        from {tr.requirement.minMmr} MMR
+                      </span>
+                    )}
                   </td>
                   <td>{tr.format}</td>
                   <td>{tr.status}</td>
