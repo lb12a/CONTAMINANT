@@ -28,7 +28,7 @@ function run(s: GameState, p0: Command[], p1: Command[] = [], rest0: string[] = 
   ]);
 }
 const T = (s: GameState, tag: string) => findTagged(s, tag)!;
-const calcOf = (events: GameEvent[], label: string) => events.find((e) => (e.kind === 'attack' || e.kind === 'crit') && e.text.includes(label))?.calc;
+const calcOf = (events: GameEvent[], label: string) => events.find((e) => (e.kind === 'attack' || e.kind === 'crit') && !!e.calc && e.text.includes(label))?.calc;
 
 test('integrated damage: Poison Bite vs Scarecrow (PDef 70, +10% Grounded standing still) = 66', () => {
   const s = createSandbox({ units: [{ owner: 0, defId: 'arachnia', pos: { c: 6, r: 4 }, tag: 'a' }, { owner: 1, defId: 'scarecrow', pos: { c: 7, r: 4 }, tag: 'b' }] });

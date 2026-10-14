@@ -271,12 +271,7 @@ export function tapTile(view: GameState, me: PlayerId, ps: PlannerState, h: Hex)
       const d = distance(t.pos, h);
       if (d < 1 || d > 3) return { ps, msg: 'Destination must be 1–3 tiles away' };
       let dir = -1;
-      for (let k = 0; k < 6; k++) {
-        const seg = ray(t.pos, h, d, view.settings.bounds);
-        void seg;
-      }
-      const dirs = [0, 1, 2, 3, 4, 5];
-      for (const k of dirs) {
+      for (const k of [0, 1, 2, 3, 4, 5]) {
         let p = t.pos;
         for (let i = 0; i < d; i++) p = stepDir(p, k);
         if (eq(p, h)) dir = k;
@@ -308,8 +303,6 @@ export function tapTile(view: GameState, me: PlayerId, ps: PlannerState, h: Hex)
 }
 
 function stepDir(h: Hex, dir: number): Hex {
-  const n = neighbors(h, { cols: 99, rows: 99 });
-  void n;
   // axial step without bounds
   const q = h.c - (h.r - (h.r & 1)) / 2;
   const D = [[1, 0], [1, -1], [0, -1], [-1, 0], [-1, 1], [0, 1]][dir]!;

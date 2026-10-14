@@ -417,6 +417,7 @@ export function executeAttack(ctx: ActCtx): boolean {
   const range = attack.range + ctx.rangeBonus;
   // Resonant Rest (Cymbal Chimp): shockwave before his first action when set to Rest
   const custom = attack.custom ? CUSTOM_ATTACKS[attack.custom] : undefined;
+  addEvent(s, { kind: 'attack', text: `${actor.name} uses ${attack.name}${ctx.replay ? ' (Replay)' : ''}`, actor: actor.uid, from: actor.pos, to: ctx.cmd.target.tile ?? getUnit(s, ctx.cmd.target.unit)?.pos });
   let ok: boolean;
   if (custom) ok = custom(ctx, range);
   else ok = genericAttack(ctx, range);

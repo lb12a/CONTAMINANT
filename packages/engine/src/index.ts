@@ -57,3 +57,5 @@ export { MAX_TRAPS, TRAP_LIFETIME, trapAt } from './traps.ts';
 export * from './sandbox.ts';
 export * from './progression.ts';
 export * from './protocol.ts';
+export * from './data/tutorials.ts';
+export * from './tutorial.ts';

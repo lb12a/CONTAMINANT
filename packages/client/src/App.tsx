@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Toasts } from './ui/components.tsx';
-import { useProfile, getSocket } from './store.ts';
+import { useProfile, getSocket, toast } from './store.ts';
+import { OnlineMatch } from './game/controller.ts';
 import { t } from './i18n.ts';
 import { MenuScreen } from './screens/Menu.tsx';
 import { PlayHost } from './screens/PlayHost.tsx';
@@ -21,7 +22,7 @@ import type { MatchController } from './game/controller.ts';
 
 export type Route =
   | { name: 'menu' }
-  | { name: 'match'; ctrl: MatchController; back?: Route; tutorial?: string }
+  | { name: 'match'; ctrl?: MatchController; back?: Route; tutorial?: string }
   | { name: 'collection' }
   | { name: 'deck'; deckId?: string }
   | { name: 'shop' }
@@ -50,9 +51,16 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = profile.settings.lang;
   }, [profile.settings.lang]);
-  // keep the socket alive while online so match invitations / tournament calls arrive
+  // keep the socket alive while online: matches found by the queue, friend lobbies and tournament
+  // calls all arrive here and open the match screen
   useEffect(() => {
-    if (profile.online) getSocket();
+    if (!profile.online) return;
+    const s = getSocket();
+    if (!s) return;
+    return s.on((m) => {
+      if (m.t === 'match_start') setRoute({ name: 'match', ctrl: new OnlineMatch(s, m), back: { name: 'online' } });
+      if (m.t === 'tournament') toast(`${m.event.replace(/_/g, ' ')}${m.data && typeof m.data === 'object' && 'name' in m.data ? `: ${(m.data as { name: string }).name}` : ''}`, 'info');
+    });
   }, [profile.online]);
 
   if (route.name === 'match') {
