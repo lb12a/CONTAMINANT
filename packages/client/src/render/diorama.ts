@@ -52,15 +52,40 @@ function hash(n: number): number {
   return ((x ^ (x >>> 16)) >>> 0) / 4294967296;
 }
 
+/**
+ * View transform shared by the drawing helpers. The board is drawn so that your own side is on the left
+ * (mirror when you start on the right); on portrait screens it is turned 90° so your side is at the bottom
+ * and the long axis runs up the phone. Board pixels (bx, by) → world (x, y·TILT).
+ */
+const VT = { portrait: false, mirror: false, BW: 0, BH: 0 };
+
+function toWorld(bx: number, by: number): { x: number; y: number } {
+  if (VT.portrait) return { x: by, y: (VT.mirror ? bx : VT.BW - bx) * TILT };
+  return { x: VT.mirror ? VT.BW - bx : bx, y: by * TILT };
+}
+
+function fromWorld(x: number, y: number): { bx: number; by: number } {
+  const Y = y / TILT;
+  if (VT.portrait) return { bx: VT.mirror ? Y : VT.BW - Y, by: x };
+  return { bx: VT.mirror ? VT.BW - x : x, by: Y };
+}
+
 export function worldCenter(h: Hex): { x: number; y: number } {
   const p = toPixel(h, S);
-  return { x: p.x + (SQ3 / 2) * S, y: (p.y + S) * TILT };
+  return toWorld(p.x + (SQ3 / 2) * S, p.y + S);
+}
+
+/** World-space size of the board (x extent, y extent after tilt). */
+function contentSize(): { cw: number; ch: number } {
+  return VT.portrait ? { cw: VT.BH, ch: VT.BW * TILT } : { cw: VT.BW, ch: VT.BH * TILT };
 }
 
 function hexPoints(cx: number, cy: number, r: number): number[] {
   const pts: number[] = [];
+  // pointy-top on landscape, flat-top once the board is turned for portrait
+  const rot = VT.portrait ? 0 : -30;
   for (let i = 0; i < 6; i++) {
-    const a = (Math.PI / 180) * (60 * i - 30);
+    const a = (Math.PI / 180) * (60 * i + rot);
     pts.push(cx + r * Math.cos(a), cy + r * Math.sin(a) * TILT);
   }
   return pts;
@@ -86,37 +111,81 @@ function radialTex(inner: string, outer: string, size = 256, stop = 0): Texture 
   });
 }
 
-/** Painted ground fallback: blotchy soil with pebbles and stains in the zone palette. */
+/** Painted ground fallback: blotchy soil with pebbles and stains in the zone palette, feathered at the edges. */
+const groundCache = new Map<Zone, Texture>();
 function groundFallback(zone: Zone): Texture {
+  let t = groundCache.get(zone);
+  if (!t) {
+    const c = document.createElement('canvas');
+    c.width = 1024;
+    c.height = 512;
+    paintGround(c.getContext('2d')!, zone);
+    t = featherTex(c);
+    groundCache.set(zone, t);
+  }
+  return t;
+}
+
+function paintGround(ctx: CanvasRenderingContext2D, zone: Zone): void {
   const pal = ZONE_GROUND[zone] ?? ZONE_GROUND.laboratory;
-  return canvasTex(1024, 512, (ctx) => {
-    ctx.fillStyle = pal.base;
-    ctx.fillRect(0, 0, 1024, 512);
-    for (let i = 0; i < 420; i++) {
-      const x = hash(i * 3 + 1) * 1024;
-      const y = hash(i * 7 + 2) * 512;
-      const r = 6 + hash(i * 11 + 3) * 46;
-      ctx.globalAlpha = 0.08 + hash(i * 13) * 0.12;
-      ctx.fillStyle = hash(i * 17) > 0.5 ? pal.dark : pal.light;
-      ctx.beginPath();
-      ctx.ellipse(x, y, r, r * 0.6, hash(i) * 3, 0, Math.PI * 2);
-      ctx.fill();
+  ctx.fillStyle = pal.base;
+  ctx.fillRect(0, 0, 1024, 512);
+  for (let i = 0; i < 420; i++) {
+    const x = hash(i * 3 + 1) * 1024;
+    const y = hash(i * 7 + 2) * 512;
+    const r = 6 + hash(i * 11 + 3) * 46;
+    ctx.globalAlpha = 0.08 + hash(i * 13) * 0.12;
+    ctx.fillStyle = hash(i * 17) > 0.5 ? pal.dark : pal.light;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.6, hash(i) * 3, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 0.9;
+  for (let i = 0; i < 160; i++) {
+    const x = hash(i * 5 + 9) * 1024;
+    const y = hash(i * 19 + 4) * 512;
+    const r = 1.5 + hash(i * 23) * 4;
+    ctx.fillStyle = pal.dark;
+    ctx.beginPath();
+    ctx.ellipse(x, y + 1.5, r, r * 0.7, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = hash(i * 29) > 0.85 ? pal.speck : pal.light;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 0.65, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+/** Copies an image into a canvas whose edges fade out in an irregular, painterly oval (diorama ground plate). */
+function featherTex(src: CanvasImageSource & { width: number; height: number }): Texture {
+  const w = src.width;
+  const h = src.height;
+  return canvasTex(w, h, (ctx) => {
+    ctx.drawImage(src, 0, 0, w, h);
+    ctx.globalCompositeOperation = 'destination-in';
+    const mask = document.createElement('canvas');
+    mask.width = w;
+    mask.height = h;
+    const m = mask.getContext('2d')!;
+    m.filter = `blur(${Math.round(Math.min(w, h) * 0.045)}px)`;
+    m.fillStyle = '#000';
+    m.beginPath();
+    // superellipse (rounded rectangle with soft, slightly wobbly edges)
+    const n = 64;
+    for (let i = 0; i <= n; i++) {
+      const a = (i / n) * Math.PI * 2;
+      const wob = 1 + (hash((i % n) * 7 + 3) - 0.5) * 0.06;
+      const cx = Math.cos(a);
+      const cy = Math.sin(a);
+      const x = w / 2 + Math.sign(cx) * Math.pow(Math.abs(cx), 0.5) * w * 0.44 * wob;
+      const y = h / 2 + Math.sign(cy) * Math.pow(Math.abs(cy), 0.5) * h * 0.42 * wob;
+      if (i === 0) m.moveTo(x, y);
+      else m.lineTo(x, y);
     }
-    ctx.globalAlpha = 0.9;
-    for (let i = 0; i < 160; i++) {
-      const x = hash(i * 5 + 9) * 1024;
-      const y = hash(i * 19 + 4) * 512;
-      const r = 1.5 + hash(i * 23) * 4;
-      ctx.fillStyle = pal.dark;
-      ctx.beginPath();
-      ctx.ellipse(x, y + 1.5, r, r * 0.7, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = hash(i * 29) > 0.85 ? pal.speck : pal.light;
-      ctx.beginPath();
-      ctx.ellipse(x, y, r, r * 0.65, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.globalAlpha = 1;
+    m.closePath();
+    m.fill();
+    ctx.drawImage(mask, 0, 0);
   });
 }
 
@@ -126,7 +195,7 @@ class TexCache {
   version = 0;
 
   /** Generated image if loaded, else `fallback()` (and the image starts loading). */
-  get(path: string, fallback: () => Texture | null): Texture | null {
+  get(path: string, fallback: () => Texture | null, transform?: (im: HTMLImageElement) => Texture): Texture | null {
     const hit = this.map.get(path);
     if (hit) return hit;
     const url = assetUrl(path);
@@ -134,7 +203,7 @@ class TexCache {
       this.loading.add(path);
       const img = assetImage(path);
       const finish = (im: HTMLImageElement) => {
-        this.map.set(path, Texture.from(im));
+        this.map.set(path, transform ? transform(im) : Texture.from(im));
         this.version++;
       };
       if (img) finish(img);
@@ -259,7 +328,7 @@ export class DioramaRenderer {
 
     this.ground.anchor.set(0.5);
     this.groundShade.anchor.set(0.5);
-    this.groundShade.texture = radialTex('rgba(10,7,12,0)', 'rgba(10,7,12,1)', 512, 0.55);
+    this.groundShade.texture = radialTex('rgba(10,7,12,0)', 'rgba(10,7,12,0.75)', 512, 0.72);
     this.groundLayer.addChild(this.ground, this.decor, this.groundShade);
     const glowBlur = new BlurFilter({ strength: 10, quality: 3 });
     this.glowG.filters = [glowBlur];
@@ -311,19 +380,31 @@ export class DioramaRenderer {
 
   // ---------------------------------------------------------------- camera
 
-  private layout(): void {
+  /** Sets the view transform; returns true when the orientation or mirroring changed. */
+  private orient(aw: number, ah: number): boolean {
     const s = this.state!;
+    const b = s.settings.bounds;
+    const portrait = aw < ah * 0.92;
+    const mirror = s.players[this.me]?.side === 'right';
+    const BW = SQ3 * S * (b.cols + 0.5);
+    const BH = S * (1.5 * b.rows + 0.5);
+    const changed = portrait !== VT.portrait || mirror !== VT.mirror || BW !== VT.BW || BH !== VT.BH;
+    Object.assign(VT, { portrait, mirror, BW, BH });
+    return changed;
+  }
+
+  private layout(): void {
     const W = this.app.screen.width;
     const H = this.app.screen.height;
-    const b = s.settings.bounds;
-    const bw = SQ3 * S * (b.cols + 0.5);
-    const bh = S * (1.5 * b.rows + 0.5) * TILT;
     const { top, right, bottom, left } = this.insets;
     const aw = Math.max(80, W - left - right);
     const ah = Math.max(80, H - top - bottom);
+    if (this.orient(aw, ah)) this.reorient();
+    const { cw: bw, ch: bh } = contentSize();
     const padTop = S * 1.55;
     const padBottom = S * 0.35;
-    const fit = Math.min(aw / (bw + S * 0.6), ah / (bh + padTop + padBottom));
+    // small boards (testing chambers) are not blown up beyond a comfortable tile size
+    const fit = Math.min(aw / (bw + S * 0.6), ah / (bh + padTop + padBottom), 1.05);
     this.scale = fit * this.cam.zoom;
     this.world.scale.set(this.scale);
     this.world.x = left + (aw - bw * this.scale) / 2 + this.cam.panX;
@@ -349,7 +430,8 @@ export class DioramaRenderer {
     if (!this.state || !this.ready) return null;
     const wx = (x - this.world.x) / this.scale;
     const wy = (y - this.world.y) / this.scale;
-    const h = fromPixel(wx - (SQ3 / 2) * S, wy / TILT - S, S);
+    const { bx, by } = fromWorld(wx, wy);
+    const h = fromPixel(bx - (SQ3 / 2) * S, by - S, S);
     const b = this.state.settings.bounds;
     if (h.c < 0 || h.r < 0 || h.c >= b.cols || h.r >= b.rows) return null;
     return h;
@@ -363,9 +445,23 @@ export class DioramaRenderer {
 
   // ---------------------------------------------------------------- static scene sync
 
+  /** Orientation changed: rebuild the static scene and snap units to their new places. */
+  private reorient(): void {
+    this.zone = null;
+    this.sync();
+    for (const v of this.units.values()) {
+      const [c, r] = v.target.split(',').map(Number);
+      const w = worldCenter({ c: c!, r: r! });
+      v.x = w.x;
+      v.y = w.y;
+      v.move = null;
+    }
+  }
+
   private sync(): void {
     const s = this.state!;
     const b = s.settings.bounds;
+    if (!VT.BW) this.orient(this.app.screen.width - this.insets.left - this.insets.right, this.app.screen.height - this.insets.top - this.insets.bottom);
     if (this.zone !== s.settings.zone || this.bounds.cols !== b.cols || this.bounds.rows !== b.rows || this.texVersion !== this.tex.version) {
       this.zone = s.settings.zone;
       this.bounds = { cols: b.cols, rows: b.rows };
@@ -391,13 +487,12 @@ export class DioramaRenderer {
     const s = this.state!;
     const zone = s.settings.zone;
     const b = s.settings.bounds;
-    const bw = SQ3 * S * (b.cols + 0.5);
-    const bh = S * (1.5 * b.rows + 0.5) * TILT;
-    const tex = this.tex.get(`ground/${zone}`, () => groundFallback(zone))!;
+    const { cw: bw, ch: bh } = contentSize();
+    const tex = this.tex.get(`ground/${zone}`, () => groundFallback(zone), featherTex)!;
     this.ground.texture = tex;
     this.ground.position.set(bw / 2, bh / 2);
-    const gw = bw + S * 7;
-    const gh = bh + S * 5;
+    const gw = bw * 1.36;
+    const gh = bh * 1.8;
     const sc = Math.max(gw / tex.width, gh / tex.height);
     this.ground.scale.set(sc, sc);
     this.groundShade.position.set(bw / 2, bh / 2);
@@ -446,8 +541,8 @@ export class DioramaRenderer {
         g.poly(hexPoints(x, y, S * 0.97), true).fill({ color: mine ? TEAM_MINE : TEAM_ENEMY, alpha: 0.045 });
       }
       // engraved hex: dark groove plus a light lip below it
-      g.poly(hexPoints(x, y + 1.5, S * 0.96), true).stroke({ width: 2, color: 0xfff1d6, alpha: 0.07 });
-      g.poly(hexPoints(x, y, S * 0.96), true).stroke({ width: 2.2, color: 0x0a0609, alpha: 0.32 });
+      g.poly(hexPoints(x, y + 1.5, S * 0.96), true).stroke({ width: 2, color: 0xfff1d6, alpha: 0.05 });
+      g.poly(hexPoints(x, y, S * 0.96), true).stroke({ width: 2, color: 0x0a0609, alpha: 0.2 });
     }
   }
 

@@ -1,1 +1,17 @@
-{ "generated": null, "files": {} }
+{
+ "generated": "2026-10-14T22:01:01.852Z",
+ "files": {
+  "tokens/arachnia.webp": {
+   "w": 512,
+   "h": 480
+  },
+  "tokens/lullabun.webp": {
+   "w": 360,
+   "h": 512
+  },
+  "tokens/vile.webp": {
+   "w": 370,
+   "h": 512
+  }
+ }
+}

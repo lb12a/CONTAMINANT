@@ -30,6 +30,14 @@ const screens: { id: string; run: (p: Page) => Promise<void> }[] = [
   { id: 'online', run: (p) => navTo(p, 'Online') },
   { id: 'settings', run: (p) => navTo(p, 'Settings') },
   {
+    id: 'chamber',
+    run: async (p) => {
+      await navTo(p, 'Chambers');
+      await p.locator('button.btn.tutorial:not([disabled])').first().click();
+      await p.waitForTimeout(1500);
+    },
+  },
+  {
     id: 'match',
     run: async (p) => {
       await p.getByRole('button', { name: /Contamination/ }).first().click();

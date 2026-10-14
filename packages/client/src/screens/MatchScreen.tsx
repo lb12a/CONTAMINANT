@@ -13,7 +13,8 @@ import {
   type Unit,
 } from '@contaminant/engine';
 import { BoardCanvas } from '../render/BoardCanvas.tsx';
-import type { Floater, Flash, Overlay, Pulse } from '../render/types.ts';
+import type { DioramaRenderer } from '../render/diorama.ts';
+import type { Floater, Flash, Insets, Overlay, Pulse } from '../render/types.ts';
 import { computeOverlay, emptyPlanner, plannedPos, tapTile, toPlan, unitActions, commandLabel, type PlannerState } from '../game/planner.ts';
 import type { MatchController, MatchSnapshot } from '../game/controller.ts';
 import { ApBattery, CharTraits, Fuse, HpBar, IdleSteps, ItemCard, Modal, StatusChips, VpRace, secondsLeft } from '../ui/components.tsx';
@@ -176,6 +177,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
   }, [snap.roundSerial]);
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const [renderer, setRenderer] = useState<DioramaRenderer | null>(null);
+  const insets = useBoardInsets();
 
   useEffect(() => {
     if (snap.ended) sfx(snap.ended.winner === me ? 'win' : 'lose');
@@ -274,64 +277,74 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
   // ---------------------------------------------------------------- render
   return (
     <div className={`match${showLeft ? ' show-left' : ''}${showRight ? ' show-right' : ''}`}>
-      {/* HUD */}
-      <div className="hud panel" style={{ padding: '6px 10px' }}>
-        <div className="row" style={{ gap: 12, alignItems: 'stretch' }}>
-          <div className="col" style={{ gap: 3, minWidth: 0, flex: '0 1 330px' }}>
-            <div className="row small">
-              <b className="num" style={{ color: 'var(--cyan)' }}>
-                {pv.apLeft}/{pl.ap} AP
-              </b>
-              <span className="muted">idle</span>
+      {/* HUD: AP · scoreboard · actions */}
+      <div className="hud">
+        <div className="hud-ap panel" title={`${pv.apLeft} AP left of ${pl.ap} · planned ${pv.cost}`}>
+          <div className="ap-top">
+            <div className="ap-num">
+              <b className="num">{pv.apLeft}</b>
+              <span className="num">/{pl.ap}</span>
+              <small>AP</small>
+            </div>
+            <div className="row small muted" style={{ gap: 6 }} title="Idle Bonus: spend less than half your AP to bank extra AP next round">
               <IdleSteps bonus={pl.idleBonus} />
-              <span className="muted">· {pl.hand.length} cards</span>
-            </div>
-            <ApBattery ap={pl.ap} planned={Math.min(pl.ap, pv.cost)} idle={0} />
-          </div>
-          <div className="col grow" style={{ gap: 3, minWidth: 0 }}>
-            <div className="row small" style={{ justifyContent: 'space-between' }}>
-              <span>
-                <b style={{ color: 'var(--gold)' }}>{snap.info.names[me]}</b> <span className="num">{display.players[me].vp}</span>
-              </span>
-              <span className="display" style={{ fontSize: 14 }}>
-                {t('Round')} {view.round} · {view.settings.mode.toUpperCase()} · {target} VP
-              </span>
-              <span>
-                <span className="num">{display.players[enemy].vp}</span> <b style={{ color: '#ff8a8f' }}>{snap.info.names[enemy]}</b>
-              </span>
-            </div>
-            <VpRace me={display.players[me].vp} them={display.players[enemy].vp} target={target === Infinity ? 100 : target} />
-            <div className="row small">
-              <div className="grow">
-                <Fuse deadline={playing ? 0 : snap.deadline} total={snap.info.planningSeconds || 30} />
-              </div>
-              <span className="num muted">{snap.deadline && !playing ? `${tsecs}s` : playing ? '…' : '∞'}</span>
-              {snap.opponentReady && !playing && <span className="chip buff">opponent ready</span>}
+              <span>+{pl.idleBonus}</span>
             </div>
           </div>
-          <div className="row" style={{ gap: 6 }}>
-            <button className="icon-btn menu-burger" onClick={() => setShowLeft((v) => !v)} title="Units">
-              ♟
-            </button>
-            <button className="icon-btn" onClick={() => setShowRight((v) => !v)} title={t('Combat log')}>
-              📓
-            </button>
-            {playing ? (
-              <button className="btn secondary small" onClick={() => (skipRef.current = true)}>
-                {t('Skip')}
-              </button>
-            ) : (
-              <button className={`btn primary${ready ? ' active' : ''}`} disabled={!!snap.ended} onClick={() => (ready ? setReady(false) : submit(true))} title={pv.issues.join('\n')}>
-                {ready ? 'Sealed ✓' : t('End planning')}
-              </button>
-            )}
+          <ApBattery ap={pl.ap} planned={Math.min(pl.ap, pv.cost)} idle={0} />
+        </div>
+        <div className="hud-score panel">
+          <div className="score-row">
+            <span className="side me">
+              <b className="vp num">{display.players[me].vp}</b>
+              <span className="nm">{snap.info.names[me]}</span>
+            </span>
+            <span className="round">
+              {t('Round')} {view.round}
+            </span>
+            <span className="side foe">
+              <span className="nm">{snap.info.names[enemy]}</span>
+              <b className="vp num">{display.players[enemy].vp}</b>
+            </span>
+          </div>
+          <VpRace me={display.players[me].vp} them={display.players[enemy].vp} target={target === Infinity ? 100 : target} />
+          <div className="score-meta">
+            <span className="mode">
+              {view.settings.mode[0]!.toUpperCase() + view.settings.mode.slice(1)} · first to {target === Infinity ? '∞' : target}
+            </span>
+            <div className="grow">
+              <Fuse deadline={playing ? 0 : snap.deadline} total={snap.info.planningSeconds || 30} />
+            </div>
+            <span className="num">{snap.deadline && !playing ? `${tsecs}s` : playing ? '…' : '∞'}</span>
+            {snap.opponentReady && !playing && <span className="chip buff" title="Your opponent has sealed their plan">rival sealed</span>}
           </div>
         </div>
-        {pv.issues.length > 0 && !playing && <div className="small" style={{ color: '#ff9da2', marginTop: 4 }}>⚠ {pv.issues[0]}</div>}
+        <div className="hud-actions">
+          <button className="icon-btn glass menu-burger" onClick={() => setShowLeft((v) => !v)} title="Units and plan" aria-label="Units and plan">
+            ♟
+          </button>
+          <button className="icon-btn glass" onClick={() => setShowRight((v) => !v)} title={t('Combat log')} aria-label={t('Combat log')}>
+            📓
+          </button>
+          {playing ? (
+            <button className="btn secondary" onClick={() => (skipRef.current = true)}>
+              {t('Skip')}
+            </button>
+          ) : (
+            <button className={`btn seal${ready ? ' active' : ''}`} disabled={!!snap.ended} onClick={() => (ready ? setReady(false) : submit(true))} title={pv.issues.join('\n') || 'Lock in your plan for this round'}>
+              {ready ? 'Sealed ✓' : t('End planning')}
+            </button>
+          )}
+        </div>
       </div>
+      {pv.issues.length > 0 && !playing && (
+        <div className="panel small" style={{ position: 'absolute', top: 112, left: '50%', transform: 'translateX(-50%)', zIndex: 13, color: '#ffb0b4', padding: '4px 12px' }}>
+          ⚠ {pv.issues[0]}
+        </div>
+      )}
 
       {/* LEFT: unit panel */}
-      <div className="left panel">
+      <div className={`left panel${!tutorialPanel && !selected && myUnits.length === 0 && ps.commands.length === 0 ? ' empty' : ''}`}>
         {tutorialPanel}
         {selected ? (
           <UnitPanel view={view} me={me} u={selected} ps={ps} setPs={setPs} setMode={setMode} toggleRest={toggleRest} removeCmd={removeCmd} handCards={handCards} />
@@ -370,8 +383,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
       </div>
 
       {/* BOARD */}
-      <div className="board panel" style={{ padding: 0, overflow: 'hidden' }} ref={boardRef}>
-        <BoardCanvas state={display} me={me} overlay={overlay} onTile={onTile} onHover={setHover} onContext={() => setMode({ kind: 'idle' })} />
+      <div className="board" ref={boardRef}>
+        <BoardCanvas state={display} me={me} overlay={overlay} insets={insets} onTile={onTile} onHover={setHover} onContext={() => setMode({ kind: 'idle' })} onRenderer={setRenderer} />
         {banner && (
           <div key={banner + view.round} className="banner" onAnimationEnd={() => setBanner(null)}>
             {banner}
@@ -382,50 +395,58 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
             ❓ {popups > 1 ? `${popups}× ` : ''}Enemy deploys a character!
           </div>
         )}
-        {ps.mode.kind !== 'idle' && !playing && (
-          <div className="panel small" style={{ position: 'absolute', left: 8, bottom: 8, padding: '6px 10px' }}>
-            {modeHint(view, ps)}{' '}
-            <button className="btn secondary small" onClick={() => setMode({ kind: 'idle' })}>
-              {t('Cancel')}
-            </button>
-          </div>
-        )}
-        {hover && !playing && <HoverInfo view={view} h={hover} me={me} />}
+        {hover && !playing && <HoverInfo view={view} h={hover} me={me} at={renderer?.screenOf(hover)} />}
         {snap.watch && (
-          <div className="panel small" style={{ position: 'absolute', right: 8, bottom: 8, maxWidth: 260 }}>
+          <div className="panel small" style={{ position: 'absolute', right: 10, bottom: 200, maxWidth: 260, zIndex: 12 }}>
             👁 Watchful Eye: {view.units.find((u) => u.uid === snap.watch!.unit)?.name} plans {snap.watch.commands.length} command(s):{' '}
             {(snap.watch.commands as { kind: string }[]).map((c) => c.kind).join(', ') || 'nothing'}
           </div>
         )}
       </div>
+      {ps.mode.kind !== 'idle' && !playing && (
+        <div className="panel mode-hint">
+          <span>{modeHint(view, ps)}</span>
+          <button className="btn secondary small" onClick={() => setMode({ kind: 'idle' })}>
+            {t('Cancel')}
+          </button>
+        </div>
+      )}
 
-      {/* RIGHT: initiative + log */}
+      {/* RIGHT: action order (while planning) + combat log drawer */}
       <div className="right">
-        <div className="panel">
-          <h3>{t('Action order')}</h3>
-          <div className="initiative">
-            {pv.order.length === 0 && <span className="muted small">Plan actions to see their order (Priority → Speed).</span>}
-            {pv.order.map((o, i) => (
-              <div key={i} className="slot">
-                <span className="pr">{o.priority >= 0 ? `+${o.priority}` : o.priority}</span>
-                <span className="grow">{o.label}</span>
-                <span className="num muted">{o.speed ? Math.round(o.speed) : ''}</span>
-              </div>
-            ))}
+        {pv.order.length > 0 && !playing && (
+          <div className="panel">
+            <h3>{t('Action order')}</h3>
+            <div className="initiative">
+              {pv.order.map((o, i) => (
+                <div key={i} className="slot">
+                  <span className="pr">{o.priority >= 0 ? `+${o.priority}` : o.priority}</span>
+                  <span className="grow">{o.label}</span>
+                  <span className="num muted">{o.speed ? Math.round(o.speed) : ''}</span>
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
-        <div className="panel notebook" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <h3>{t('Combat log')}</h3>
-          <LogBook entries={log} />
-        </div>
+        )}
+        {showRight && (
+          <div className="panel notebook" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div className="row" style={{ justifyContent: 'space-between' }}>
+              <h3 style={{ margin: 0 }}>{t('Combat log')}</h3>
+              <button className="icon-btn" style={{ width: 30, height: 30, fontSize: 13 }} onClick={() => setShowRight(false)} aria-label="Close log">
+                ✕
+              </button>
+            </div>
+            <LogBook entries={log} />
+          </div>
+        )}
       </div>
 
-      {/* BOTTOM: offered characters + hand */}
-      <div className="bottom panel" style={{ padding: '6px 8px' }}>
-        <div className="row" style={{ alignItems: 'flex-end', gap: 14, overflowX: 'auto' }}>
-          <div className="col" style={{ gap: 4 }}>
-            <div className="row small">
-              <b>{t('Offered characters')}</b>
+      {/* DOCK: offered characters + hand */}
+      <div className="bottom">
+        <div className="dock">
+          <div className="dock-group">
+            <div className="dock-label">
+              <span>{t('Offered characters')}</span>
               <button className="btn secondary small" disabled={playing || ready} onClick={async () => { const r = await ctrl.op({ kind: 'reroll', card: 'all' }); if (!r.ok) toast(r.error ?? 'Cannot re-roll', 'bad'); }} title="Re-roll all unlocked offered characters (3 AP)">
                 🎲 3 AP
               </button>
@@ -438,11 +459,11 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
                 const chosen = ps.mode.kind === 'deploy' && ps.mode.card === o.cardUid;
                 return (
                   <div key={o.cardUid} className={`locker rarity-${def.rarity}${chosen ? ' selected' : ''}`} style={{ opacity: deployingCards.has(o.cardUid) ? 0.4 : 1 }} title={`${def.name} · Deploy ${def.deploy} AP · ${def.tier}`} onClick={() => !playing && !ready && !deployingCards.has(o.cardUid) && setMode({ kind: 'deploy', card: o.cardUid })}>
-                    <img src={portraitUrl(def.id, null, { size: 120 })} alt={def.name} style={{ width: '100%', borderRadius: 6, display: 'block' }} draggable={false} />
-                    <div className="small center" style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      <span style={{ color: 'var(--cyan)' }}>{def.deploy}</span> {def.name}
+                    <img src={portraitUrl(def.id, null, { size: 160 })} alt={def.name} style={{ width: '100%', borderRadius: 8, display: 'block' }} draggable={false} />
+                    <div className="locker-name">
+                      <span className="cost-pip">{def.deploy}</span> {def.name}
                     </div>
-                    <button className="lock icon-btn" style={{ width: 24, height: 24, fontSize: 11 }} onClick={async (e) => { e.stopPropagation(); await ctrl.op({ kind: 'lock', card: o.cardUid, locked: !o.locked }); }} title={o.locked ? 'Unlock' : 'Lock'}>
+                    <button className="lock icon-btn" style={{ width: 26, height: 26, fontSize: 11 }} onClick={async (e) => { e.stopPropagation(); await ctrl.op({ kind: 'lock', card: o.cardUid, locked: !o.locked }); }} title={o.locked ? 'Unlock' : 'Lock'} aria-label={o.locked ? 'Unlock' : 'Lock'}>
                       {o.locked ? '🔒' : '🔓'}
                     </button>
                   </div>
@@ -451,10 +472,10 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
             </div>
           </div>
           {!hideHand && (
-            <div className="col grow" style={{ gap: 4, minWidth: 0 }}>
-              <b className="small">
-                {t('Your hand')} ({handCards.length}/6) · {pl.cardsPlayedThisRound + ps.commands.filter((c) => c.kind === 'item' || ((c.kind === 'attack' || c.kind === 'ability') && c.item)).length}/3 played
-              </b>
+            <div className="dock-group" style={{ minWidth: 0 }}>
+              <div className="dock-label">
+                {t('Your hand')} {handCards.length}/6 · {pl.cardsPlayedThisRound + ps.commands.filter((c) => c.kind === 'item' || ((c.kind === 'attack' || c.kind === 'ability') && c.item)).length}/3 played
+              </div>
               <div className="hand">
                 {handCards.map((c) => (
                   <ItemCard key={c.uid} itemId={c.itemId} tarnished={c.tarnished} attached={attachedCards.has(c.uid)} selected={ps.mode.kind === 'item' && ps.mode.card === c.uid} onClick={() => onHandCard(c.uid)} />
@@ -480,7 +501,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand }: Props) {
 
       {snap.ended && !playing && <EndSeal snap={snap} me={me} onExit={() => onExit({ won: snap.ended!.winner === 'draw' || snap.ended!.winner === null ? null : snap.ended!.winner === me, snap, log: log.map((l) => l.text) })} onSurrenderless />}
       {!snap.ended && (
-        <button className="btn danger small" style={{ position: 'fixed', left: 8, bottom: 8, zIndex: 25, opacity: 0.75 }} onClick={() => confirm('Surrender this match?') && ctrl.surrender()}>
+        <button className="btn danger small surrender" onClick={() => confirm('Surrender this match?') && ctrl.surrender()}>
           {t('Surrender')}
         </button>
       )}
@@ -658,7 +679,21 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
   );
 }
 
-function HoverInfo({ view, h, me }: { view: GameState; h: Hex; me: PlayerId }) {
+/** Screen area covered by the floating HUD at the current window size (the camera fits the board into the rest). */
+function useBoardInsets(): Insets {
+  const [w, setW] = useState(() => window.innerWidth);
+  useEffect(() => {
+    const on = () => setW(window.innerWidth);
+    window.addEventListener('resize', on);
+    return () => window.removeEventListener('resize', on);
+  }, []);
+  return useMemo(() => {
+    if (w <= 760) return { top: 150, right: 4, bottom: 158, left: 4 };
+    return { top: 108, right: 24, bottom: 176, left: 24 };
+  }, [w]);
+}
+
+function HoverInfo({ view, h, me, at }: { view: GameState; h: Hex; me: PlayerId; at?: { x: number; y: number } }) {
   const t = view.tiles.find((x) => x.c === h.c && x.r === h.r);
   const u = view.units.find((x) => x.pos.c === h.c && x.pos.r === h.r);
   if (!t) return null;
@@ -668,7 +703,7 @@ function HoverInfo({ view, h, me }: { view: GameState; h: Hex; me: PlayerId }) {
   for (const f of t.fields) parts.push(f.id.replace(/_/g, ' '));
   if (u) parts.push(`${u.owner === me ? '◆' : '◇'} ${u.name} ${u.hp}/${u.maxHp}`);
   return (
-    <div className="panel small" style={{ position: 'absolute', left: 8, top: 8, padding: '4px 8px', pointerEvents: 'none', maxWidth: 280 }}>
+    <div className="panel hover-info" style={at ? { left: at.x, top: at.y - 40 } : { left: '50%', top: 120 }}>
       {parts.join(' · ')}
     </div>
   );

@@ -3,7 +3,7 @@
 // (UI-Assets document, technical rules). Generated ComfyUI images replace these when available.
 
 import { CHARACTERS, SUMMONS } from '@contaminant/engine';
-import { assetUrl } from './assets.ts';
+import { assetImage } from './assets.ts';
 
 type Acc =
   | 'legs8' | 'eggs' | 'screen' | 'hood' | 'skull' | 'scythe' | 'ghost' | 'vines' | 'mushroom' | 'spores' | 'ears' | 'button' | 'knife'
@@ -846,13 +846,34 @@ export function figureCanvas(key: string, size: number, opts: { silhouette?: boo
   return c;
 }
 
-/** Portrait (card art): figure over a vignette in the character's colours. Uses a generated image if present. */
+/** Draws a generated sprite fitted into a box, optionally as a flat silhouette. */
+function drawSprite(ctx: CanvasRenderingContext2D, img: HTMLImageElement, x: number, y: number, w: number, h: number, silhouette: boolean): void {
+  const sc = Math.min(w / img.naturalWidth, h / img.naturalHeight);
+  const dw = img.naturalWidth * sc;
+  const dh = img.naturalHeight * sc;
+  const dx = x + (w - dw) / 2;
+  const dy = y + h - dh;
+  if (!silhouette) {
+    ctx.drawImage(img, dx, dy, dw, dh);
+    return;
+  }
+  const tmp = document.createElement('canvas');
+  tmp.width = Math.ceil(dw);
+  tmp.height = Math.ceil(dh);
+  const t = tmp.getContext('2d')!;
+  t.drawImage(img, 0, 0, dw, dh);
+  t.globalCompositeOperation = 'source-in';
+  t.fillStyle = '#050307';
+  t.fillRect(0, 0, dw, dh);
+  ctx.drawImage(tmp, dx, dy);
+}
+
+/** Portrait (card art): the creature over a vignette in the character's colours. Uses the generated sprite when loaded. */
 export function portraitUrl(defId: string, form?: string | null, opts: { silhouette?: boolean; size?: number } = {}): string {
   const key = lookKey(defId, form);
-  const gen = assetUrl(`portraits/${key}.png`);
-  if (gen && !opts.silhouette) return gen;
+  const sprite = assetImage(`tokens/${key}`);
   const size = opts.size ?? 260;
-  const ck = `portrait|${key}|${size}|${opts.silhouette ? 1 : 0}`;
+  const ck = `portrait|${key}|${size}|${opts.silhouette ? 1 : 0}|${sprite ? 'gen' : 'fig'}`;
   const cached = urlCache.get(ck);
   if (cached) return cached;
   const c = document.createElement('canvas');
@@ -881,7 +902,14 @@ export function portraitUrl(defId: string, form?: string | null, opts: { silhoue
     ctx.lineTo(size, size * (0.15 + i * 0.22));
     ctx.stroke();
   }
-  drawFigure(ctx, key, size, { silhouette: opts.silhouette });
+  if (sprite) {
+    // floor shadow, then the creature standing on the bottom edge
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
+    ctx.beginPath();
+    ctx.ellipse(size * 0.5, size * 0.93, size * 0.32, size * 0.05, 0, 0, Math.PI * 2);
+    ctx.fill();
+    drawSprite(ctx, sprite, size * 0.06, size * 0.05, size * 0.88, size * 0.9, !!opts.silhouette);
+  } else drawFigure(ctx, key, size, { silhouette: opts.silhouette });
   const url = c.toDataURL();
   urlCache.set(ck, url);
   return url;
@@ -891,9 +919,8 @@ const urlCache = new Map<string, string>();
 
 /** Item art: a simple emblem in the item type colour (replaced by generated art when available). */
 export function itemArtUrl(itemId: string, typeColor: string, glyph: string): string {
-  const gen = assetUrl(`items/${itemId}.png`);
-  if (gen) return gen;
-  const ck = `item|${itemId}`;
+  const icon = assetImage(`items/${itemId}`);
+  const ck = `item|${itemId}|${icon ? 'gen' : 'fig'}`;
   const cached = urlCache.get(ck);
   if (cached) return cached;
   const W = 200;
@@ -911,13 +938,17 @@ export function itemArtUrl(itemId: string, typeColor: string, glyph: string): st
   ctx.beginPath();
   ctx.ellipse(W * 0.55, H * 0.82, W * 0.22, H * 0.06, 0, 0, Math.PI * 2);
   ctx.fill();
-  ctx.font = `${H * 0.5}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.shadowColor = '#000';
-  ctx.shadowOffsetX = 3;
-  ctx.shadowOffsetY = 3;
-  ctx.fillText(glyph, W / 2, H / 2);
+  if (icon) {
+    drawSprite(ctx, icon, W * 0.18, H * 0.06, W * 0.64, H * 0.84, false);
+  } else {
+    ctx.font = `${H * 0.5}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.shadowColor = '#000';
+    ctx.shadowOffsetX = 3;
+    ctx.shadowOffsetY = 3;
+    ctx.fillText(glyph, W / 2, H / 2);
+  }
   const url = c.toDataURL();
   urlCache.set(ck, url);
   return url;
