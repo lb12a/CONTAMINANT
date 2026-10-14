@@ -230,6 +230,19 @@ function figureTex(k: string): Texture {
   return t;
 }
 
+const STATUS_TINT: [string, number][] = [
+  ['frozen', 0xb8e6ff],
+  ['gilded', 0xffe6a0],
+  ['corruption', 0xffa0f0],
+  ['burn', 0xffd0b0],
+  ['poison', 0xd8ffc8],
+];
+
+function statusTint(ids: string[]): number {
+  for (const [id, c] of STATUS_TINT) if (ids.includes(id)) return c;
+  return 0xffffff;
+}
+
 // ---------------------------------------------------------------- unit views
 
 interface UnitView {
@@ -296,8 +309,11 @@ export class DioramaRenderer {
   private trapSprites = new Map<string, Sprite | Text>();
   private tombSprites: (Sprite | Text)[] = [];
   private floaterTexts = new Map<Floater, Text>();
-  private particles: { x: number; y: number; vx: number; vy: number; life: number; t0: number; color: number; r: number }[] = [];
+  private particles: { x: number; y: number; vx: number; vy: number; life: number; t0: number; color: number; r: number; grav?: number }[] = [];
+  /** dust and spores drifting through the light (world space) */
+  private motes: { x: number; y: number; r: number; phase: number; speed: number; color: number }[] = [];
   private seenPulses = new WeakSet<Pulse>();
+  private moteBox = { w: 1, h: 1 };
   private firstSyncDone = false;
   private zone: Zone | null = null;
   private bounds = { cols: 0, rows: 0 };
@@ -496,6 +512,17 @@ export class DioramaRenderer {
     const sc = Math.max(gw / tex.width, gh / tex.height);
     this.ground.scale.set(sc, sc);
     this.groundShade.position.set(bw / 2, bh / 2);
+    this.motes = this.reduce
+      ? []
+      : Array.from({ length: 54 }, (_, i) => ({
+          x: hash(i * 11 + 5) * bw,
+          y: hash(i * 23 + 7) * bh - S,
+          r: 1.2 + hash(i * 31) * 2.6,
+          phase: hash(i * 41) * 6.28,
+          speed: 4 + hash(i * 53) * 10,
+          color: hash(i * 61) > 0.8 ? 0xb6ff8c : 0xffe2b0,
+        }));
+    this.moteBox = { w: bw, h: bh };
     this.groundShade.width = gw * 1.02;
     this.groundShade.height = gh * 1.08;
     // decorative props around the board edge (dimmed, outside the playable hexes)
@@ -1081,7 +1108,9 @@ export class DioramaRenderer {
       const sc = Math.min(base, maxW / Math.max(1, tex.width));
       v.spr.scale.set(sc * (1 - breathe * 0.6), sc * (1 + breathe));
       v.spr.position.set(ox, oy);
+      if (tint === 0xffffff) tint = statusTint(u.statuses.map((st) => st.id));
       v.spr.tint = tint;
+      if (!this.reduce) this.emitStatus(u.statuses.map((st) => st.id), v.x + ox, v.y + oy, v.height);
       const hidden = u.statuses.some((st) => st.id === 'hidden');
       v.spr.alpha = hidden ? 0.45 + 0.15 * Math.sin(t * 5) : 1;
       v.root.position.set(v.x, v.y);
@@ -1153,6 +1182,21 @@ export class DioramaRenderer {
     });
   }
 
+  /** Little particles that make statuses visible on the creature itself. */
+  private emitStatus(ids: string[], x: number, y: number, h: number): void {
+    const now = performance.now();
+    const spawn = (chance: number, color: number, vy: number, grav: number, r: number, life: number) => {
+      if (Math.random() > chance) return;
+      this.particles.push({ x: x + (Math.random() - 0.5) * S * 0.7, y: y - Math.random() * h * 0.8, vx: (Math.random() - 0.5) * 12, vy, life, t0: now, color, r, grav });
+    };
+    if (ids.includes('poison') || ids.includes('infection')) spawn(0.07, 0x9cff6a, -30, -10, 3, 1100);
+    if (ids.includes('burn')) spawn(0.14, 0xffa43a, -60, -30, 2.5, 800);
+    if (ids.includes('bleeding')) spawn(0.05, 0xd0202a, 10, 420, 2.5, 700);
+    if (ids.includes('frozen')) spawn(0.04, 0xe8f8ff, -8, 6, 2, 1400);
+    if (ids.includes('shock')) spawn(0.06, 0xe8ffff, -20, 0, 1.8, 300);
+    if (this.particles.length > 500) this.particles.splice(0, this.particles.length - 500);
+  }
+
   private burst(at: { x: number; y: number }, color: number, n: number, dir = 1): void {
     if (this.reduce) return;
     const now = performance.now();
@@ -1176,6 +1220,13 @@ export class DioramaRenderer {
   private drawFx(now: number): void {
     const g = this.fxG.clear();
     const ov = this.ov;
+    // drifting dust and spores, brighter where the light falls
+    const t = now / 1000;
+    for (const m of this.motes) {
+      const y = ((((m.y - t * m.speed) % (this.moteBox.h + S * 2)) + this.moteBox.h + S * 2) % (this.moteBox.h + S * 2)) - S;
+      const x = m.x + Math.sin(t * 0.35 + m.phase) * S * 0.4;
+      g.circle(x, y, m.r).fill({ color: m.color, alpha: 0.16 + 0.14 * Math.sin(t * 1.3 + m.phase) });
+    }
     // flashes
     for (const f of ov.flashes ?? []) {
       const k = (now - f.t0) / f.dur;
@@ -1193,7 +1244,7 @@ export class DioramaRenderer {
       if (k >= 1) return false;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
-      p.vy += 260 * dt;
+      p.vy += (p.grav ?? 260) * dt;
       p.vx *= 0.97;
       g.circle(p.x, p.y, p.r * (1 - k * 0.6)).fill({ color: p.color, alpha: 1 - k });
       return true;
