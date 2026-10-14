@@ -32,6 +32,8 @@ import { realClock, RoomManager, verifyReplay, type Clock, type Conn, type Match
 import { Matchmaker } from './matchmaking.ts';
 import { TournamentService } from './tournaments.ts';
 import { WorldCupService } from './worldcup.ts';
+import { CircuitService, circuitSeason } from './circuit.ts';
+import { TeamService } from './teams.ts';
 import { SeasonService } from './seasons.ts';
 import { botWeights, classifyDeck, detectAnomalies, metaSnapshot, recordTelemetry } from './meta.ts';
 import { DIVISIONS, divisionFor } from './rating.ts';
@@ -48,6 +50,8 @@ export interface ServerConfig {
   staticDir?: string;
   clock?: Clock;
   autoTick?: boolean;
+  /** follow the yearly calendar (Monthly Majors, Halloween World Cup); defaults to autoTick */
+  calendar?: boolean;
   log?: (msg: string) => void;
 }
 
@@ -80,6 +84,8 @@ export class GameServer {
   readonly mm: Matchmaker;
   readonly tournaments: TournamentService;
   readonly worldcup: WorldCupService;
+  readonly circuit: CircuitService;
+  readonly teams: TeamService;
   readonly seasons: SeasonService;
   readonly conns = new Map<string, Set<Conn>>();
   readonly lobbies = new Map<string, FriendLobby>();
@@ -103,7 +109,10 @@ export class GameServer {
     const notify = (pid: string, m: ServerMsg) => this.notify(pid, m);
     this.mm = new Matchmaker(this.clock, this.rooms, this.players, notify, { botFillSeconds: this.cfg.botFillSeconds, rankedBotFill: this.cfg.rankedBotFill, planningSeconds: this.cfg.planningSeconds });
     this.tournaments = new TournamentService({ db: this.db, players: this.players, rooms: this.rooms, clock: this.clock, notify, planningSeconds: this.cfg.planningSeconds, fillWithBots: this.cfg.fillTournamentsWithBots });
-    this.worldcup = new WorldCupService({ db: this.db, players: this.players, rooms: this.rooms, clock: this.clock, notify, fillWithBots: this.cfg.fillTournamentsWithBots });
+    this.circuit = new CircuitService(this.db, this.tournaments);
+    this.tournaments.onFinished = (t) => this.circuit.onTournamentFinished(t);
+    this.worldcup = new WorldCupService({ db: this.db, players: this.players, rooms: this.rooms, clock: this.clock, notify, fillWithBots: this.cfg.fillTournamentsWithBots, circuit: this.circuit, calendar: this.cfg.calendar ?? this.cfg.autoTick ?? true });
+    this.teams = new TeamService(this.db, this.players);
     this.seasons = new SeasonService(this.db, this.players, this.clock);
     this.seasons.current();
   }
@@ -154,6 +163,7 @@ export class GameServer {
     if (room.kind === 'wm') this.worldcup.onRoomEnd(room, result);
     if (room.kind === 'team') {
       const team = this.mm.teamRoomEnded(room, result);
+      if (team) this.teams.recordBattle(team.teams, team.winnerTeam);
       if (team) for (const [ti, ids] of team.teams.entries()) for (const pid of ids) this.notify(pid, { t: 'tournament', id: 'team-battle', event: 'team_result', data: { won: team.winnerTeam === ti, draw: team.winnerTeam === null } });
     }
     // telemetry
@@ -268,6 +278,7 @@ export class GameServer {
   slowTick(): void {
     const now = this.clock.now();
     this.tournaments.scheduleTick(now);
+    if (this.cfg.calendar ?? this.cfg.autoTick ?? true) this.circuit.tick(now);
     this.tournaments.lifecycleTick(now);
     this.worldcup.tick(now);
     this.seasons.tick(now);
@@ -452,6 +463,62 @@ export class GameServer {
       return json(res, 200, this.worldcup.register(p, body.deckId as string | undefined));
     }
     if (path === '/api/hall-of-fame') return json(res, 200, { entries: this.worldcup.hallOfFame() });
+    if (path === '/api/worldcup/eligibility') {
+      const p = need();
+      if (!p) return;
+      return json(res, 200, this.worldcup.eligibility(p));
+    }
+    if (path === '/api/circuit') {
+      const season = Number(q('season') ?? circuitSeason(this.clock.now()));
+      return json(res, 200, { calendar: this.circuit.calendar(season), standings: this.circuit.ranking(season).slice(0, 200), direct: this.circuit.directQualifiers(season), me: me ? this.circuit.standings(season).entries[me.id] ?? null : null });
+    }
+    if (path === '/api/champions') {
+      const majors = this.tournaments
+        .list()
+        .filter((t) => t.circuit && t.status === 'finished' && t.placements?.length)
+        .map((t) => ({ id: t.id, name: t.name, season: t.circuit!.season, at: t.startsAt, champion: t.placements!.find((x) => x.place === 1)!.name, playerId: t.placements!.find((x) => x.place === 1)!.playerId }));
+      return json(res, 200, { ...this.worldcup.champions(), majors });
+    }
+    if ((m = path.match(/^\/api\/players\/([\w-]+)$/))) {
+      const p = this.players.byId(m[1]!);
+      if (!p) return json(res, 404, { error: 'not found' });
+      const season = circuitSeason(this.clock.now());
+      const team = this.teams.teamOf(p.id);
+      const recent = this.db.all<MatchRow>('SELECT id,kind,mode,zone,p0,p1,p0_name,p1_name,winner,vp0,vp1,rounds,started,ended,tournament_id,featured FROM matches WHERE p0=? OR p1=? ORDER BY ended DESC LIMIT 20', p.id, p.id);
+      const honours = this.db.all("SELECT kind,title,season,created FROM hall WHERE player_id=? ORDER BY created DESC LIMIT 50", p.id);
+      const rank = this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM players WHERE is_bot=0 AND mmr > ?', p.mmr)?.n ?? 0;
+      return json(res, 200, {
+        player: this.players.public(p),
+        rank: p.is_bot ? null : rank + 1,
+        team: team ? { id: team.id, name: team.name, tag: team.tag } : null,
+        circuit: this.circuit.standings(season).entries[p.id] ?? null,
+        recent,
+        honours,
+      });
+    }
+    if (path === '/api/teams' && req.method === 'GET') return json(res, 200, { teams: this.teams.ladder(Number(q('limit') ?? 100)) });
+    if (path === '/api/teams' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.teams.create(p, body);
+      return json(res, r.ok ? 200 : 400, r);
+    }
+    if (path === '/api/teams/leave' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.teams.leave(p);
+      return json(res, r.ok ? 200 : 400, r);
+    }
+    if ((m = path.match(/^\/api\/teams\/([\w-]+)\/join$/)) && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.teams.join(p, m[1]!);
+      return json(res, r.ok ? 200 : 400, r);
+    }
+    if ((m = path.match(/^\/api\/teams\/([\w-]+)$/))) {
+      const t = this.teams.get(m[1]!);
+      return t ? json(res, 200, { team: this.teams.view(t) }) : json(res, 404, { error: 'not found' });
+    }
     if (path === '/api/meta') return json(res, 200, metaSnapshot(this.db, { mode: q('mode'), zone: q('zone'), kind: q('kind'), minMmr: q('minMmr') ? Number(q('minMmr')) : undefined }));
     if (path === '/api/meta/anomalies') return json(res, 200, { anomalies: detectAnomalies(this.db, { minGames: Number(q('minGames') ?? 20) }) });
     if (path === '/api/meta/classify' && req.method === 'POST') return json(res, 200, classifyDeck((body.characters as string[]) ?? []));

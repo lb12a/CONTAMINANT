@@ -1,5 +1,7 @@
-// Online World Cup (WM online): open qualifiers (Swiss) → group stage (round robin) → playoffs
-// (single elimination + 3rd place) → World Champion crown, title badge and permanent hall-of-fame record.
+// Online World Cup (WM online), held every year on Halloween: Last Chance qualifier (Swiss, 29 Oct) →
+// group stage (round robin, 30 Oct) → playoffs (single elimination + 3rd place, finals on 31 Oct) →
+// World Champion crown, title badge and permanent hall-of-fame record. Monthly Major champions and the
+// top of the Circuit Points race are seeded straight into the groups (see circuit.ts).
 // Every WM match is "featured": spectators and casters get it with a broadcast delay.
 
 import type { ServerMsg } from '@contaminant/engine';
@@ -22,16 +24,21 @@ import {
   type Entrant,
 } from './brackets.ts';
 import type { Registration } from './tournaments.ts';
+import { CIRCUIT, circuitSeason, halloweenSchedule, type CircuitService } from './circuit.ts';
 
 export type WmStage = 'qualifiers' | 'groups' | 'playoffs';
 
 export interface WorldCup {
   id: string;
   edition: number;
+  /** circuit season (= the Halloween year); absent for ad-hoc editions opened by an admin */
+  season?: number;
   name: string;
   status: 'registration' | WmStage | 'finished';
   createdAt: number;
   schedule: { qualifiersAt: number; groupsAt: number; playoffsAt: number };
+  /** a stage that is ready but waits for its scheduled day */
+  pendingStage?: 'groups' | 'playoffs';
   qualifierAdvance: number;
   groupCount: number;
   registrations: Registration[];
@@ -52,6 +59,9 @@ export interface WmHost {
   clock: Clock;
   notify(playerId: string, m: ServerMsg): void;
   fillWithBots: boolean;
+  circuit?: CircuitService;
+  /** respect the Halloween calendar (stages wait for their day); off for ad-hoc editions and tests */
+  calendar?: boolean;
 }
 
 export class WorldCupService {
@@ -95,18 +105,77 @@ export class WorldCupService {
     return w;
   }
 
+  /** The Halloween edition of a circuit season: opens on 1 October with the direct qualifiers already seeded. */
+  ensureSeason(now = this.h.clock.now()): WorldCup | null {
+    const season = circuitSeason(now);
+    const id = `wm-${season}`;
+    const existing = this.h.db.getDoc<WorldCup>('worldcup', id);
+    if (existing) return existing;
+    const sch = halloweenSchedule(season);
+    if (now < sch.registrationAt) return null;
+    const w: WorldCup = {
+      id,
+      edition: (this.all()[0]?.edition ?? 0) + 1,
+      season,
+      name: `Contaminant World Cup ${season} · Halloween`,
+      status: 'registration',
+      createdAt: now,
+      schedule: { qualifiersAt: sch.qualifiersAt, groupsAt: sch.groupsAt, playoffsAt: sch.playoffsAt },
+      qualifierAdvance: CIRCUIT.groupField,
+      groupCount: 4,
+      registrations: [],
+      rooms: {},
+      broadcastDelayRounds: 2,
+      planningSeconds: 45,
+    };
+    for (const q of this.h.circuit?.directQualifiers(season) ?? []) {
+      const p = this.h.players.byId(q.playerId);
+      if (p) w.registrations.push({ playerId: p.id, name: p.name, mmr: p.mmr, checkedIn: true, direct: true, via: q.via });
+    }
+    this.save(w);
+    for (const r of w.registrations) this.h.notify(r.playerId, { t: 'tournament', id: w.id, event: 'wm_qualified', data: { via: r.via } });
+    return w;
+  }
+
+  /** Who may enter: direct seeds are registered automatically; others need the World Cup MMR or Circuit Points. */
+  eligibility(p: PlayerRow, w = this.current()): { ok: boolean; direct: boolean; reason: string } {
+    if (!w) return { ok: false, direct: false, reason: 'No World Cup is open' };
+    const reg = w.registrations.find((r) => r.playerId === p.id);
+    if (reg?.direct) return { ok: true, direct: true, reason: reg.via ?? 'Direct seed' };
+    const pts = w.season !== undefined ? this.h.circuit?.pointsOf(w.season, p.id) ?? 0 : 0;
+    if (p.is_bot || p.mmr >= CIRCUIT.wmMinMmr || pts > 0) return { ok: true, direct: false, reason: pts > 0 ? `${pts} Circuit Points` : `${Math.round(p.mmr)} MMR` };
+    return { ok: false, direct: false, reason: `Needs ${CIRCUIT.wmMinMmr} MMR or Circuit Points from a Monthly Major` };
+  }
+
   register(p: PlayerRow, deckId?: string): { ok: boolean; error?: string } {
     const w = this.current();
     if (!w || w.status !== 'registration') return { ok: false, error: 'World Cup registration is closed' };
-    if (!w.registrations.some((r) => r.playerId === p.id)) w.registrations.push({ playerId: p.id, name: p.name, mmr: p.mmr, checkedIn: true, deckId, isBot: !!p.is_bot });
+    const el = this.eligibility(p, w);
+    if (!el.ok && w.season !== undefined) return { ok: false, error: el.reason };
+    const existing = w.registrations.find((r) => r.playerId === p.id);
+    if (existing) existing.deckId = deckId ?? existing.deckId;
+    else w.registrations.push({ playerId: p.id, name: p.name, mmr: p.mmr, checkedIn: true, deckId, isBot: !!p.is_bot });
     this.save(w);
     return { ok: true };
   }
 
   tick(now = this.h.clock.now()): void {
+    if (this.h.calendar) this.ensureSeason(now);
     const w = this.current();
     if (!w || w.status === 'finished') return;
     if (w.status === 'registration' && now >= w.schedule.qualifiersAt) this.startQualifiers(w.id);
+    if (w.pendingStage === 'groups' && now >= w.schedule.groupsAt) this.startGroups(w);
+    else if (w.pendingStage === 'playoffs' && now >= w.schedule.playoffsAt) this.startPlayoffs(w);
+  }
+
+  /** Stages of a calendar edition wait for their day (groups 30 Oct, finals 31 Oct). */
+  private waitFor(w: WorldCup, stage: 'groups' | 'playoffs'): boolean {
+    if (w.season === undefined || !this.h.calendar) return false;
+    const at = stage === 'groups' ? w.schedule.groupsAt : w.schedule.playoffsAt;
+    if (this.h.clock.now() >= at) return false;
+    w.pendingStage = stage;
+    this.save(w);
+    return true;
   }
 
   private bracketFor(w: WorldCup, stage: WmStage): Bracket | undefined {
@@ -116,7 +185,10 @@ export class WorldCupService {
   startQualifiers(id: string): void {
     const w = this.h.db.getDoc<WorldCup>('worldcup', id)!;
     if (w.status !== 'registration') return;
-    let field = w.registrations.slice();
+    // direct seeds skip the Last Chance qualifier; it fills the remaining group places
+    const direct = w.registrations.filter((r) => r.direct);
+    w.qualifierAdvance = Math.max(4, CIRCUIT.groupField - direct.length);
+    let field = w.registrations.filter((r) => !r.direct);
     const want = w.qualifierAdvance * 2;
     if (field.length < want && this.h.fillWithBots) {
       for (const b of this.h.players.ensureBots(want)) {
@@ -128,6 +200,13 @@ export class WorldCupService {
       }
     }
     field = field.sort((a, b) => b.mmr - a.mmr);
+    if (field.length < 2) {
+      // nobody needs the Last Chance qualifier: straight to the groups
+      w.status = 'qualifiers';
+      this.save(w);
+      if (!this.waitFor(w, 'groups')) this.startGroups(w);
+      return;
+    }
     const entrants: Entrant[] = field.map((r, i) => ({ id: r.playerId, name: r.name, seed: i + 1, mmr: r.mmr }));
     w.qualifiers = swiss(entrants, Math.max(3, Math.ceil(Math.log2(entrants.length))));
     w.status = 'qualifiers';
@@ -137,8 +216,13 @@ export class WorldCupService {
   }
 
   private startGroups(w: WorldCup): void {
-    const st = swissStandings(w.qualifiers!).slice(0, w.qualifierAdvance);
-    const entrants: Entrant[] = st.map((s, i) => ({ id: s.id, name: s.name, seed: i + 1, mmr: w.registrations.find((r) => r.playerId === s.id)?.mmr ?? 1000 }));
+    w.pendingStage = undefined;
+    const mmrOf = (id: string) => w.registrations.find((r) => r.playerId === id)?.mmr ?? 1000;
+    // direct seeds (Major champions, points race) first, then the qualifier survivors
+    const direct = w.registrations.filter((r) => r.direct).map((r) => ({ id: r.playerId, name: r.name }));
+    const fromSwiss = w.qualifiers ? swissStandings(w.qualifiers).slice(0, w.qualifierAdvance).map((s) => ({ id: s.id, name: s.name })) : [];
+    const st = [...direct, ...fromSwiss.filter((s) => !direct.some((d) => d.id === s.id))];
+    const entrants: Entrant[] = st.map((s, i) => ({ id: s.id, name: s.name, seed: i + 1, mmr: mmrOf(s.id) }));
     w.groups = roundRobinGroups(entrants, Math.min(w.groupCount, Math.max(1, Math.floor(entrants.length / 2))));
     w.status = 'groups';
     this.save(w);
@@ -147,6 +231,7 @@ export class WorldCupService {
   }
 
   private startPlayoffs(w: WorldCup): void {
+    w.pendingStage = undefined;
     const groups = Object.keys(w.groups!.groups ?? {});
     const winners = groups.map((g) => groupStandings(w.groups!, g)[0]!).filter(Boolean);
     const runners = groups.map((g) => groupStandings(w.groups!, g)[1]!).filter(Boolean);
@@ -163,8 +248,10 @@ export class WorldCupService {
     while (guard++ < 1000) {
       const w = this.h.db.getDoc<WorldCup>('worldcup', id);
       if (!w || w.status === 'registration' || w.status === 'finished') return;
+      if (w.pendingStage) return;
       const stage = w.status as WmStage;
-      const b = this.bracketFor(w, stage)!;
+      const b = this.bracketFor(w, stage);
+      if (!b) return;
       const todo = playable(b).filter((m) => !w.rooms[`${stage}:${m.id}`]);
       if (!todo.length) {
         this.advance(w, stage);
@@ -221,12 +308,12 @@ export class WorldCupService {
         this.provision(w.id);
         return;
       }
-      this.startGroups(w);
+      if (!this.waitFor(w, 'groups')) this.startGroups(w);
       return;
     }
     if (stage === 'groups') {
       if (open) return;
-      this.startPlayoffs(w);
+      if (!this.waitFor(w, 'playoffs')) this.startPlayoffs(w);
       return;
     }
     if (stage === 'playoffs' && !open && champion(b)) this.crown(w);
@@ -274,7 +361,15 @@ export class WorldCupService {
     if (w.status === 'qualifiers' && w.qualifiers) return { stage: 'qualifiers', round: w.qualifiers.current, rounds: w.qualifiers.rounds, standings: swissStandings(w.qualifiers) };
     if (w.status === 'groups' && w.groups) return { stage: 'groups', groups: Object.fromEntries(Object.keys(w.groups.groups ?? {}).map((g) => [g, groupStandings(w.groups!, g)])) };
     if ((w.status === 'playoffs' || w.status === 'finished') && w.playoffs) return { stage: w.status, bracket: w.playoffs.matches, champion: w.champion, podium: w.podium };
-    return { stage: w.status, registrations: w.registrations.length };
+    return { stage: w.status, registrations: w.registrations.length, direct: w.registrations.filter((r) => r.direct).map((r) => ({ name: r.name, via: r.via })) };
+  }
+
+  /** The reigning World Champion and every past champion with the podium. */
+  champions(): { current: { name: string; playerId: string; season?: number; edition: number; name_of_cup: string } | null; history: { edition: number; season?: number; cup: string; champion: string; playerId: string; podium: WorldCup['podium'] }[] } {
+    const done = this.all().filter((w) => w.status === 'finished' && w.champion);
+    const history = done.map((w) => ({ edition: w.edition, season: w.season, cup: w.name, champion: w.champion!.name, playerId: w.champion!.playerId, podium: w.podium }));
+    const top = done[0];
+    return { current: top ? { name: top.champion!.name, playerId: top.champion!.playerId, season: top.season, edition: top.edition, name_of_cup: top.name } : null, history };
   }
 
   hallOfFame(): unknown[] {

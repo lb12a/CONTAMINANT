@@ -39,6 +39,9 @@ export interface Registration {
   checkedIn: boolean;
   deckId?: string;
   isBot?: boolean;
+  /** World Cup: seeded straight into the group stage (Major champion or points race) */
+  direct?: boolean;
+  via?: string;
 }
 
 export interface Tournament {
@@ -63,6 +66,10 @@ export interface Tournament {
   rooms: Record<string, string>;
   featured?: boolean;
   swissRounds?: number;
+  /** entry requirement (Monthly Majors need a minimum MMR) */
+  requirement?: { minMmr?: number };
+  /** set for Contamination Circuit Majors */
+  circuit?: { season: number; month: number; year: number };
 }
 
 export interface ScheduleSpec {
@@ -120,6 +127,8 @@ export interface TournamentHost {
 export class TournamentService {
   private h: TournamentHost;
   private schedules: ScheduleSpec[];
+  /** called once a tournament has finished and paid its prizes (Circuit Points hook) */
+  onFinished?: (t: Tournament) => void;
   constructor(h: TournamentHost, schedules: ScheduleSpec[] = DEFAULT_SCHEDULES) {
     this.h = h;
     this.schedules = schedules;
@@ -199,6 +208,8 @@ export class TournamentService {
     if (!t) return { ok: false, error: 'unknown tournament' };
     if (t.status !== 'scheduled' && t.status !== 'checkin') return { ok: false, error: 'registration is closed' };
     if (t.registrations.length >= t.maxPlayers) return { ok: false, error: 'tournament is full' };
+    const min = t.requirement?.minMmr;
+    if (min && !p.is_bot && p.mmr < min) return { ok: false, error: `${t.name} needs at least ${min} MMR (you have ${Math.round(p.mmr)})` };
     if (!t.registrations.some((r) => r.playerId === p.id)) t.registrations.push({ playerId: p.id, name: p.name, mmr: p.mmr, checkedIn: false, deckId, isBot: !!p.is_bot });
     this.save(t);
     return { ok: true };
@@ -340,9 +351,10 @@ export class TournamentService {
       if (!reg?.isBot) this.h.players.grant(p.playerId, { gold: prize.gold, trophies: prize.trophies, title: p.place === 1 ? prize.badge : undefined, chest: prize.chest }, `tournament:${t.id}:place${p.place}`);
       this.h.notify(p.playerId, { t: 'tournament', id: t.id, event: 'finished', data: { place: p.place, prize } });
       if (p.place <= 3) {
-        this.h.db.run('INSERT INTO hall(kind,title,player_id,player_name,season,created,data) VALUES(?,?,?,?,?,?,?)', 'trophy', `${t.name} — ${p.place === 1 ? 'Champion' : p.place === 2 ? 'Runner-up' : 'Third place'}`, p.playerId, p.name, t.series, this.h.clock.now(), JSON.stringify({ tournament: t.id, place: p.place, format: t.format }));
+        this.h.db.run('INSERT INTO hall(kind,title,player_id,player_name,season,created,data) VALUES(?,?,?,?,?,?,?)', 'trophy', `${t.name} — ${p.place === 1 ? 'Champion' : p.place === 2 ? 'Runner-up' : 'Third place'}`, p.playerId, p.name, t.series, this.h.clock.now(), JSON.stringify({ tournament: t.id, place: p.place, format: t.format, major: !!t.circuit }));
       }
     }
+    this.onFinished?.(t);
   }
 
   standings(id: string) {
