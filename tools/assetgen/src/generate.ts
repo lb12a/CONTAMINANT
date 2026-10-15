@@ -194,6 +194,8 @@ async function post(specs: AssetSpec[]): Promise<void> {
   const res = spawnSync(PY, ['-I', join(here, 'post.py'), '--jobs', jobFile], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 });
   if (res.status !== 0) throw new Error(`post-processing failed:\n${res.stderr}`);
   console.log(`  post-processed ${jobs.length} asset(s)`);
+  // keep the manifest current so a running client picks new art up on its next load
+  writeManifest(OUT);
 }
 
 function contactSheets(specs: AssetSpec[]): void {

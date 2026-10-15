@@ -17,5 +17,16 @@
  "tokens/werewolf": 1,
  "tokens/midas_mummy": 0,
  "tokens/cog_cuckoo": 1,
- "tokens/zombie_limb": 0
+ "tokens/zombie_limb": 0,
+ "tokens/piggybank": 1,
+ "tokens/steak": 0,
+ "tokens/ghost_train": 0,
+ "tokens/termite_mound": 1,
+ "tokens/cymbal_chimp": 1,
+ "tokens/mambo": 0,
+ "tokens/candle": 0,
+ "tokens/mud_decoy": 1,
+ "tokens/cooking_pot": 0,
+ "tokens/training_dummy": 1,
+ "tokens/training_walker": 1
 }

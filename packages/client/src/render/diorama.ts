@@ -218,6 +218,71 @@ class TexCache {
     const fb = fallback();
     return fb;
   }
+
+  private images = new Map<string, HTMLImageElement>();
+
+  /** The decoded generated image itself (for textures that are composed per board size). */
+  image(path: string): HTMLImageElement | null {
+    const hit = this.images.get(path);
+    if (hit) return hit;
+    const url = assetUrl(path);
+    if (url && !this.loading.has(`img:${path}`)) {
+      this.loading.add(`img:${path}`);
+      const im = new Image();
+      im.onload = () => {
+        this.images.set(path, im);
+        this.version++;
+      };
+      im.src = url;
+    }
+    return null;
+  }
+}
+
+/** Floors with a regular pattern repeat; organic grounds are one painted plate. */
+const TILED_GROUND = new Set<Zone>(['laboratory', 'toyroom', 'tomb']);
+
+const plateCache = new Map<string, Texture>();
+/**
+ * The ground plate for a board: the generated texture either covers it (organic ground) or repeats
+ * mirror-tiled at a scale where a painted floor tile is about one and a half hexes, then the edges fade.
+ */
+function groundPlate(img: HTMLImageElement, zone: Zone, gw: number, gh: number): Texture {
+  const ck = `${zone}|${Math.round(gw)}x${Math.round(gh)}`;
+  const hit = plateCache.get(ck);
+  if (hit) return hit;
+  const W = 2048;
+  const H = Math.round((W * gh) / gw);
+  const c = document.createElement('canvas');
+  c.width = W;
+  c.height = H;
+  const ctx = c.getContext('2d')!;
+  if (TILED_GROUND.has(zone)) {
+    // a 2 × 2 mirrored tile has no seams
+    const m = document.createElement('canvas');
+    m.width = img.width * 2;
+    m.height = img.height * 2;
+    const mc = m.getContext('2d')!;
+    for (const [fx, fy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
+      mc.setTransform(fx, 0, 0, fy, fx < 0 ? m.width : 0, fy < 0 ? m.height : 0);
+      mc.drawImage(img, 0, 0);
+    }
+    const worldPerTexPx = (S * SQ3 * 1.5 * 9) / img.width; // ~9 painted tiles across the texture
+    const scale = worldPerTexPx * (W / gw);
+    const pat = ctx.createPattern(m, 'repeat')!;
+    pat.setTransform(new DOMMatrix().scale(scale, scale * TILT));
+    ctx.fillStyle = pat;
+    ctx.fillRect(0, 0, W, H);
+  } else {
+    // lies on the tilted floor: squashed vertically like the board itself
+    const sc = Math.max(W / img.width, H / (img.height * TILT));
+    const dw = img.width * sc;
+    const dh = img.height * sc * TILT;
+    ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  }
+  const t = featherTex(c);
+  plateCache.set(ck, t);
+  return t;
 }
 
 const figTexCache = new Map<string, Texture>();
@@ -504,13 +569,19 @@ export class DioramaRenderer {
     const zone = s.settings.zone;
     const b = s.settings.bounds;
     const { cw: bw, ch: bh } = contentSize();
-    const tex = this.tex.get(`ground/${zone}`, () => groundFallback(zone), featherTex)!;
-    this.ground.texture = tex;
-    this.ground.position.set(bw / 2, bh / 2);
     const gw = bw * 1.36;
     const gh = bh * 1.8;
-    const sc = Math.max(gw / tex.width, gh / tex.height);
-    this.ground.scale.set(sc, sc);
+    const img = this.tex.image(`ground/${zone}`);
+    const tex = img ? groundPlate(img, zone, gw, gh) : groundFallback(zone);
+    this.ground.texture = tex;
+    this.ground.position.set(bw / 2, bh / 2);
+    if (img) {
+      this.ground.width = gw;
+      this.ground.height = gh;
+    } else {
+      const sc = Math.max(gw / tex.width, gh / tex.height);
+      this.ground.scale.set(sc, sc);
+    }
     this.groundShade.position.set(bw / 2, bh / 2);
     this.motes = this.reduce
       ? []
@@ -568,8 +639,8 @@ export class DioramaRenderer {
         g.poly(hexPoints(x, y, S * 0.97), true).fill({ color: mine ? TEAM_MINE : TEAM_ENEMY, alpha: 0.045 });
       }
       // engraved hex: dark groove plus a light lip below it
-      g.poly(hexPoints(x, y + 1.5, S * 0.96), true).stroke({ width: 2, color: 0xfff1d6, alpha: 0.05 });
-      g.poly(hexPoints(x, y, S * 0.96), true).stroke({ width: 2, color: 0x0a0609, alpha: 0.2 });
+      g.poly(hexPoints(x, y + 1.5, S * 0.96), true).stroke({ width: 2, color: 0xfff1d6, alpha: 0.1 });
+      g.poly(hexPoints(x, y, S * 0.96), true).stroke({ width: 2.4, color: 0x0a0609, alpha: 0.34 });
     }
   }
 
@@ -593,8 +664,8 @@ export class DioramaRenderer {
         if (tx) {
           const sp = new Sprite(tx);
           sp.anchor.set(0.5, 0.86);
-          const hgt = S * 1.45;
-          const sc = Math.min(hgt / tx.height, (S * 1.75) / tx.width);
+          const hgt = S * 1.75;
+          const sc = Math.min(hgt / tx.height, (S * 2.0) / tx.width);
           sp.scale.set(hash(t.c + t.r * 7) > 0.5 ? -sc : sc, sc);
           spr = sp;
         } else {

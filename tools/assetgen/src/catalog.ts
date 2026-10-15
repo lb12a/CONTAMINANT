@@ -23,7 +23,8 @@ export const NEGATIVE =
   'photo, photorealistic, realistic, 3d render, cgi, octane, blurry, soft focus, text, letters, words, watermark, signature, logo, frame, border, ' +
   'multiple characters, duplicate, collage, cropped, cut off, out of frame, scenery, landscape, room, ground plane, cast shadow, gradient background, ' +
   'astronaut, spacesuit, crewmate, visor, cute chibi, anime girl, low quality, worst quality, jpeg artifacts, deformed, extra limbs, sketch lines, ' +
-  'nude, naked, nudity, nsfw, nipples, breasts, cleavage, bikini, lingerie, sexy, revealing clothes, photo of a figurine, glossy 3d porcelain render';
+  'nude, naked, nudity, nsfw, nipples, breasts, cleavage, bikini, lingerie, sexy, revealing clothes, photo of a figurine, glossy 3d porcelain render, ' +
+  'character sheet, turnaround, multiple views, reference sheet, several figures, background figures';
 
 const ISOLATED = 'centered, full body visible with margin, isolated on a plain flat light grey background';
 
