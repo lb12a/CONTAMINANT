@@ -1,5 +1,8 @@
 // Português: interface strings (English text → Português). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "Criaturas",
+  "Cards": "Cartas",
+  "Dock": "Doca",
   "Day {n}": "Dia {n}",
   "(typical decks land at 42–50)": "(baralhos típicos ficam entre 42 e 50)",
   "{name} challenges you to a friendly": "{name} desafia você para uma partida amistosa",

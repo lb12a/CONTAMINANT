@@ -2849,3 +2849,53 @@ a.btn {
   gap: 6px;
   text-decoration: none;
 }
+
+/* ------------------------------------------------------------------ phone dock: one row at a time */
+.dock-switch {
+  display: none;
+}
+@media (max-width: 760px) {
+  .dock-switch {
+    display: flex;
+    gap: 4px;
+    margin: 0 4px -6px;
+    position: relative;
+    z-index: 2;
+  }
+  .dock-switch button {
+    appearance: none;
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 36px;
+    border: 2px solid var(--ink);
+    border-radius: 10px 10px 0 0;
+    background: rgba(31, 24, 36, 0.92);
+    color: var(--bone-dim);
+    font: 600 13px var(--font-body);
+  }
+  .dock-switch button.on {
+    background: linear-gradient(180deg, #3a2f2a, #241c1a);
+    color: var(--bone);
+    border-bottom-color: transparent;
+    box-shadow: inset 0 2px 0 rgba(140, 255, 90, 0.5);
+  }
+  .dock-switch b {
+    color: var(--spore);
+  }
+  .dock.show-chars .dock-hand,
+  .dock.show-hand .dock-chars {
+    display: none;
+  }
+  .dock .dock-hand .dock-label,
+  .dock .dock-chars .dock-label > span {
+    display: none;
+  }
+  .dock .lockers,
+  .dock .hand {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+}

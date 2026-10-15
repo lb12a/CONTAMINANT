@@ -1,5 +1,8 @@
 // 日本語: interface strings (English text → 日本語). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "クリーチャー",
+  "Cards": "カード",
+  "Dock": "ドック",
   "Day {n}": "{n}日目",
   "(typical decks land at 42–50)": "（一般的なデッキは42〜50）",
   "{name} challenges you to a friendly": "{name}があなたにフレンド戦を挑んでいます",

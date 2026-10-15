@@ -1,5 +1,8 @@
 // 한국어: interface strings (English text → 한국어). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "크리처",
+  "Cards": "카드",
+  "Dock": "도크",
   "Day {n}": "{n}일차",
   "(typical decks land at 42–50)": "(일반적인 덱은 42–50)",
   "{name} challenges you to a friendly": "{name}님이 친선전을 신청했습니다",

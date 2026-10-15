@@ -673,8 +673,8 @@ export class DioramaRenderer {
         g.poly(hexPoints(x, y, S * 0.97), true).fill({ color: mine ? TEAM_MINE : TEAM_ENEMY, alpha: 0.045 });
       }
       // engraved hex: dark groove plus a light lip below it
-      g.poly(hexPoints(x, y + 1.5, S * 0.96), true).stroke({ width: 2, color: 0xfff1d6, alpha: 0.1 });
-      g.poly(hexPoints(x, y, S * 0.96), true).stroke({ width: 2.4, color: 0x0a0609, alpha: 0.34 });
+      g.poly(hexPoints(x, y + 1.5, S * 0.96), true).stroke({ width: 2, color: 0xfff1d6, alpha: 0.16 });
+      g.poly(hexPoints(x, y, S * 0.96), true).stroke({ width: 2.8, color: 0x0a0609, alpha: 0.5 });
     }
   }
 

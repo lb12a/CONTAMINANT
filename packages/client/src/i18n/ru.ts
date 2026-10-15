@@ -1,5 +1,8 @@
 // Русский: interface strings (English text → Русский). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "Существа",
+  "Cards": "Карты",
+  "Dock": "Док",
   "Day {n}": "День {n}",
   "(typical decks land at 42–50)": "(обычные колоды — 42–50)",
   "{name} challenges you to a friendly": "{name} вызывает тебя на товарищеский матч",

@@ -1,5 +1,8 @@
 // Deutsch: interface strings (English text → Deutsch). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "Kreaturen",
+  "Cards": "Karten",
+  "Dock": "Ablage",
   "Day {n}": "Tag {n}",
   "(typical decks land at 42–50)": "(typische Decks liegen bei 42–50)",
   "{name} challenges you to a friendly": "{name} fordert dich zu einem Freundschaftsspiel heraus",

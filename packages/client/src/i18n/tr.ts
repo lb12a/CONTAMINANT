@@ -1,5 +1,8 @@
 // Türkçe: interface strings (English text → Türkçe). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "Yaratıklar",
+  "Cards": "Kartlar",
+  "Dock": "Rıhtım",
   "Day {n}": "{n}. gün",
   "(typical decks land at 42–50)": "(tipik desteler 42–50 arasındadır)",
   "{name} challenges you to a friendly": "{name} seni bir dostluk maçına davet ediyor",

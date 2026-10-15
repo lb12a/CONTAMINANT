@@ -1,5 +1,8 @@
 // 简体中文: interface strings (English text → 简体中文). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Creatures": "怪物",
+  "Cards": "卡牌",
+  "Dock": "码头",
   "Day {n}": "第 {n} 天",
   "(typical decks land at 42–50)": "（常见卡组在 42–50 之间）",
   "{name} challenges you to a friendly": "{name} 向你发起友谊赛挑战",

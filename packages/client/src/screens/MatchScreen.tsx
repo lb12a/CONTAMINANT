@@ -52,6 +52,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   const [banner, setBanner] = useState<string | null>(null);
   const [popups, setPopups] = useState<number>(0);
   const [showLeft, setShowLeft] = useState(false);
+  /** phones show one dock row at a time: the offered creatures or the hand */
+  const [dockTab, setDockTab] = useState<'chars' | 'hand'>('chars');
   const [showRight, setShowRight] = useState(false);
   const [ready, setReady] = useState(false);
   const [moodFor, setMoodFor] = useState<string | null>(null);
@@ -571,8 +573,18 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
 
       {/* DOCK: offered characters + hand */}
       <div className="bottom">
-        <div className="dock">
-          <div className="dock-group">
+        {!hideHand && (
+          <div className="dock-switch" role="tablist" aria-label={t('Dock')}>
+            <button role="tab" aria-selected={dockTab === 'chars'} className={dockTab === 'chars' ? 'on' : ''} onClick={() => setDockTab('chars')}>
+              <Icon name="tier/standard" size={18} /> {t('Creatures')} <b className="num">{offered.length}</b>
+            </button>
+            <button role="tab" aria-selected={dockTab === 'hand'} className={dockTab === 'hand' ? 'on' : ''} onClick={() => setDockTab('hand')}>
+              <Icon name="ui/cards" size={18} /> {t('Cards')} <b className="num">{handCards.length}</b>
+            </button>
+          </div>
+        )}
+        <div className={`dock show-${hideHand ? 'chars' : dockTab}`}>
+          <div className="dock-group dock-chars">
             <div className="dock-label">
               <span>{t('Offered characters')}</span>
               <button className="btn secondary small" disabled={playing || ready} onClick={async () => { const r = await ctrl.op({ kind: 'reroll', card: 'all' }); if (!r.ok) toast(r.error ?? 'Cannot re-roll', 'bad'); }} title={t('Re-roll all unlocked offered characters (3 AP)')}>
@@ -600,7 +612,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             </div>
           </div>
           {!hideHand && (
-            <div className="dock-group" style={{ minWidth: 0 }}>
+            <div className="dock-group dock-hand" style={{ minWidth: 0 }}>
               <div className="dock-label">
                 {t('Your hand')} {handCards.length}/6 · {pl.cardsPlayedThisRound + ps.commands.filter((c) => c.kind === 'item' || ((c.kind === 'attack' || c.kind === 'ability') && c.item)).length}/3 played
               </div>
