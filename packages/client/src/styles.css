@@ -2579,3 +2579,71 @@ details.more-ways[open] > summary::before {
     padding: 6px 8px;
   }
 }
+
+/* ------------------------------------------------------------------ profile card, team management */
+.title-icon {
+  vertical-align: -6px;
+}
+.swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  padding: 0;
+}
+.swatch.on {
+  outline: 2px solid var(--bone);
+  outline-offset: 2px;
+}
+.avatar-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(54px, 1fr));
+  gap: 4px;
+  max-height: 260px;
+  overflow: auto;
+  padding: 4px;
+  border-radius: 10px;
+  background: rgba(14, 10, 18, 0.5);
+}
+.avatar-pick {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 3px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.avatar-pick:hover,
+.avatar-pick:focus-visible {
+  background: rgba(140, 255, 90, 0.1);
+}
+.avatar-pick.on {
+  background: rgba(140, 255, 90, 0.2);
+}
+.avatar-pick.big {
+  padding: 0;
+}
+.team-head {
+  border-top: 4px solid var(--team);
+}
+.person.me {
+  background: rgba(140, 255, 90, 0.06);
+  border-radius: 8px;
+}
+.friend-code-inline {
+  font-size: 22px;
+  letter-spacing: 0.16em;
+  color: var(--spore);
+}
+.me-btn .avatar {
+  margin: -4px 0;
+}

@@ -586,15 +586,27 @@ export class GameServer {
       const r = this.teams.leave(p);
       return json(res, r.ok ? 200 : 400, r);
     }
+    if (path === '/api/teams/join-code' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.teams.joinByCode(p, String(body.code ?? ''));
+      return json(res, r.ok ? 200 : 400, r);
+    }
     if ((m = path.match(/^\/api\/teams\/([\w-]+)\/join$/)) && req.method === 'POST') {
       const p = need();
       if (!p) return;
-      const r = this.teams.join(p, m[1]!);
+      const r = this.teams.join(p, m[1]!, body.code ? String(body.code) : undefined);
+      return json(res, r.ok ? 200 : 400, r);
+    }
+    if ((m = path.match(/^\/api\/teams\/([\w-]+)\/manage$/)) && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.teams.manage(p, m[1]!, String(body.action ?? ''), body);
       return json(res, r.ok ? 200 : 400, r);
     }
     if ((m = path.match(/^\/api\/teams\/([\w-]+)$/))) {
       const t = this.teams.get(m[1]!);
-      return t ? json(res, 200, { team: this.teams.view(t) }) : json(res, 404, { error: 'not found' });
+      return t ? json(res, 200, { team: this.teams.view(t, me?.id) }) : json(res, 404, { error: 'not found' });
     }
     if (path === '/api/meta') return json(res, 200, metaSnapshot(this.db, { mode: q('mode'), zone: q('zone'), kind: q('kind'), minMmr: q('minMmr') ? Number(q('minMmr')) : undefined, includeBots: q('bots') === '1' }));
     if (path === '/api/meta/anomalies') return json(res, 200, { anomalies: detectAnomalies(this.db, { minGames: Number(q('minGames') ?? 20) }) });

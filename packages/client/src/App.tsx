@@ -22,7 +22,7 @@ import { MissionsScreen } from './screens/Missions.tsx';
 import { ProfileScreen } from './screens/Profile.tsx';
 import { TeamsScreen } from './screens/Teams.tsx';
 import { ReplayScreen } from './screens/Replay.tsx';
-import { FriendsScreen } from './screens/Friends.tsx';
+import { Avatar, FriendsScreen } from './screens/Friends.tsx';
 import { InviteHost } from './ui/InviteHost.tsx';
 import type { MatchController } from './game/controller.ts';
 
@@ -122,9 +122,10 @@ export function App() {
           <Icon name="ui/trophy" size={20} />
           <b className="num">{profile.collection.trophies}</b>
         </span>
-        <button className={`me-btn${profile.online ? ' online' : ''}`} onClick={() => nav(profile.online ? { name: 'profile' } : { name: 'online' })} title={profile.online ? t('Profile') : t('Go online')}>
+        <button className={`me-btn${profile.online ? ' online' : ''}`} onClick={() => nav({ name: 'profile' })} title={`${t('Profile')} · ${profile.online ? t('Online') : t('Offline')}`}>
+          {profile.look?.avatar ? <Avatar avatar={profile.look.avatar} color={profile.look.color} size={26} /> : null}
           <span className="me-dot" />
-          <span className="me-name">{profile.online ? profile.online.name : t('Offline')}</span>
+          <span className="me-name">{profile.online ? profile.online.name : profile.name}</span>
         </button>
         <button className={`icon-btn settings-btn${route.name === 'settings' ? ' current' : ''}`} onClick={() => nav({ name: 'settings' })} aria-label={t('Settings')} title={t('Settings')}>
           <Icon name="ui/settings" size={22} />

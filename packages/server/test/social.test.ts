@@ -218,3 +218,40 @@ test('health reports the server name and players online for the server finder', 
   assert.deepEqual([h.game, h.name, h.players], ['contaminant', 'Lab PC', 0]);
   s.close();
 });
+
+test('team management: invite-only with code, officers, kick, captaincy hand-over, settings', async () => {
+  const { s, call, reg } = await setup();
+  const cap = await reg('Captain Rot');
+  const a = await reg('Ash');
+  const b = await reg('Bea');
+  const made = await call<{ ok: boolean; team: { id: string; inviteCode?: string; color?: string } }>(cap.token, '/api/teams', { name: 'Night Shift', tag: 'NSH', open: false });
+  assert.ok(made.ok);
+  assert.match(made.team.inviteCode ?? '', /^[A-Z2-9]{6}$/, 'the captain sees the invite code');
+  assert.ok(made.team.color);
+  const id = made.team.id;
+  const pub = await call<{ team: { inviteCode?: string } }>(a.token, `/api/teams/${id}`);
+  assert.equal(pub.team.inviteCode, undefined, 'outsiders never see the code');
+  assert.equal((await call<{ ok: boolean }>(a.token, `/api/teams/${id}/join`, {})).ok, false, 'invite-only');
+  assert.ok((await call<{ ok: boolean }>(a.token, '/api/teams/join-code', { code: made.team.inviteCode!.toLowerCase() })).ok);
+  assert.ok((await call<{ ok: boolean }>(b.token, `/api/teams/${id}/join`, { code: made.team.inviteCode })).ok);
+
+  // members cannot manage; the captain promotes Ash to officer, Ash may then kick Bea
+  assert.equal((await call<{ ok: boolean }>(b.token, `/api/teams/${id}/manage`, { action: 'kick', playerId: a.player.id })).ok, false);
+  assert.ok((await call<{ ok: boolean }>(cap.token, `/api/teams/${id}/manage`, { action: 'promote', playerId: a.player.id })).ok);
+  const kicked = await call<{ ok: boolean; team: { roster: { playerId: string }[] } }>(a.token, `/api/teams/${id}/manage`, { action: 'kick', playerId: b.player.id });
+  assert.ok(kicked.ok);
+  assert.ok(!kicked.team.roster.some((r) => r.playerId === b.player.id));
+  // an officer cannot remove the captain or change roles
+  assert.equal((await call<{ ok: boolean }>(a.token, `/api/teams/${id}/manage`, { action: 'kick', playerId: cap.player.id })).ok, false);
+  assert.equal((await call<{ ok: boolean }>(a.token, `/api/teams/${id}/manage`, { action: 'captain', playerId: a.player.id })).ok, false);
+
+  const set = await call<{ ok: boolean; team: { motto: string; open: boolean; color: string; emblem?: string } }>(a.token, `/api/teams/${id}/manage`, { action: 'settings', motto: 'We never sleep', open: true, color: '#4FE3FF', emblem: 'vile' });
+  assert.deepEqual([set.team.motto, set.team.open, set.team.color, set.team.emblem], ['We never sleep', true, '#4FE3FF', 'vile']);
+  const old = made.team.inviteCode;
+  const fresh = await call<{ team: { inviteCode: string } }>(cap.token, `/api/teams/${id}/manage`, { action: 'new-code' });
+  assert.notEqual(fresh.team.inviteCode, old);
+
+  const handed = await call<{ ok: boolean; team: { captain: string } }>(cap.token, `/api/teams/${id}/manage`, { action: 'captain', playerId: a.player.id });
+  assert.equal(handed.team.captain, a.player.id);
+  s.close();
+});
