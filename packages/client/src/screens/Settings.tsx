@@ -2,13 +2,9 @@ import { useEffect, useState } from 'react';
 import { setProfile, toast, useProfile } from '../store.ts';
 import { starterCollection, EXAMPLE_DECKS } from '@contaminant/engine';
 import { LANGUAGES, loadLanguage, t, type Lang } from '../i18n.ts';
+import { askNotifications, notificationsAllowed, notificationsSupported } from '../notify.ts';
 import { loadAssetManifest } from '../render/assets.ts';
-
-interface DesktopBridge {
-  platform: string;
-  server(action: 'start' | 'stop' | 'status'): Promise<{ running: boolean; port: number; lan: string[] }>;
-}
-const desktop = (window as unknown as { contaminantDesktop?: DesktopBridge }).contaminantDesktop;
+import { desktop } from '../net/discovery.ts';
 
 /** Desktop app only: host the game server on this PC so friends in the same network can join. */
 function LanServer() {
@@ -23,8 +19,8 @@ function LanServer() {
       <h3>{t('LAN server')}</h3>
       <p className="small muted">{t('Host matches, tournaments and the ladder on this PC. Friends in your network enter one of these addresses on the Online screen.')}</p>
       {st.running && <code className="small">{urls.join('  ·  ') || `http://localhost:${st.port}`}</code>}
-      <button className={`btn ${st.running ? 'danger' : 'primary'} small`} style={{ alignSelf: 'flex-start' }} onClick={async () => setSt(await desktop.server(st.running ? 'stop' : 'start'))}>
-        {st.running ? 'Stop server' : 'Host server'}
+      <button className={`btn ${st.running ? 'danger' : 'primary'} small`} style={{ alignSelf: 'flex-start' }} onClick={async () => desktop && setSt(await desktop.server(st.running ? 'stop' : 'start'))}>
+        {st.running ? t('Stop server') : t('Host server')}
       </button>
     </div>
   );
@@ -32,6 +28,7 @@ function LanServer() {
 
 export function SettingsScreen() {
   const p = useProfile();
+  const [notifyOn, setNotifyOn] = useState(notificationsAllowed());
   const s = p.settings;
   const set = (patch: Partial<typeof s>) => setProfile((x) => ({ ...x, settings: { ...x.settings, ...patch } }));
   return (
@@ -74,8 +71,25 @@ export function SettingsScreen() {
         </label>
         <div className="row">
           <span className="small grow">{t('Show tile coordinates on hover')}</span>
-          <button className={`toggle${s.showCoords ? ' on' : ''}`} onClick={() => set({ showCoords: !s.showCoords })} aria-pressed={s.showCoords} />
+          <button className={`toggle${s.showCoords ? ' on' : ''}`} onClick={() => set({ showCoords: !s.showCoords })} aria-pressed={s.showCoords} aria-label={t('Show tile coordinates on hover')} />
         </div>
+        {notificationsSupported() && (
+          <div className="row">
+            <span className="small grow">{t('Notifications for challenges, friend requests and the daily reward')}</span>
+            <button
+              className={`toggle${s.notifications !== false && notifyOn ? ' on' : ''}`}
+              aria-pressed={s.notifications !== false && notifyOn}
+              aria-label={t('Notifications for challenges, friend requests and the daily reward')}
+              onClick={async () => {
+                if (s.notifications !== false && notifyOn) return set({ notifications: false });
+                const ok = await askNotifications();
+                setNotifyOn(ok);
+                set({ notifications: ok });
+                if (!ok) toast(t('Notifications are blocked in the system settings'), 'bad');
+              }}
+            />
+          </div>
+        )}
       </div>
       <LanServer />
       <div className="panel col">

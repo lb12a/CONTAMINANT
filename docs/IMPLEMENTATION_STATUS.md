@@ -41,12 +41,29 @@ limits that remain.
   with 1250 MMR or Circuit Points can enter the Last Chance qualifier (Swiss, 29 October); groups on
   30 October, playoffs and final on 31 October; stages wait for their day. Crown, titles, hall of fame,
   reigning champion and champion history (`/api/champions`).
-- Teams (`teams.ts`): create / join / leave, captaincy hand-over, team rating, team ladder, Team Battle record.
-- Public profiles (`/api/players/:id`): rank, division, record, team, Circuit results, honours, recent matches.
+- Teams (`teams.ts`): create / join / leave, open or invite-only with a 6-letter invite code, captain and
+  officers (promote, demote, kick, hand over the captaincy), banner colour and emblem creature, team rating,
+  team ladder, Team Battle record.
+- Social (`social.ts`): short friend codes without look-alike letters, friend requests (a mutual request
+  becomes a friendship), presence (online / in a match, "friend is online" events), **players nearby** (same
+  public address = same Wi-Fi, or any private address on a LAN server), challenges to friends and players
+  nearby (an invitation lobby only the invited player can join, decline and auto-decline), public profile
+  cards (avatar creature, colour, earned title, motto).
+- Daily rewards: seven-day login calendar with streak, a free chest per day, play rewards at 1, 3, 5 and 10
+  matches a day (paid automatically after each match).
+- Developer accounts (name ending in `#`): everything unlocked, unlimited gold; kept off the ladder, out of
+  tournaments, the World Cup, Team Battles, ranked and the meta. Bots never reach the ladder, the halls or the
+  public meta either.
+- One-click hosting: `/api/health` names the server and its player count; `--lan` announces the server on
+  UDP 8788 (`lan.ts`); `--trust-proxy` reads client addresses behind a reverse proxy.
+- Public profiles (`/api/players/:id`): rank, division, record, team, Circuit results, honours, recent matches,
+  profile card and friend code.
 - Telemetry, meta snapshot with Wilson intervals, deck archetypes, log-odds anomaly detection.
 - Spectating with broadcast delay, caster feed, OBS overlay, replay verification.
 - WebRTC signalling relay for P2P matches.
 - Production bundle (`npm run build:server`) and a smoke test (`npm run smoke`).
+- Deployment: `Dockerfile` (server + web client in one image), `docker-compose.yml` with an optional Caddy
+  HTTPS profile, [DEPLOY.md](DEPLOY.md).
 
 ### Client (`packages/client`)
 
@@ -60,21 +77,43 @@ limits that remain.
 - Full-bleed match layout with floating HUD (AP, scoreboard with VP race and fuse, seal button), unit
   dossier, action order, combat log drawer, dock with offered characters and hand.
 - Basic Training with a coach that waits for the player's own actions; Testing Chambers.
-- Screens: menu, collection, deck builder, shop, missions, online (ranked, casual, friendly, party, P2P),
-  tournaments, World Cup & Circuit, teams, ladder, profiles, replays, spectate, meta, history, settings.
+- Navigation in four sections (Play, Collection, Compete, Watch) with sub-tabs, a phone tab bar and a
+  loading screen.
+- Screens: home with daily rewards, collection, deck builder, shop, missions, online (**Play online** with
+  automatic server discovery, ranked, casual, players nearby, online friends, private lobbies, party, P2P),
+  friends, tournaments with live countdowns, World Cup (Halloween stage with live countdown, qualification
+  steps, podium) & Circuit, teams with management, ladder, profiles with an editable profile card, replays,
+  spectate, meta, history, settings.
+- Challenges pop up wherever the player is (accept / decline, auto-decline after a minute); friend events and
+  challenges become system notifications while the game is in the background.
+- Resolution plays step by step: one beat per action with a caption ("Vile uses Reaper's Slash on Dummy ·
+  133 damage · KO"), projectiles, slashes, beams and bursts, HP bars that drain with a trailing ghost bar.
+- Planning aids: spawn-round previews of arriving creatures (with Nexus tile re-rolls), a creature-or-tile
+  aim chooser when a target tile holds an enemy.
+- Interface icons: a hand-built SVG set in the ink style (statuses, damage tags, tiers, modes, interface) —
+  no emoji anywhere; status icons above units on the board.
+- Twelve languages with dictionaries loaded on demand; the system language is picked on first start.
 - **P2P friendlies** (`game/p2p.ts`): WebRTC data channel, both peers contribute half of the seed, plans are
   committed as hashes and revealed afterwards, planning ops applied seat by seat, state hashes compared
   every round.
 - Offline play with local rewards and history, PWA manifest and service worker, WebAudio sound effects,
-  English / German strings for the main flow, `prefers-reduced-motion` respected.
+  `prefers-reduced-motion` respected.
+- Phone layout: tab bar, a dock that switches between creatures and cards, panels as drawers.
 
 ### Desktop (`apps/desktop`)
 
 - Electron 38 shell around the built client, sandboxed renderer with a two-function preload bridge.
-- Built-in LAN server (the production server bundle as a Node child process), started from the menu or
-  Settings; data in the user-data folder.
+- Built-in LAN server (the production server bundle as a Node child process): started by **Play online**
+  when no server is found, from the menu or from Settings; announced on the network; the app lists servers
+  it hears (`lan()` bridge). Data in the user-data folder.
 - electron-builder: Windows NSIS installer (built and launch-tested), macOS dmg/zip and Linux AppImage/deb
   targets configured.
+
+### Android (`apps/android`)
+
+- Capacitor 8 shell around the built client (`npm run android:build` → debug APK), local notifications for
+  challenges, friend requests and a daily evening reminder, plain-http LAN servers allowed, launcher icons
+  and splash screens composed from the generated art. See [ANDROID.md](ANDROID.md).
 
 ### Art pipeline (`tools/assetgen`)
 
@@ -85,7 +124,9 @@ limits that remain.
   that keeps the main figure, trim, WebP export, manifest, contact sheets, `picks.json` for candidates.
 - Gentle mode (default) for integrated GPUs: one image per job, smaller renders, tiled VAE decoding and a
   pause after every image. Full-size batches froze the development machine twice (Intel GPU driver
-  timeout, LiveKernelEvent 141); in gentle mode the whole catalog rendered without a freeze.
+  timeout, LiveKernelEvent 141); a third hard power-off happened during a gentle-mode icon run on battery,
+  so GPU runs on this laptop now only happen on request.
+- `appicon.py` composes the app icon (Vile on a toxic hexagon) and splash screens from the existing art.
 - On the board, ground textures sit at a fixed size per hex, centred and mirror-tiled; props stand on wall
   hexes and around the board edge.
 
@@ -118,12 +159,19 @@ limits that remain.
   and server-hosted friendlies remain available.
 - Installers are not code-signed, so Windows SmartScreen and macOS Gatekeeper will warn on first launch.
   macOS and Linux packages must be built on those platforms.
-- German translations cover the main flow; newer screens (circuit, teams, profiles, replays) are English.
-- The repository has no git remote configured yet; pushing needs the target repository.
+- Character, ability and item names and texts stay English in every language (as in the Game Plan); the
+  per-character Testing Chamber scripts exist in English and German.
+- Three characters (Semi-mechanical Frankenstein, Zombie Brute, Swamp Siren) have new fully clothed prompts
+  in `catalog.ts`, but their re-render is pending: ComfyUI crashed the development laptop, so the shipped
+  tokens are still the earlier versions until a GPU run is done (`npm run assets:generate -- --only=tokens/frankenstein,tokens/zombie_brute,tokens/swamp_siren`).
+  The same applies to generated interface icons (the SVG set is used meanwhile).
+- Players nearby relies on the server seeing the same public address for one Wi-Fi; carrier-grade NAT on
+  mobile data can group strangers, so the list only offers friendly challenges.
 
 ## Verification
 
-- `npm test`: 73 engine tests, 18 server tests.
+- `npm test`: engine and server suites (friends, nearby, challenges, team management, daily rewards included).
+- `npm run qa:i18n`: every interface string exists in all twelve languages.
 - `npm run typecheck`: engine, server, client.
 - `npm run smoke`: bundled server boots and answers 16 checks.
 - `tools/qa`: screenshots of every screen at 1600 × 900 and 390 × 844, Basic Training played by clicks,

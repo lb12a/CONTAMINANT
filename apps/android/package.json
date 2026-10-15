@@ -1,0 +1,20 @@
+{
+  "name": "@contaminant/android",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Contaminant for Android (Capacitor shell around the web client)",
+  "scripts": {
+    "sync": "cap sync android",
+    "build:debug": "node build.mjs debug",
+    "build:release": "node build.mjs release",
+    "open": "cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/core": "8.5.3",
+    "@capacitor/local-notifications": "8.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "8.5.3"
+  }
+}

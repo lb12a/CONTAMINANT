@@ -29,6 +29,8 @@
     "assets:manifest": "node tools/assetgen/src/manifest.ts",
     "assets:generate": "node tools/assetgen/src/generate.ts",
     "assets:status": "node tools/assetgen/src/generate.ts --check",
+    "android:build": "node apps/android/build.mjs debug",
+    "android:release": "node apps/android/build.mjs release",
     "desktop:pack": "npm run build:client && npm run build:server && npm run pack -w @contaminant/desktop",
     "smoke": "npm run build:server && npm run smoke -w @contaminant/server",
     "qa:shots": "node tools/qa/shots.ts",

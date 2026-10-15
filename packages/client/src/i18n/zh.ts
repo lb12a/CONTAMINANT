@@ -1,5 +1,8 @@
 // 简体中文: interface strings (English text → 简体中文). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Notifications for challenges, friend requests and the daily reward": "挑战、好友请求和每日奖励通知",
+  "Notifications are blocked in the system settings": "通知已在系统设置中被阻止",
+  "Your daily reward and the free chest are waiting in the lab.": "每日奖励和免费宝箱正在实验室里等你。",
   "Creatures": "怪物",
   "Cards": "卡牌",
   "Dock": "码头",

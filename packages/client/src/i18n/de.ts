@@ -1,5 +1,8 @@
 // Deutsch: interface strings (English text → Deutsch). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Notifications for challenges, friend requests and the daily reward": "Benachrichtigungen für Herausforderungen, Freundschaftsanfragen und die tägliche Belohnung",
+  "Notifications are blocked in the system settings": "Benachrichtigungen sind in den Systemeinstellungen blockiert",
+  "Your daily reward and the free chest are waiting in the lab.": "Deine tägliche Belohnung und die Gratis-Truhe warten im Labor.",
   "Creatures": "Kreaturen",
   "Cards": "Karten",
   "Dock": "Ablage",

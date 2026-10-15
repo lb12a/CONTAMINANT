@@ -1,5 +1,8 @@
 // 日本語: interface strings (English text → 日本語). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Notifications for challenges, friend requests and the daily reward": "挑戦、フレンド申請、デイリー報酬の通知",
+  "Notifications are blocked in the system settings": "通知はシステム設定でブロックされています",
+  "Your daily reward and the free chest are waiting in the lab.": "デイリー報酬と無料宝箱がラボで待っています。",
   "Creatures": "クリーチャー",
   "Cards": "カード",
   "Dock": "ドック",

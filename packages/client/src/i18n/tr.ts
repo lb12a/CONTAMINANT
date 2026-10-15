@@ -1,5 +1,8 @@
 // Türkçe: interface strings (English text → Türkçe). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "Notifications for challenges, friend requests and the daily reward": "Meydan okumalar, arkadaşlık istekleri ve günlük ödül için bildirimler",
+  "Notifications are blocked in the system settings": "Bildirimler sistem ayarlarında engellenmiş",
+  "Your daily reward and the free chest are waiting in the lab.": "Günlük ödülün ve ücretsiz sandık laboratuvarda seni bekliyor.",
   "Creatures": "Yaratıklar",
   "Cards": "Kartlar",
   "Dock": "Rıhtım",

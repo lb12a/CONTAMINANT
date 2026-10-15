@@ -3,6 +3,8 @@ import { App } from './App.tsx';
 import { loadAssetManifest, preloadAssets } from './render/assets.ts';
 import { loadLanguage } from './i18n.ts';
 import { getProfile } from './store.ts';
+import { scheduleDailyReminder } from './notify.ts';
+import { t } from './i18n.ts';
 import '@fontsource/grenze-gotisch/600.css';
 import '@fontsource/grenze-gotisch/800.css';
 import '@fontsource/barlow-semi-condensed/400.css';
@@ -29,6 +31,8 @@ progress(0.08);
 await preloadAssets(['tokens/', 'items/', 'backdrops/', 'icons/'], 9000, (done, total) => progress(done / Math.max(1, total)));
 progress(1);
 createRoot(document.getElementById('root')!).render(<App />);
+// Android app: a daily evening reminder that the free reward is waiting
+void scheduleDailyReminder('Contaminant', t('Your daily reward and the free chest are waiting in the lab.'));
 window.setTimeout(() => {
   window.clearInterval(rotate);
   const boot = document.getElementById('boot');

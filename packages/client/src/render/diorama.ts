@@ -381,6 +381,8 @@ export class DioramaRenderer {
   private groundLayer = new Container();
   private ground = new Sprite();
   private groundShade = new Sprite();
+  /** stains, slime and dried blood on the floor (seeded per board) */
+  private grime = new Graphics();
   private decor = new Container();
   private gridG = new Graphics();
   private fieldsG = new Graphics();
@@ -440,7 +442,7 @@ export class DioramaRenderer {
     this.ground.anchor.set(0.5);
     this.groundShade.anchor.set(0.5);
     this.groundShade.texture = radialTex('rgba(10,7,12,0)', 'rgba(10,7,12,0.6)', 512, 0.74);
-    this.groundLayer.addChild(this.ground, this.decor, this.groundShade);
+    this.groundLayer.addChild(this.ground, this.grime, this.decor, this.groundShade);
     const glowBlur = new BlurFilter({ strength: 10, quality: 3 });
     this.glowG.filters = [glowBlur];
     this.glowG.blendMode = 'add';
@@ -626,6 +628,7 @@ export class DioramaRenderer {
     this.moteBox = { w: bw, h: bh };
     this.groundShade.width = gw * 1.02;
     this.groundShade.height = gh * 1.08;
+    this.drawGrime();
     // decorative props around the board edge (dimmed, outside the playable hexes)
     this.decor.removeChildren().forEach((c) => c.destroy());
     const props = assetList(`props/${zone}_`);
@@ -656,6 +659,60 @@ export class DioramaRenderer {
         this.decor.addChild(holder);
       }
       this.decor.children.sort((a, c) => a.y - c.y);
+    }
+  }
+
+  /** Zone-coloured grime: a few dark stains, puddles and smears on open tiles, the same for both players. */
+  private drawGrime(): void {
+    const s = this.state!;
+    const g = this.grime.clear();
+    const look: Record<string, { stain: number; puddle: number; shine: number }> = {
+      laboratory: { stain: 0x0a1208, puddle: 0x5fbf2e, shine: 0xc8ff9a },
+      graveyard: { stain: 0x0b0806, puddle: 0x4a0d12, shine: 0xa8333d },
+      bog: { stain: 0x081008, puddle: 0x2f4a1c, shine: 0x9fd46a },
+      toyroom: { stain: 0x120806, puddle: 0x5a1015, shine: 0xb2343e },
+      forest: { stain: 0x080a06, puddle: 0x3b5221, shine: 0xa8d07a },
+      tomb: { stain: 0x0d0906, puddle: 0x5e1a10, shine: 0xc0502e },
+    };
+    const pal = look[s.settings.zone] ?? look.laboratory!;
+    const open = s.tiles.filter((t) => !t.wall && !t.objective);
+    if (!open.length) return;
+    const n = Math.min(16, Math.round(open.length / 9));
+    for (let i = 0; i < n; i++) {
+      const t = open[Math.floor(hash(i * 977 + s.settings.zone.length * 131 + open.length * 13) * open.length)]!;
+      const { x: cx, y: cy } = worldCenter(t);
+      const x = cx + (hash(i * 31 + 3) - 0.5) * S * 0.8;
+      const y = cy + (hash(i * 47 + 9) - 0.5) * S * 0.5;
+      const big = S * (0.32 + hash(i * 59) * 0.5);
+      const puddle = hash(i * 71) > 0.55;
+      // irregular blob in perspective
+      const pts: number[] = [];
+      const k = 11;
+      for (let j = 0; j < k; j++) {
+        const a = (j / k) * Math.PI * 2;
+        const r = big * (0.62 + hash(i * 101 + j * 7) * 0.5);
+        pts.push(x + Math.cos(a) * r, y + Math.sin(a) * r * TILT);
+      }
+      g.poly(pts, true).fill({ color: puddle ? pal.puddle : pal.stain, alpha: puddle ? 0.5 : 0.32 });
+      if (puddle) {
+        g.ellipse(x - big * 0.25, y - big * 0.12 * TILT, big * 0.22, big * 0.08 * TILT).fill({ color: pal.shine, alpha: 0.35 });
+        // drips and satellite drops
+        for (let d = 0; d < 4; d++) {
+          const a = hash(i * 13 + d * 29) * Math.PI * 2;
+          const r = big * (1.05 + hash(i * 17 + d) * 0.6);
+          const rr = S * (0.03 + hash(i * 19 + d) * 0.05);
+          g.ellipse(x + Math.cos(a) * r, y + Math.sin(a) * r * TILT, rr, rr * TILT).fill({ color: pal.puddle, alpha: 0.55 });
+        }
+      } else {
+        // a dragged smear trailing away from the stain
+        const a = hash(i * 23) * Math.PI * 2;
+        const len = big * (1.4 + hash(i * 29) * 1.2);
+        for (let d = 1; d <= 5; d++) {
+          const f = d / 5;
+          const rr = big * 0.32 * (1 - f * 0.7);
+          g.ellipse(x + Math.cos(a) * len * f, y + Math.sin(a) * len * f * TILT, rr, rr * TILT).fill({ color: pal.stain, alpha: 0.22 * (1 - f * 0.5) });
+        }
+      }
     }
   }
 

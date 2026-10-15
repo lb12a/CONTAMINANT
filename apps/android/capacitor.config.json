@@ -1,0 +1,18 @@
+{
+  "appId": "game.contaminant.app",
+  "appName": "Contaminant",
+  "webDir": "../../packages/client/dist",
+  "android": {
+    "allowMixedContent": true,
+    "backgroundColor": "#0e0a12"
+  },
+  "server": {
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "plugins": {
+    "LocalNotifications": {
+      "iconColor": "#8CFF5A"
+    }
+  }
+}
