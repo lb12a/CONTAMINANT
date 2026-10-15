@@ -2647,3 +2647,205 @@ details.more-ways[open] > summary::before {
 .me-btn .avatar {
   margin: -4px 0;
 }
+
+/* ------------------------------------------------------------------ World Cup stage */
+.wc-stage {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 18px;
+  min-height: 380px;
+  padding: 28px 28px 24px;
+  border-radius: 16px;
+  border: 3px solid var(--ink);
+  box-shadow: var(--shadow);
+  background-color: #1d1028;
+  background-size: cover;
+  background-position: center 40%;
+  overflow: hidden;
+  isolation: isolate;
+}
+.wc-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    linear-gradient(90deg, rgba(14, 10, 18, 0.92) 0%, rgba(14, 10, 18, 0.7) 42%, rgba(14, 10, 18, 0.15) 75%),
+    linear-gradient(0deg, rgba(14, 10, 18, 0.85) 0%, transparent 45%);
+}
+.wc-stage-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 620px;
+}
+.wc-kicker {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--marigold);
+  letter-spacing: 0.06em;
+  text-shadow: 0 2px 0 #000;
+}
+.wc-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: clamp(48px, 8vw, 92px);
+  line-height: 0.9;
+  color: var(--gold);
+  text-shadow:
+    0 4px 0 #000,
+    0 0 28px rgba(255, 154, 31, 0.45);
+}
+.wc-tag {
+  margin: 0;
+  max-width: 520px;
+  font-size: 17px;
+  color: var(--bone);
+  text-shadow: 0 2px 2px #000;
+}
+.wc-countdown {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.wc-count-label {
+  color: var(--bone-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.wc-digit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 64px;
+  padding: 6px 8px 4px;
+  border-radius: 10px;
+  border: 3px solid var(--ink);
+  background: linear-gradient(180deg, #2a1d33 0%, #1a1220 50%, #120c17 50%, #1d1424 100%);
+  box-shadow: 0 3px 0 rgba(0, 0, 0, 0.6);
+}
+.wc-digit b {
+  font-size: 34px;
+  line-height: 1;
+  color: var(--marigold);
+  text-shadow: 0 0 12px rgba(255, 154, 31, 0.5);
+}
+.wc-digit span {
+  font-size: 11px;
+  color: var(--bone-dim);
+  text-transform: uppercase;
+}
+.wc-note {
+  color: var(--bone-dim);
+  text-shadow: 0 1px 2px #000;
+}
+.wc-in {
+  font-size: 16px;
+  padding: 8px 12px;
+}
+.wc-champion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 14px 18px;
+  min-width: 200px;
+  border-radius: 14px;
+  border: 3px solid var(--ink);
+  background: rgba(14, 10, 18, 0.72);
+  backdrop-filter: blur(3px);
+  text-align: center;
+}
+.wc-champion .icon {
+  filter: drop-shadow(0 0 16px rgba(217, 169, 58, 0.7));
+  animation: wc-float 4s ease-in-out infinite;
+}
+@keyframes wc-float {
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.wc-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+.wc-step {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.wc-step b {
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.wc-podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 auto;
+}
+.wc-step-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  text-align: center;
+}
+.wc-plinth {
+  width: 100%;
+  display: grid;
+  place-items: center;
+  border: 3px solid var(--ink);
+  border-radius: 8px 8px 0 0;
+  font-family: var(--font-display);
+  font-size: 28px;
+  color: var(--ink);
+}
+.wc-step-block.p1 .wc-plinth {
+  height: 110px;
+  background: linear-gradient(180deg, #ffe27a, var(--gold));
+}
+.wc-step-block.p2 .wc-plinth {
+  height: 80px;
+  background: linear-gradient(180deg, #eef2f7, #9aa4b2);
+}
+.wc-step-block.p3 .wc-plinth {
+  height: 60px;
+  background: linear-gradient(180deg, #e7a56a, #9b5a2a);
+}
+@media (max-width: 760px) {
+  .wc-stage {
+    grid-template-columns: 1fr;
+    min-height: 0;
+    padding: 18px 16px;
+  }
+  .wc-stage::before {
+    background: linear-gradient(0deg, rgba(14, 10, 18, 0.95) 0%, rgba(14, 10, 18, 0.55) 100%);
+  }
+  .wc-digit {
+    min-width: 54px;
+  }
+  .wc-digit b {
+    font-size: 26px;
+  }
+  .wc-champion {
+    min-width: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wc-champion .icon {
+    animation: none;
+  }
+}
+a.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+}
