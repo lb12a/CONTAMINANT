@@ -1,6 +1,406 @@
 {
- "generated": "2026-10-15T06:36:05.033Z",
+ "generated": "2026-10-15T08:25:07.674Z",
  "files": {
+  "backdrops/menu.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "backdrops/worldcup.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "ground/bog.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "ground/forest.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "ground/graveyard.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "ground/laboratory.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "ground/tomb.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "ground/toyroom.webp": {
+   "w": 1344,
+   "h": 576
+  },
+  "items/acid_mine.webp": {
+   "w": 170,
+   "h": 256
+  },
+  "items/adrenaline_shot.webp": {
+   "w": 69,
+   "h": 256
+  },
+  "items/aegis_plate.webp": {
+   "w": 218,
+   "h": 256
+  },
+  "items/alarm_bell.webp": {
+   "w": 256,
+   "h": 205
+  },
+  "items/amplifier_coil.webp": {
+   "w": 191,
+   "h": 256
+  },
+  "items/antidote.webp": {
+   "w": 91,
+   "h": 256
+  },
+  "items/backwards_clock.webp": {
+   "w": 225,
+   "h": 256
+  },
+  "items/bear_snare.webp": {
+   "w": 256,
+   "h": 181
+  },
+  "items/blackout_lantern.webp": {
+   "w": 130,
+   "h": 256
+  },
+  "items/black_market.webp": {
+   "w": 256,
+   "h": 237
+  },
+  "items/blood_pact.webp": {
+   "w": 247,
+   "h": 256
+  },
+  "items/bone_charm.webp": {
+   "w": 141,
+   "h": 256
+  },
+  "items/chain_link.webp": {
+   "w": 135,
+   "h": 256
+  },
+  "items/contamination_burst.webp": {
+   "w": 152,
+   "h": 256
+  },
+  "items/customs_inspector.webp": {
+   "w": 127,
+   "h": 256
+  },
+  "items/echo_crystal.webp": {
+   "w": 219,
+   "h": 256
+  },
+  "items/emergency_sterilization.webp": {
+   "w": 113,
+   "h": 256
+  },
+  "items/evacuation_order.webp": {
+   "w": 210,
+   "h": 256
+  },
+  "items/executioners_ledger.webp": {
+   "w": 256,
+   "h": 227
+  },
+  "items/false_alarm.webp": {
+   "w": 164,
+   "h": 256
+  },
+  "items/field_medkit.webp": {
+   "w": 252,
+   "h": 256
+  },
+  "items/flame_oil.webp": {
+   "w": 145,
+   "h": 256
+  },
+  "items/frost_mine.webp": {
+   "w": 256,
+   "h": 248
+  },
+  "items/gag_order.webp": {
+   "w": 123,
+   "h": 256
+  },
+  "items/gas_leak.webp": {
+   "w": 169,
+   "h": 256
+  },
+  "items/ghost_shroud.webp": {
+   "w": 208,
+   "h": 256
+  },
+  "items/heavy_gloves.webp": {
+   "w": 229,
+   "h": 256
+  },
+  "items/hex_scroll.webp": {
+   "w": 93,
+   "h": 256
+  },
+  "items/insulated_gloves.webp": {
+   "w": 253,
+   "h": 256
+  },
+  "items/iron_tonic.webp": {
+   "w": 119,
+   "h": 256
+  },
+  "items/lead_boots.webp": {
+   "w": 226,
+   "h": 256
+  },
+  "items/lifesteal_fang.webp": {
+   "w": 222,
+   "h": 256
+  },
+  "items/lucky_coin.webp": {
+   "w": 249,
+   "h": 256
+  },
+  "items/midas_touch_card.webp": {
+   "w": 197,
+   "h": 256
+  },
+  "items/mind_link.webp": {
+   "w": 223,
+   "h": 256
+  },
+  "items/mirror_charm.webp": {
+   "w": 167,
+   "h": 256
+  },
+  "items/molotov.webp": {
+   "w": 145,
+   "h": 256
+  },
+  "items/moon_charm.webp": {
+   "w": 161,
+   "h": 256
+  },
+  "items/night_goggles.webp": {
+   "w": 256,
+   "h": 126
+  },
+  "items/overcharge_valve.webp": {
+   "w": 187,
+   "h": 256
+  },
+  "items/overtime.webp": {
+   "w": 214,
+   "h": 256
+  },
+  "items/phoenix_feather.webp": {
+   "w": 249,
+   "h": 256
+  },
+  "items/piercing_rounds.webp": {
+   "w": 256,
+   "h": 251
+  },
+  "items/poison_coating.webp": {
+   "w": 177,
+   "h": 256
+  },
+  "items/prism_visor.webp": {
+   "w": 206,
+   "h": 256
+  },
+  "items/quick_fuse.webp": {
+   "w": 134,
+   "h": 256
+  },
+  "items/rad_capsule.webp": {
+   "w": 145,
+   "h": 256
+  },
+  "items/rage_pill.webp": {
+   "w": 166,
+   "h": 256
+  },
+  "items/rain_barrel.webp": {
+   "w": 178,
+   "h": 256
+  },
+  "items/ration_pack.webp": {
+   "w": 232,
+   "h": 256
+  },
+  "items/reroll_ticket.webp": {
+   "w": 202,
+   "h": 256
+  },
+  "items/running_shoes.webp": {
+   "w": 256,
+   "h": 205
+  },
+  "items/scope.webp": {
+   "w": 251,
+   "h": 256
+  },
+  "items/scout_card.webp": {
+   "w": 253,
+   "h": 256
+  },
+  "items/second_wind.webp": {
+   "w": 180,
+   "h": 256
+  },
+  "items/seed_bomb.webp": {
+   "w": 192,
+   "h": 256
+  },
+  "items/shock_plate.webp": {
+   "w": 202,
+   "h": 256
+  },
+  "items/silencer.webp": {
+   "w": 122,
+   "h": 256
+  },
+  "items/skeleton_key.webp": {
+   "w": 117,
+   "h": 256
+  },
+  "items/smelling_salts.webp": {
+   "w": 112,
+   "h": 256
+  },
+  "items/smoke_candle.webp": {
+   "w": 169,
+   "h": 256
+  },
+  "items/spare_battery.webp": {
+   "w": 192,
+   "h": 256
+  },
+  "items/spike_pit.webp": {
+   "w": 256,
+   "h": 243
+  },
+  "items/spy_drone.webp": {
+   "w": 256,
+   "h": 187
+  },
+  "items/switchback_rune.webp": {
+   "w": 252,
+   "h": 256
+  },
+  "items/tesla_coil.webp": {
+   "w": 124,
+   "h": 256
+  },
+  "items/time_dilation_bottle.webp": {
+   "w": 111,
+   "h": 256
+  },
+  "items/tuning_fork.webp": {
+   "w": 67,
+   "h": 256
+  },
+  "items/vocal_tonic.webp": {
+   "w": 102,
+   "h": 256
+  },
+  "items/whetstone.webp": {
+   "w": 229,
+   "h": 256
+  },
+  "items/wolf_pelt.webp": {
+   "w": 179,
+   "h": 256
+  },
+  "objectives/control.webp": {
+   "w": 169,
+   "h": 256
+  },
+  "objectives/sample.webp": {
+   "w": 152,
+   "h": 256
+  },
+  "objectives/terminal.webp": {
+   "w": 219,
+   "h": 256
+  },
+  "props/bog_0.webp": {
+   "w": 384,
+   "h": 263
+  },
+  "props/bog_1.webp": {
+   "w": 384,
+   "h": 314
+  },
+  "props/bog_2.webp": {
+   "w": 384,
+   "h": 361
+  },
+  "props/forest_0.webp": {
+   "w": 384,
+   "h": 367
+  },
+  "props/forest_1.webp": {
+   "w": 384,
+   "h": 384
+  },
+  "props/forest_2.webp": {
+   "w": 346,
+   "h": 384
+  },
+  "props/graveyard_0.webp": {
+   "w": 368,
+   "h": 384
+  },
+  "props/graveyard_1.webp": {
+   "w": 249,
+   "h": 384
+  },
+  "props/graveyard_2.webp": {
+   "w": 384,
+   "h": 379
+  },
+  "props/laboratory_0.webp": {
+   "w": 361,
+   "h": 384
+  },
+  "props/laboratory_1.webp": {
+   "w": 233,
+   "h": 384
+  },
+  "props/laboratory_2.webp": {
+   "w": 210,
+   "h": 384
+  },
+  "props/tomb_0.webp": {
+   "w": 183,
+   "h": 384
+  },
+  "props/tomb_1.webp": {
+   "w": 270,
+   "h": 384
+  },
+  "props/tomb_2.webp": {
+   "w": 376,
+   "h": 384
+  },
+  "props/toyroom_0.webp": {
+   "w": 384,
+   "h": 308
+  },
+  "props/toyroom_1.webp": {
+   "w": 304,
+   "h": 384
+  },
+  "props/toyroom_2.webp": {
+   "w": 355,
+   "h": 384
+  },
   "tokens/arachnia.webp": {
    "w": 512,
    "h": 485
@@ -25,6 +425,10 @@
    "w": 297,
    "h": 512
   },
+  "tokens/cooking_pot.webp": {
+   "w": 370,
+   "h": 512
+  },
   "tokens/cruorina.webp": {
    "w": 400,
    "h": 512
@@ -33,8 +437,16 @@
    "w": 512,
    "h": 480
   },
+  "tokens/cymbal_chimp.webp": {
+   "w": 511,
+   "h": 512
+  },
   "tokens/frankenstein.webp": {
    "w": 389,
+   "h": 512
+  },
+  "tokens/ghost_train.webp": {
+   "w": 250,
    "h": 512
   },
   "tokens/lab_assistant.webp": {
@@ -53,6 +465,10 @@
    "w": 354,
    "h": 512
   },
+  "tokens/mambo.webp": {
+   "w": 400,
+   "h": 512
+  },
   "tokens/midas_mummy.webp": {
    "w": 306,
    "h": 512
@@ -62,7 +478,7 @@
    "h": 512
   },
   "tokens/mud_decoy.webp": {
-   "w": 497,
+   "w": 287,
    "h": 512
   },
   "tokens/mycel.webp": {
@@ -74,7 +490,7 @@
    "h": 512
   },
   "tokens/piggybank.webp": {
-   "w": 418,
+   "w": 399,
    "h": 512
   },
   "tokens/pokerface.webp": {
@@ -113,6 +529,22 @@
    "w": 455,
    "h": 512
   },
+  "tokens/swamp_siren.webp": {
+   "w": 332,
+   "h": 512
+  },
+  "tokens/termite_mound.webp": {
+   "w": 512,
+   "h": 480
+  },
+  "tokens/training_dummy.webp": {
+   "w": 191,
+   "h": 512
+  },
+  "tokens/training_walker.webp": {
+   "w": 296,
+   "h": 512
+  },
   "tokens/vile.webp": {
    "w": 370,
    "h": 512
@@ -140,6 +572,18 @@
   "tokens/zombie_patchwork.webp": {
    "w": 256,
    "h": 512
+  },
+  "ui/chest_large.webp": {
+   "w": 256,
+   "h": 243
+  },
+  "ui/chest_medium.webp": {
+   "w": 253,
+   "h": 256
+  },
+  "ui/chest_small.webp": {
+   "w": 218,
+   "h": 256
   }
  }
 }

@@ -13,6 +13,8 @@ export interface AssetSpec {
   height: number;
   /** candidates generated per run; the best one is picked in picks.json */
   candidates: number;
+  /** keep only this horizontal band of the cut-out (fractions), for renders with stray side figures */
+  cropX?: [number, number];
 }
 
 export const STYLE =
@@ -101,6 +103,9 @@ const CHARACTERS: Record<string, string> = {
   training_dummy: 'a burlap straw training dummy on a wooden post with a painted target on its chest and a stitched face',
   training_walker: 'a walking burlap straw training dummy on stick legs with a painted target on its chest and a stitched face',
 };
+
+/** The swamp siren keeps coming out as a character sheet: only the central figure is used. */
+const CROP_X: Record<string, [number, number]> = { swamp_siren: [0.2, 0.8] };
 
 const PROPS: Record<string, string[]> = {
   laboratory: [
@@ -227,6 +232,7 @@ export function catalog(): AssetSpec[] {
       width: 1024,
       height: 1024,
       candidates: 2,
+      cropX: CROP_X[id],
     });
   }
   for (const [zone, list] of Object.entries(PROPS)) {

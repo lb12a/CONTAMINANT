@@ -53,6 +53,35 @@ def cutout(session, img):
     return out
 
 
+def main_figure(img):
+    """Drops detached extra figures (the model sometimes paints a character sheet): keeps the largest
+    opaque component and everything whose bounding box touches it (floating heads, hands, props)."""
+    import numpy as np
+    from scipy import ndimage
+
+    a = np.asarray(img.getchannel("A"))
+    mask = a > 40
+    labels, n = ndimage.label(mask)
+    if n <= 1:
+        return img
+    sizes = ndimage.sum(mask, labels, range(1, n + 1))
+    main = int(np.argmax(sizes)) + 1
+    boxes = ndimage.find_objects(labels)
+    my, mx = boxes[main - 1]
+    padx = int((mx.stop - mx.start) * 0.08)
+    pady = int((my.stop - my.start) * 0.08)
+    keep = np.zeros(n + 1, dtype=bool)
+    for i, (sy, sx) in enumerate(boxes, start=1):
+        if sx.start <= mx.stop + padx and sx.stop >= mx.start - padx and sy.start <= my.stop + pady and sy.stop >= my.start - pady:
+            keep[i] = True
+    # soft edge pixels below the threshold belong to whatever they touch: keep them where kept parts are
+    kept = ndimage.binary_dilation(keep[labels], iterations=3)
+    out = np.where(kept, a, 0).astype(np.uint8)
+    img = img.copy()
+    img.putalpha(Image.fromarray(out, "L"))
+    return img
+
+
 def trim(img, pad_ratio=0.03):
     bbox = img.getchannel("A").point(lambda v: 255 if v > 12 else 0).getbbox()
     if not bbox:
@@ -81,7 +110,13 @@ def run_jobs(jobs):
         img = Image.open(j["src"]).convert("RGBA")
         if j["kind"] in CUTOUT:
             has_alpha = img.getchannel("A").getextrema()[0] < 250
-            img = trim(img if has_alpha else cutout(session, img))
+            img = img if has_alpha else cutout(session, img)
+            if j.get("cropX"):
+                x0, x1 = j["cropX"]
+                img = img.crop((int(img.width * x0), 0, int(img.width * x1), img.height))
+            if j["kind"] == "token":
+                img = main_figure(img)
+            img = trim(img)
             img = fit(img, j.get("box", 512))
             img.save(j["dst"], "WEBP", quality=90, method=6)
         else:

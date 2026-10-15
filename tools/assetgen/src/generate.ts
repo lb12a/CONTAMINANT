@@ -168,7 +168,7 @@ async function cutout(src: string, dst: string): Promise<void> {
 async function post(specs: AssetSpec[]): Promise<void> {
   const pk = picks();
   const comfy = await comfyUp();
-  const jobs: { src: string; dst: string; kind: string; box: number }[] = [];
+  const jobs: { src: string; dst: string; kind: string; box: number; cropX?: [number, number] }[] = [];
   for (const s of specs) {
     let src = rawFile(s, Math.min(pk[s.path] ?? 0, s.candidates - 1));
     if (!existsSync(src)) continue;
@@ -183,7 +183,7 @@ async function post(specs: AssetSpec[]): Promise<void> {
       }
       src = cut;
     }
-    jobs.push({ src, dst: join(OUT, `${s.path}.webp`), kind: s.kind, box: BOX[s.kind] });
+    jobs.push({ src, dst: join(OUT, `${s.path}.webp`), kind: s.kind, box: BOX[s.kind], cropX: s.cropX });
   }
   for (const j of jobs) mkdirSync(dirname(j.dst), { recursive: true });
   if (!jobs.length) return;
