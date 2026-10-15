@@ -206,3 +206,31 @@ export function itemCopiesAllowed(col: Collection, itemId: string): number {
 export function ownsCharacter(col: Collection, defId: string): boolean {
   return !!col.chars[defId] && !!CHARACTERS[defId];
 }
+
+// ---------------------------------------------------------------- developer accounts
+
+/** Developer accounts are names ending in '#': everything unlocked, unlimited gold, no competitive play. */
+export const DEV_GOLD = 999_999;
+
+export function isDevName(name: string | null | undefined): boolean {
+  return !!name && name.trim().endsWith('#');
+}
+
+/** Every character at max level, every item card, all areas, unlimited gold (tutorial progress is kept). */
+export function devCollection(base?: Collection): Collection {
+  const chars: Record<string, OwnedChar> = {};
+  for (const c of CHARACTER_LIST) chars[c.id] = { level: 10, dups: 0, tutorialDone: base?.chars[c.id]?.tutorialDone ?? false };
+  const items: Record<string, number> = {};
+  for (const it of ITEM_LIST) items[it.id] = 9;
+  const top = MILESTONES[MILESTONES.length - 1]!.trophies;
+  return {
+    gold: DEV_GOLD,
+    trophies: Math.max(base?.trophies ?? 0, top),
+    bestTrophies: Math.max(base?.bestTrophies ?? 0, top),
+    chars,
+    items,
+    chests: base?.chests ?? [],
+    cardBacks: [...new Set([...(base?.cardBacks ?? []), 'biohazard'])],
+    titles: [...new Set([...(base?.titles ?? []), 'Developer'])],
+  };
+}

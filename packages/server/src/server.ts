@@ -25,6 +25,7 @@ import {
   type ClientMsg,
   type DeckPayload,
   type ServerMsg,
+  isDevName,
 } from '@contaminant/engine';
 import { Db, type MatchRow, type PlayerRow } from './db.ts';
 import { PlayerService } from './players.ts';
@@ -166,10 +167,12 @@ export class GameServer {
       if (team) this.teams.recordBattle(team.teams, team.winnerTeam);
       if (team) for (const [ti, ids] of team.teams.entries()) for (const pid of ids) this.notify(pid, { t: 'tournament', id: 'team-battle', event: 'team_result', data: { won: team.winnerTeam === ti, draw: team.winnerTeam === null } });
     }
-    // telemetry
-    recordTelemetry(this.db, {
+    // telemetry: developer accounts never count; matches with a bot are kept apart ('sim') and stay out of the meta
+    const hasBot = room.seats.some((s) => !!s.bot);
+    const hasDev = room.seats.some((s) => isDevName(s.name));
+    if (!hasDev) recordTelemetry(this.db, {
       matchId: room.id,
-      kind: room.kind,
+      kind: hasBot ? 'sim' : room.kind,
       mode: room.state.settings.mode,
       zone: room.state.settings.zone,
       winner: result.winner,
@@ -436,7 +439,7 @@ export class GameServer {
       const r = this.players.saveDeck(p.id, { id: String(body.id ?? `d${Date.now().toString(36)}`), name: String(body.name ?? 'Deck'), characters: (body.characters as never) ?? [], items: (body.items as never) ?? [] });
       return json(res, r.ok ? 200 : 400, r);
     }
-    if (path === '/api/ladder') return json(res, 200, { season: this.seasons.current(), players: this.players.leaderboard(Number(q('limit') ?? 100), Number(q('offset') ?? 0), q('bots') === '1') });
+    if (path === '/api/ladder') return json(res, 200, { season: this.seasons.current(), players: this.players.leaderboard(Number(q('limit') ?? 100), Number(q('offset') ?? 0)) });
     if (path === '/api/divisions') return json(res, 200, { divisions: DIVISIONS });
     if (path === '/api/season') return json(res, 200, { season: this.seasons.current() });
     if (path === '/api/tournaments' && req.method === 'GET') return json(res, 200, { tournaments: this.tournaments.list().slice(0, 50).map((t) => ({ ...t, bracket: undefined, players: t.registrations.length })) });
@@ -489,7 +492,7 @@ export class GameServer {
       const rank = this.db.get<{ n: number }>('SELECT COUNT(*) AS n FROM players WHERE is_bot=0 AND mmr > ?', p.mmr)?.n ?? 0;
       return json(res, 200, {
         player: this.players.public(p),
-        rank: p.is_bot ? null : rank + 1,
+        rank: p.is_bot || isDevName(p.name) ? null : rank + 1,
         team: team ? { id: team.id, name: team.name, tag: team.tag } : null,
         circuit: this.circuit.standings(season).entries[p.id] ?? null,
         recent,
@@ -519,7 +522,7 @@ export class GameServer {
       const t = this.teams.get(m[1]!);
       return t ? json(res, 200, { team: this.teams.view(t) }) : json(res, 404, { error: 'not found' });
     }
-    if (path === '/api/meta') return json(res, 200, metaSnapshot(this.db, { mode: q('mode'), zone: q('zone'), kind: q('kind'), minMmr: q('minMmr') ? Number(q('minMmr')) : undefined }));
+    if (path === '/api/meta') return json(res, 200, metaSnapshot(this.db, { mode: q('mode'), zone: q('zone'), kind: q('kind'), minMmr: q('minMmr') ? Number(q('minMmr')) : undefined, includeBots: q('bots') === '1' }));
     if (path === '/api/meta/anomalies') return json(res, 200, { anomalies: detectAnomalies(this.db, { minGames: Number(q('minGames') ?? 20) }) });
     if (path === '/api/meta/classify' && req.method === 'POST') return json(res, 200, classifyDeck((body.characters as string[]) ?? []));
     if (path === '/api/live') return json(res, 200, { matches: this.rooms.live() });
@@ -657,6 +660,7 @@ export class GameServer {
     switch (msg.t) {
       case 'queue': {
         if (this.rooms.forPlayer(p.id)) return conn.send({ t: 'error', msg: 'already in a match' });
+        if (isDevName(p.name) && (msg.queue === 'ranked' || msg.queue === 'team')) return conn.send({ t: 'error', msg: 'Developer accounts (name ending in #) cannot play ranked or Team Battles', code: 'dev' });
         const deck = this.resolveDeck(p, msg.deckId, msg.deck);
         if (typeof deck === 'string') return conn.send({ t: 'error', msg: deck, code: 'deck' });
         const party = msg.queue === 'team' ? this.mm.partyOf(p.id) : undefined;

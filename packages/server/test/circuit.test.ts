@@ -133,8 +133,9 @@ test('Halloween World Cup: direct seeds from Majors and the points race, Last Ch
   cur = s.worldcup.current()!;
   assert.equal(cur.status, 'finished');
   const champs = s.worldcup.champions();
-  assert.equal(champs.current?.name, cur.champion!.name);
-  assert.equal(champs.history.length, 1);
+  const champIsBot = cur.registrations.find((r) => r.playerId === cur.champion!.playerId)?.isBot;
+  assert.equal(champs.current?.name ?? null, champIsBot ? null : cur.champion!.name);
+  assert.equal(champs.history.length, champIsBot ? 0 : 1);
   s.close();
 });
 
@@ -163,5 +164,24 @@ test('teams: create, join, ladder rating, captaincy passes on, team battles coun
   assert.equal(s.teams.leave(s.players.byId(a.id)!).ok, true);
   const after = s.teams.get(t1.team!.id)!;
   assert.equal(after.captain, b.id, 'the remaining member becomes captain');
+  s.close();
+});
+
+test('developer accounts (name ending in #): everything unlocked, no ladder, tournaments or World Cup', () => {
+  const clock = fakeClock(Date.UTC(2026, 9, 25, 12));
+  const s = mkServer(clock);
+  const dev = s.players.register('Tester#');
+  assert.equal(dev.name, 'Tester#');
+  const col = s.players.collection(dev.id);
+  assert.ok(col.gold >= 999_999);
+  assert.ok(Object.values(col.chars).every((c) => c.level === 10));
+  assert.ok(Object.keys(col.chars).length >= 30);
+  assert.equal(s.players.public(dev).dev, true);
+  s.db.run('UPDATE players SET mmr=2400 WHERE id=?', dev.id);
+  assert.ok(!s.players.leaderboard().some((p) => p.id === dev.id), 'not on the ladder');
+  const major = s.circuit.tick(clock.now())!;
+  assert.equal(s.tournaments.register(major.id, s.players.byId(dev.id)!).ok, false);
+  const normal = s.players.register('Normal Name');
+  assert.equal(s.players.public(normal).dev, false);
   s.close();
 });

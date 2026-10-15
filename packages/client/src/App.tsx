@@ -111,7 +111,12 @@ export function App() {
           ))}
         </div>
         <span className="spacer" />
-        <span className="chip num" title="Gold">🪙 {profile.collection.gold}</span>
+        {profile.dev && (
+          <span className="chip dev-badge" title="Developer profile: everything unlocked, unlimited gold, no ranked, tournaments, ladder or meta">
+            DEV
+          </span>
+        )}
+        <span className="chip num" title="Gold">🪙 {profile.dev ? '∞' : profile.collection.gold}</span>
         <span className="chip num" title="Trophies">🏆 {profile.collection.trophies}</span>
         {profile.online ? (
           <button className="chip buff" style={{ cursor: 'pointer' }} onClick={() => nav({ name: 'profile' })} title="Your public profile">

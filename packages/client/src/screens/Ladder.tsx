@@ -27,11 +27,10 @@ export function LadderScreen({ nav }: { nav: Nav }) {
   const [rows, setRows] = useState<Row[]>([]);
   const [divs, setDivs] = useState<Division[]>([]);
   const [season, setSeason] = useState<{ name: string; end: number } | null>(null);
-  const [bots, setBots] = useState(false);
   useEffect(() => {
     if (!p.online) return;
     getApi()
-      .get<{ players: Row[]; season: { name: string; end: number } }>(`/api/ladder?limit=200${bots ? '&bots=1' : ''}`)
+      .get<{ players: Row[]; season: { name: string; end: number } }>('/api/ladder?limit=200')
       .then((r) => {
         setRows(r.players);
         setSeason(r.season);
@@ -41,7 +40,7 @@ export function LadderScreen({ nav }: { nav: Nav }) {
       .get<{ divisions: Division[] }>('/api/divisions')
       .then((r) => setDivs(r.divisions))
       .catch(() => undefined);
-  }, [p.online, bots]);
+  }, [p.online]);
   if (!p.online) return <p className="muted">Go online to see the global ladder.</p>;
   const color = (id: string) => divs.find((d) => d.id === id)?.color ?? '#888';
   return (
@@ -66,9 +65,6 @@ export function LadderScreen({ nav }: { nav: Nav }) {
           </div>
         ))}
       </div>
-      <label className="row small">
-        <input type="checkbox" checked={bots} onChange={(e) => setBots(e.target.checked)} /> show bot accounts
-      </label>
       <div className="panel scroll-x">
         <table className="table">
           <thead>

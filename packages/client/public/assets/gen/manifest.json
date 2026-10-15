@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T08:25:07.674Z",
+ "generated": "2026-10-15T08:49:58.057Z",
  "files": {
   "backdrops/menu.webp": {
    "w": 1344,
@@ -442,7 +442,7 @@
    "h": 512
   },
   "tokens/frankenstein.webp": {
-   "w": 389,
+   "w": 338,
    "h": 512
   },
   "tokens/ghost_train.webp": {
@@ -530,7 +530,7 @@
    "h": 512
   },
   "tokens/swamp_siren.webp": {
-   "w": 332,
+   "w": 340,
    "h": 512
   },
   "tokens/termite_mound.webp": {

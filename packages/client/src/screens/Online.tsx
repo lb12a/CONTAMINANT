@@ -135,13 +135,13 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
           </div>
         ) : (
           <div className="row wrap">
-            <button className="btn primary" onClick={() => join('ranked')}>
+            <button className="btn primary" disabled={p.dev} title={p.dev ? 'Developer accounts (name ending in #) cannot play ranked' : undefined} onClick={() => join('ranked')}>
               ⚔ {t('Ranked')}
             </button>
             <button className="btn secondary" onClick={() => join('casual')}>
               {t('Casual')}
             </button>
-            <button className="btn secondary" onClick={() => join('team')} title="2v2: each member plays a 1v1, most wins decide">
+            <button className="btn secondary" disabled={p.dev} onClick={() => join('team')} title={p.dev ? 'Developer accounts cannot play Team Battles' : '2v2: each member plays a 1v1, most wins decide'}>
               👥 {t('Team Battle')}
             </button>
             <button className="btn secondary" onClick={() => join('bot')}>

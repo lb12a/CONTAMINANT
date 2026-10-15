@@ -2,7 +2,7 @@
 // match provisioning, result reporting, automatic prize distribution and the Trophy Hall.
 
 import { randomBytes } from 'node:crypto';
-import type { ChestSize, ServerMsg } from '@contaminant/engine';
+import { isDevName, type ChestSize, type ServerMsg } from '@contaminant/engine';
 import type { Db, PlayerRow } from './db.ts';
 import type { PlayerService } from './players.ts';
 import type { Clock, MatchRoom, RoomManager, RoomResult } from './rooms.ts';
@@ -208,6 +208,7 @@ export class TournamentService {
     if (!t) return { ok: false, error: 'unknown tournament' };
     if (t.status !== 'scheduled' && t.status !== 'checkin') return { ok: false, error: 'registration is closed' };
     if (t.registrations.length >= t.maxPlayers) return { ok: false, error: 'tournament is full' };
+    if (isDevName(p.name)) return { ok: false, error: 'Developer accounts (name ending in #) cannot enter tournaments' };
     const min = t.requirement?.minMmr;
     if (min && !p.is_bot && p.mmr < min) return { ok: false, error: `${t.name} needs at least ${min} MMR (you have ${Math.round(p.mmr)})` };
     if (!t.registrations.some((r) => r.playerId === p.id)) t.registrations.push({ playerId: p.id, name: p.name, mmr: p.mmr, checkedIn: false, deckId, isBot: !!p.is_bot });
@@ -350,7 +351,7 @@ export class TournamentService {
       const reg = t.registrations.find((r) => r.playerId === p.playerId);
       if (!reg?.isBot) this.h.players.grant(p.playerId, { gold: prize.gold, trophies: prize.trophies, title: p.place === 1 ? prize.badge : undefined, chest: prize.chest }, `tournament:${t.id}:place${p.place}`);
       this.h.notify(p.playerId, { t: 'tournament', id: t.id, event: 'finished', data: { place: p.place, prize } });
-      if (p.place <= 3) {
+      if (p.place <= 3 && !reg?.isBot) {
         this.h.db.run('INSERT INTO hall(kind,title,player_id,player_name,season,created,data) VALUES(?,?,?,?,?,?,?)', 'trophy', `${t.name} — ${p.place === 1 ? 'Champion' : p.place === 2 ? 'Runner-up' : 'Third place'}`, p.playerId, p.name, t.series, this.h.clock.now(), JSON.stringify({ tournament: t.id, place: p.place, format: t.format, major: !!t.circuit }));
       }
     }

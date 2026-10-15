@@ -62,9 +62,12 @@ export function MetaScreen() {
   const [minMmr, setMinMmr] = useState('');
   const [tab, setTab] = useState<'tiers' | 'characters' | 'items' | 'archetypes' | 'anomalies'>('tiers');
   const [tip, setTip] = useState<{ x: number; y: number; html: string } | null>(null);
+  // developer accounts may look at the bot simulations; the public meta is human matches only
+  const [sims, setSims] = useState(false);
   useEffect(() => {
     if (!p.online) return;
     const q = new URLSearchParams();
+    if (sims) q.set('bots', '1');
     if (mode) q.set('mode', mode);
     if (zone) q.set('zone', zone);
     if (minMmr) q.set('minMmr', minMmr);
@@ -76,11 +79,12 @@ export function MetaScreen() {
     f();
     const i = setInterval(f, 15_000);
     return () => clearInterval(i);
-  }, [p.online, mode, zone, minMmr]);
+  }, [p.online, mode, zone, minMmr, sims]);
 
   const chars = useMemo(() => (snap?.characters ?? []).filter((c) => c.games > 0).sort((a, b) => b.winRate - a.winRate), [snap]);
-  if (!p.online) return <p className="muted">Go online to see the live meta. Developers can seed it with <code>--seed-telemetry 200</code>.</p>;
+  if (!p.online) return <p className="muted">Go online to see the live meta.</p>;
   if (!snap) return <p className="muted">Loading the meta…</p>;
+  const empty = snap.matches === 0;
 
   return (
     <div className="col" onMouseLeave={() => setTip(null)}>
@@ -88,9 +92,15 @@ export function MetaScreen() {
         <h1 style={{ margin: 0 }}>{t('Meta')}</h1>
         <span className="spacer" />
         <span className="small muted">
-          {snap.matches} matches · updated {new Date(snap.generated).toLocaleTimeString()} · refreshes every 15 s
+          {snap.matches} {sims ? 'matches incl. bot simulations' : 'human matches'} · updated {new Date(snap.generated).toLocaleTimeString()}
         </span>
+        {p.dev && (
+          <label className="row small" title="Developer view: bot-vs-bot simulations, never part of the public meta">
+            <input type="checkbox" checked={sims} onChange={(e) => setSims(e.target.checked)} /> bot simulations
+          </label>
+        )}
       </div>
+      {empty && <p className="panel muted">No human matches recorded yet. The meta only counts matches between players; bots and developer accounts never influence it.</p>}
       {/* filters: one row above the charts */}
       <div className="row wrap">
         <select value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Mode">

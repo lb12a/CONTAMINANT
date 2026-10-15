@@ -4,7 +4,7 @@
 // top of the Circuit Points race are seeded straight into the groups (see circuit.ts).
 // Every WM match is "featured": spectators and casters get it with a broadcast delay.
 
-import type { ServerMsg } from '@contaminant/engine';
+import { isDevName, type ServerMsg } from '@contaminant/engine';
 import type { Db, PlayerRow } from './db.ts';
 import type { PlayerService } from './players.ts';
 import type { Clock, MatchRoom, RoomManager, RoomResult } from './rooms.ts';
@@ -142,6 +142,7 @@ export class WorldCupService {
     if (!w) return { ok: false, direct: false, reason: 'No World Cup is open' };
     const reg = w.registrations.find((r) => r.playerId === p.id);
     if (reg?.direct) return { ok: true, direct: true, reason: reg.via ?? 'Direct seed' };
+    if (isDevName(p.name)) return { ok: false, direct: false, reason: 'Developer accounts (name ending in #) cannot enter the World Cup' };
     const pts = w.season !== undefined ? this.h.circuit?.pointsOf(w.season, p.id) ?? 0 : 0;
     if (p.is_bot || p.mmr >= CIRCUIT.wmMinMmr || pts > 0) return { ok: true, direct: false, reason: pts > 0 ? `${pts} Circuit Points` : `${Math.round(p.mmr)} MMR` };
     return { ok: false, direct: false, reason: `Needs ${CIRCUIT.wmMinMmr} MMR or Circuit Points from a Monthly Major` };
@@ -151,7 +152,7 @@ export class WorldCupService {
     const w = this.current();
     if (!w || w.status !== 'registration') return { ok: false, error: 'World Cup registration is closed' };
     const el = this.eligibility(p, w);
-    if (!el.ok && w.season !== undefined) return { ok: false, error: el.reason };
+    if (!el.ok && (w.season !== undefined || isDevName(p.name))) return { ok: false, error: el.reason };
     const existing = w.registrations.find((r) => r.playerId === p.id);
     if (existing) existing.deckId = deckId ?? existing.deckId;
     else w.registrations.push({ playerId: p.id, name: p.name, mmr: p.mmr, checkedIn: true, deckId, isBot: !!p.is_bot });
@@ -338,7 +339,7 @@ export class WorldCupService {
       const r = rewards[p.place];
       const reg = w.registrations.find((x) => x.playerId === p.playerId);
       if (r && !reg?.isBot) this.h.players.grant(p.playerId, { ...r, cardBack: p.place === 1 ? 'world_crown' : undefined, skin: p.place === 1 ? 'champion_crown' : undefined }, `worldcup:${w.id}:place${p.place}`);
-      if (p.place <= 3) {
+      if (p.place <= 3 && !reg?.isBot) {
         this.h.db.run(
           'INSERT INTO hall(kind,title,player_id,player_name,season,created,data) VALUES(?,?,?,?,?,?,?)',
           p.place === 1 ? 'world_champion' : 'world_podium',
@@ -366,7 +367,9 @@ export class WorldCupService {
 
   /** The reigning World Champion and every past champion with the podium. */
   champions(): { current: { name: string; playerId: string; season?: number; edition: number; name_of_cup: string } | null; history: { edition: number; season?: number; cup: string; champion: string; playerId: string; podium: WorldCup['podium'] }[] } {
-    const done = this.all().filter((w) => w.status === 'finished' && w.champion);
+    // only human champions are crowned in public: a bot-filled test edition does not count
+    const human = (w: WorldCup) => !w.registrations.find((r) => r.playerId === w.champion?.playerId)?.isBot;
+    const done = this.all().filter((w) => w.status === 'finished' && w.champion && human(w));
     const history = done.map((w) => ({ edition: w.edition, season: w.season, cup: w.name, champion: w.champion!.name, playerId: w.champion!.playerId, podium: w.podium }));
     const top = done[0];
     return { current: top ? { name: top.champion!.name, playerId: top.champion!.playerId, season: top.season, edition: top.edition, name_of_cup: top.name } : null, history };

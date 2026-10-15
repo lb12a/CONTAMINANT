@@ -1,6 +1,6 @@
 // App store: local profile (offline progression), settings and the optional online account.
 import { useSyncExternalStore } from 'react';
-import { EXAMPLE_DECKS, starterCollection, type Collection, type DeckCardInput, type Difficulty, type ModeId } from '@contaminant/engine';
+import { EXAMPLE_DECKS, devCollection, isDevName, starterCollection, type Collection, type DeckCardInput, type Difficulty, type ModeId } from '@contaminant/engine';
 import { Api, defaultServerUrl } from './net/api.ts';
 import { GameSocket } from './net/socket.ts';
 
@@ -51,6 +51,22 @@ export interface Profile {
   onboarded: boolean;
   /** Basic Training finished (its reward is paid once) */
   trainingDone?: boolean;
+  /** developer profile (name ends with '#'): everything unlocked, unlimited gold, no ranked/tournaments */
+  dev?: boolean;
+  /** the real collection, kept while the profile is in developer mode */
+  normalCollection?: Collection;
+}
+
+/** A name ending in '#' switches the profile into developer mode; removing it restores the real collection. */
+function applyDev(p: Profile): Profile {
+  const dev = isDevName(p.name) || isDevName(p.online?.name);
+  if (dev) return { ...p, dev: true, normalCollection: p.normalCollection ?? (p.dev ? undefined : p.collection), collection: devCollection(p.collection) };
+  if (p.dev) return { ...p, dev: false, collection: p.normalCollection ?? p.collection, normalCollection: undefined };
+  return p;
+}
+
+export function isDevProfile(p: Profile = profile): boolean {
+  return !!p.dev;
 }
 
 const KEY = 'contaminant.profile.v1';
@@ -75,7 +91,7 @@ function load(): Profile {
     if (raw) {
       const p = JSON.parse(raw) as Profile;
       const d = defaultProfile();
-      return { ...d, ...p, settings: { ...d.settings, ...p.settings } };
+      return applyDev({ ...d, ...p, settings: { ...d.settings, ...p.settings } });
     }
   } catch {
     /* corrupted storage: start fresh */
@@ -91,7 +107,7 @@ export function getProfile(): Profile {
 }
 
 export function setProfile(fn: (p: Profile) => Profile): void {
-  profile = fn(profile);
+  profile = applyDev(fn(profile));
   try {
     localStorage.setItem(KEY, JSON.stringify(profile));
   } catch {

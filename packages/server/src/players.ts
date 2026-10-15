@@ -2,6 +2,8 @@
 
 import { randomBytes } from 'node:crypto';
 import {
+  devCollection,
+  isDevName,
   EXAMPLE_DECKS,
   starterCollection,
   validateCharDeck,
@@ -32,11 +34,21 @@ export interface PublicPlayer {
   draws: number;
   titles: string[];
   isBot: boolean;
+  /** developer account (name ends in '#'): no ladder, tournaments or meta */
+  dev: boolean;
 }
 
 export function sanitizeName(raw: unknown): string {
-  const s = String(raw ?? '').replace(/[^\p{L}\p{N} _\-.]/gu, '').trim().slice(0, 20);
-  return s.length >= 2 ? s : `Subject-${Math.floor(Math.random() * 9000 + 1000)}`;
+  const text = String(raw ?? '').trim();
+  // a trailing '#' marks a developer account (everything unlocked, no competitive play)
+  const dev = text.endsWith('#');
+  const s = text.replace(/[^\p{L}\p{N} _\-.]/gu, '').trim().slice(0, dev ? 19 : 20);
+  const name = s.length >= 2 ? s : `Subject-${Math.floor(Math.random() * 9000 + 1000)}`;
+  return dev ? `${name}#` : name;
+}
+
+export function isDevPlayer(p: { name: string } | null | undefined): boolean {
+  return isDevName(p?.name);
 }
 
 export class PlayerService {
@@ -86,7 +98,8 @@ export class PlayerService {
 
   collection(id: string): Collection {
     const p = this.byId(id);
-    return p ? (JSON.parse(p.collection) as Collection) : starterCollection();
+    const col = p ? (JSON.parse(p.collection) as Collection) : starterCollection();
+    return p && isDevName(p.name) ? devCollection(col) : col;
   }
 
   saveCollection(id: string, col: Collection): void {
@@ -140,6 +153,7 @@ export class PlayerService {
       draws: p.draws,
       titles: col.titles ?? [],
       isBot: !!p.is_bot,
+      dev: isDevName(p.name),
     };
   }
 
@@ -169,8 +183,9 @@ export class PlayerService {
     this.db.run('UPDATE players SET games=games+1, wins=wins+?, losses=losses+?, draws=draws+? WHERE id=?', score === 1 ? 1 : 0, score === 0 ? 1 : 0, score === 0.5 ? 1 : 0, id);
   }
 
-  leaderboard(limit = 100, offset = 0, includeBots = false): (PublicPlayer & { rank: number })[] {
-    const rows = this.db.all<PlayerRow>(`SELECT * FROM players ${includeBots ? '' : 'WHERE is_bot=0'} ORDER BY mmr DESC LIMIT ? OFFSET ?`, limit, offset);
+  /** The ladder: humans only (bots and developer accounts never appear). */
+  leaderboard(limit = 100, offset = 0): (PublicPlayer & { rank: number })[] {
+    const rows = this.db.all<PlayerRow>("SELECT * FROM players WHERE is_bot=0 AND name NOT LIKE '%#' ORDER BY mmr DESC LIMIT ? OFFSET ?", limit, offset);
     return rows.map((r, i) => ({ ...this.public(r), rank: offset + i + 1 }));
   }
 

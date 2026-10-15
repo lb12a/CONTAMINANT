@@ -12,17 +12,18 @@ function mkServer() {
   return new GameServer({ dataFile: ':memory:', autoTick: false, planningSeconds: 30, botFillSeconds: 999 });
 }
 
-test('bot simulations feed telemetry and the meta dashboard', () => {
+test('bot simulations are recorded apart: the public meta is humans only', () => {
   const s = mkServer();
   s.simulate(40);
-  const meta = metaSnapshot(s.db);
+  assert.equal(metaSnapshot(s.db).matches, 0, 'bot matches never reach the public meta');
+  const meta = metaSnapshot(s.db, { includeBots: true });
   assert.equal(meta.matches, 40);
   assert.ok(meta.characters.some((c) => c.games > 0));
   assert.ok(meta.items.some((i) => i.games > 0));
   assert.ok(meta.archetypes.length > 0);
   const tiers = Object.values(meta.tierList).flat();
   assert.ok(tiers.length > 0);
-  assert.ok(Array.isArray(detectAnomalies(s.db, { minGames: 5 })));
+  assert.ok(Array.isArray(detectAnomalies(s.db, { minGames: 5, f: { includeBots: true } })));
   s.close();
 });
 
@@ -67,7 +68,9 @@ test('automatic tournaments: schedule, bot-filled single / double / swiss events
     assert.equal(fin.placements![0]!.place, 1);
     void done;
   }
-  assert.ok(s.tournaments.trophyHall().length >= 3);
+  // bots win prizes in bot-filled events, but they never enter the Trophy Hall
+  const botIds = new Set(s.players.bots().map((b) => b.id));
+  assert.ok(s.tournaments.trophyHall().every((h) => !botIds.has(h.player_id)));
   s.close();
 });
 
@@ -80,8 +83,12 @@ test('World Cup pipeline: qualifiers → groups → playoffs → crowned champio
   assert.ok(fin.champion);
   assert.equal(fin.podium!.length, 4);
   assert.equal(Object.keys(fin.groups!.groups!).length, 4);
+  const champIsBot = fin.registrations.find((r) => r.playerId === fin.champion!.playerId)?.isBot;
   const hall = s.worldcup.hallOfFame() as { kind: string; title: string }[];
-  assert.ok(hall.some((h) => h.kind === 'world_champion' && h.title.startsWith('World Champion')));
+  if (champIsBot) {
+    assert.equal(hall.filter((h) => h.kind === 'world_champion').length, 0, 'a bot champion is not enshrined');
+    assert.equal(s.worldcup.champions().current, null);
+  } else assert.ok(hall.some((h) => h.kind === 'world_champion' && h.title.startsWith('World Champion')));
   s.close();
 });
 

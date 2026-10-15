@@ -2059,3 +2059,11 @@ input[type='number'] {
     font-size: 12px;
   }
 }
+
+.dev-badge {
+  background: #3a1240;
+  color: #ff9ef0;
+  border-color: #ff2bd6;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}

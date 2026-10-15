@@ -93,6 +93,8 @@ export interface MetaFilter {
   kind?: string;
   minMmr?: number;
   sinceMs?: number;
+  /** include matches with a bot ('sim'); the public meta is humans only */
+  includeBots?: boolean;
 }
 
 interface TelMatchRow {
@@ -111,7 +113,7 @@ function matchIds(db: Db, f: MetaFilter): Set<string> {
   const now = Date.now();
   return new Set(
     rows
-      .filter((r) => (!f.mode || r.mode === f.mode) && (!f.zone || r.zone === f.zone) && (!f.kind || r.kind === f.kind) && (!f.minMmr || r.mmr_avg >= f.minMmr) && (!f.sinceMs || now - r.created <= f.sinceMs))
+      .filter((r) => (f.includeBots || r.kind !== 'sim') && (!f.mode || r.mode === f.mode) && (!f.zone || r.zone === f.zone) && (!f.kind || r.kind === f.kind) && (!f.minMmr || r.mmr_avg >= f.minMmr) && (!f.sinceMs || now - r.created <= f.sinceMs))
       .map((r) => r.match_id),
   );
 }
@@ -369,7 +371,7 @@ export function metaSnapshot(db: Db, f: MetaFilter = {}): MetaSnapshot {
 /** Learned bot weights: characters/items that win more get deployed/played more by bots. */
 export function botWeights(db: Db): Record<string, number> {
   const w: Record<string, number> = {};
-  for (const c of characterStats(db)) if (c.games >= 10) w[c.id] = Math.max(0.5, Math.min(1.5, 1 + (c.winRate - 0.5) * 2));
-  for (const i of itemStats(db)) if (i.games >= 10) w[i.id] = Math.max(0.5, Math.min(1.5, 1 + (i.winRate - 0.5) * 2));
+  for (const c of characterStats(db, { includeBots: true })) if (c.games >= 10) w[c.id] = Math.max(0.5, Math.min(1.5, 1 + (c.winRate - 0.5) * 2));
+  for (const i of itemStats(db, { includeBots: true })) if (i.games >= 10) w[i.id] = Math.max(0.5, Math.min(1.5, 1 + (i.winRate - 0.5) * 2));
   return w;
 }
