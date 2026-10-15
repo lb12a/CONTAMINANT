@@ -239,13 +239,20 @@ class TexCache {
   }
 }
 
-/** Floors with a regular pattern repeat; organic grounds are one painted plate. */
-const TILED_GROUND = new Set<Zone>(['laboratory', 'toyroom', 'tomb']);
+/** How many hexes one generated ground texture spans (its width); beyond that it repeats mirrored. */
+const GROUND_HEXES: Record<Zone, number> = {
+  laboratory: 13.5, // ~9 painted tiles → 1.5 hexes per tile
+  tomb: 12,
+  toyroom: 11,
+  graveyard: 16, // framed compositions roughly match a standard board
+  bog: 16,
+  forest: 16,
+};
 
 const plateCache = new Map<string, Texture>();
 /**
- * The ground plate for a board: the generated texture either covers it (organic ground) or repeats
- * mirror-tiled at a scale where a painted floor tile is about one and a half hexes, then the edges fade.
+ * The ground plate for a board: the generated texture at a fixed size per hex, centred on the board
+ * and repeated mirror-tiled (no seams) where the board is larger, squashed by the tilt, edges faded.
  */
 function groundPlate(img: HTMLImageElement, zone: Zone, gw: number, gh: number): Texture {
   const ck = `${zone}|${Math.round(gw)}x${Math.round(gh)}`;
@@ -257,29 +264,23 @@ function groundPlate(img: HTMLImageElement, zone: Zone, gw: number, gh: number):
   c.width = W;
   c.height = H;
   const ctx = c.getContext('2d')!;
-  if (TILED_GROUND.has(zone)) {
-    // a 2 × 2 mirrored tile has no seams
-    const m = document.createElement('canvas');
-    m.width = img.width * 2;
-    m.height = img.height * 2;
-    const mc = m.getContext('2d')!;
-    for (const [fx, fy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
-      mc.setTransform(fx, 0, 0, fy, fx < 0 ? m.width : 0, fy < 0 ? m.height : 0);
-      mc.drawImage(img, 0, 0);
-    }
-    const worldPerTexPx = (S * SQ3 * 1.5 * 9) / img.width; // ~9 painted tiles across the texture
-    const scale = worldPerTexPx * (W / gw);
-    const pat = ctx.createPattern(m, 'repeat')!;
-    pat.setTransform(new DOMMatrix().scale(scale, scale * TILT));
-    ctx.fillStyle = pat;
-    ctx.fillRect(0, 0, W, H);
-  } else {
-    // lies on the tilted floor: squashed vertically like the board itself
-    const sc = Math.max(W / img.width, H / (img.height * TILT));
-    const dw = img.width * sc;
-    const dh = img.height * sc * TILT;
-    ctx.drawImage(img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  // a 2 × 2 mirrored tile has no seams
+  const m = document.createElement('canvas');
+  m.width = img.width * 2;
+  m.height = img.height * 2;
+  const mc = m.getContext('2d')!;
+  for (const [fx, fy] of [[1, 1], [-1, 1], [1, -1], [-1, -1]] as const) {
+    mc.setTransform(fx, 0, 0, fy, fx < 0 ? m.width : 0, fy < 0 ? m.height : 0);
+    mc.drawImage(img, 0, 0);
   }
+  const worldPerTexPx = (S * SQ3 * (GROUND_HEXES[zone] ?? 14)) / img.width;
+  const sx = worldPerTexPx * (W / gw);
+  const sy = sx * TILT;
+  const pat = ctx.createPattern(m, 'repeat')!;
+  // centre the (unmirrored) texture on the plate
+  pat.setTransform(new DOMMatrix().translate(W / 2 - (img.width * sx) / 2, H / 2 - (img.height * sy) / 2).scale(sx, sy));
+  ctx.fillStyle = pat;
+  ctx.fillRect(0, 0, W, H);
   const t = featherTex(c);
   plateCache.set(ck, t);
   return t;
@@ -409,7 +410,7 @@ export class DioramaRenderer {
 
     this.ground.anchor.set(0.5);
     this.groundShade.anchor.set(0.5);
-    this.groundShade.texture = radialTex('rgba(10,7,12,0)', 'rgba(10,7,12,0.75)', 512, 0.72);
+    this.groundShade.texture = radialTex('rgba(10,7,12,0)', 'rgba(10,7,12,0.6)', 512, 0.74);
     this.groundLayer.addChild(this.ground, this.decor, this.groundShade);
     const glowBlur = new BlurFilter({ strength: 10, quality: 3 });
     this.glowG.filters = [glowBlur];
@@ -419,7 +420,7 @@ export class DioramaRenderer {
     this.fxG.blendMode = 'add';
 
     // light: warm spotlight + god rays, then the vignette frame
-    this.spot.texture = radialTex('rgba(255,214,150,0.32)', 'rgba(255,190,120,0)', 512);
+    this.spot.texture = radialTex('rgba(255,214,150,0.4)', 'rgba(255,190,120,0)', 512);
     this.spot.anchor.set(0.5);
     this.spot.blendMode = 'add';
     if (!this.reduce) {
@@ -429,7 +430,7 @@ export class DioramaRenderer {
       this.rays.blendMode = 'add';
     }
     this.light.addChild(this.spot, this.rays);
-    this.vignette.texture = radialTex('rgba(6,4,8,0)', 'rgba(6,4,8,0.92)', 512, 0.45);
+    this.vignette.texture = radialTex('rgba(6,4,8,0)', 'rgba(6,4,8,0.86)', 512, 0.5);
     this.vignette.anchor.set(0.5);
     this.app.stage.addChild(this.world, this.light, this.vignette);
 
