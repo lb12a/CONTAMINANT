@@ -291,16 +291,16 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
                   <span className="small">{m.champion ? `Champion: ${m.champion}` : m.status === 'scheduled' || m.status === 'checkin' ? `${m.players} in` : new Date(m.startsAt).getUTCDate() + '.'}</span>
                   {m.tournamentId && (m.status === 'scheduled' || m.status === 'checkin') && (
                     <button className="btn small primary" onClick={() => nav({ name: 'tournaments', id: m.tournamentId! })}>
-                      Enter
+                      {t('Enter')}
                     </button>
                   )}
                 </li>
               );
             })}
             <li className="road-stop finale">
-              <span className="road-month">Oct</span>
+              <span className="road-month">{t('Oct')}</span>
               <span className="road-pin" />
-              <span className="small">World Cup</span>
+              <span className="small">{t('World Cup')}</span>
             </li>
           </ol>
         </section>
@@ -344,7 +344,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
                   {(lb.stage === 'playoffs' || lb.stage === 'finished') && Array.isArray(lb.bracket) && <BracketView matches={lb.bracket as BMatch[]} names={names} nav={nav} />}
                   {lb.stage === 'registration' && Array.isArray(lb.direct) && (lb.direct as { name: string; via: string }[]).length > 0 && (
                     <div className="small">
-                      <b>Seeded into the groups</b>
+                      <b>{t('Seeded into the groups')}</b>
                       {(lb.direct as { name: string; via: string }[]).map((d) => (
                         <div key={d.name}>
                           {d.name} <span className="muted">· {d.via}</span>
@@ -358,7 +358,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
           )}
           {live.length > 0 && (
             <div className="col" style={{ marginTop: 10 }}>
-              <h3>Live broadcasts</h3>
+              <h3>{t('Live broadcasts')}</h3>
               <div className="row wrap">
                 {live.map((m) => (
                   <button key={m.id} className="btn secondary small" onClick={() => nav({ name: 'spectate', match: m.id })}>
@@ -372,13 +372,13 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
 
         {/* Circuit Points race */}
         <section className="panel">
-          <h2>Circuit Points</h2>
+          <h2>{t('Circuit Points')}</h2>
           {circuit?.me && (
             <p className="small">
               You: <b className="num">{circuit.me.points}</b> points · {circuit.me.majors.map((m) => `${m.name} #${m.place}`).join(', ')}
             </p>
           )}
-          {!circuit?.standings.length && <p className="muted small">No Major has been played this season yet. The first one decides the first seed.</p>}
+          {!circuit?.standings.length && <p className="muted small">{t('No Major has been played this season yet. The first one decides the first seed.')}</p>}
           <table className="table">
             <tbody>
               {circuit?.standings.slice(0, 32).map((r) => (
@@ -388,7 +388,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
                     <button className="link-name" onClick={() => nav({ name: 'profile', id: r.playerId })}>
                       {r.name}
                     </button>
-                    {directIds.has(r.playerId) && <span className="chip buff" style={{ marginLeft: 6 }}>seeded</span>}
+                    {directIds.has(r.playerId) && <span className="chip buff" style={{ marginLeft: 6 }}>{t('seeded')}</span>}
                   </td>
                   <td className="num">{r.points}</td>
                   <td className="num muted">{r.majorWins ? (
@@ -405,8 +405,8 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
 
       {/* champion history */}
       <section className="panel">
-        <h2>Champions</h2>
-        {!champs?.history.length && !champs?.majors.length && <span className="muted small">No champion yet. The first crown is still unclaimed.</span>}
+        <h2>{t('Champions')}</h2>
+        {!champs?.history.length && !champs?.majors.length && <span className="muted small">{t('No champion yet. The first crown is still unclaimed.')}</span>}
         <div className="champ-list">
           {champs?.history.map((h) => (
             <div key={h.edition} className="champ-card world">

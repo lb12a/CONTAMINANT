@@ -9,7 +9,7 @@ import { LocalMatch, type MatchSnapshot } from '../game/controller.ts';
 import type { PlannerState } from '../game/planner.ts';
 import type { HighlightKind } from '../render/types.ts';
 import { setProfile, toast, useProfile } from '../store.ts';
-import { t } from '../i18n.ts';
+import { t, tx } from '../i18n.ts';
 import { startBotMatch } from '../game/offline.ts';
 import { MatchScreen } from './MatchScreen.tsx';
 import { Icon } from '../ui/Icon.tsx';
@@ -215,10 +215,10 @@ export function BasicTraining({ nav }: { nav: Nav }) {
               <span className="coach-step">
                 {step + 1}/{STEPS.length}
               </span>
-              <b>{de ? s.de.title : s.title}</b>
+              <b>{tx(s.title, s.de.title)}</b>
             </div>
-            <p>{de ? s.de.text : s.text}</p>
-            {hint && <p className="coach-hint">{de ? 'Nimm für diese Lektion ein goldenes Feld: Entferne den Einsatz in deiner Planliste (✕) und versuche es erneut.' : 'For this lesson use a gold tile: remove the deployment in your plan list (✕) and try again.'}</p>}
+            <p>{tx(s.text, s.de.text)}</p>
+            {hint && <p className="coach-hint">{tx('For this lesson use a gold tile: remove the deployment in your plan list (✕) and try again.', 'Nimm für diese Lektion ein goldenes Feld: Entferne den Einsatz in deiner Planliste (✕) und versuche es erneut.')}</p>}
             <div className="coach-dots" aria-hidden>
               {STEPS.map((_, i) => (
                 <span key={i} className={i < step ? 'done' : i === step ? 'now' : ''} />

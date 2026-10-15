@@ -113,7 +113,7 @@ export function OnlineConnect() {
       <details className="small">
         <summary>{t('Enter a server address')}</summary>
         <div className="row wrap" style={{ marginTop: 6 }}>
-          <input type="text" value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="192.168.1.20 / https://…" style={{ flex: '1 1 200px' }} />
+          <input type="text" value={addr} onChange={(e) => setAddr(e.target.value)} placeholder={t('192.168.1.20 / https://…')} style={{ flex: '1 1 200px' }} />
           <button className="btn secondary small" disabled={!addr.trim() || busy} onClick={() => void manual()}>
             {t('Connect')}
           </button>
@@ -351,22 +351,22 @@ function PeerPanel({ nav }: { nav: Nav }) {
   return (
     <div className="panel grow" style={{ minWidth: 280 }}>
       <h3>{t('Direct match (P2P)')}</h3>
-      <p className="small muted">Play a friend over a direct connection. Plans are sealed with a hash before they are revealed, so nobody can react to the other side.</p>
+      <p className="small muted">{t('Play a friend over a direct connection. Plans are sealed with a hash before they are revealed, so nobody can react to the other side.')}</p>
       <div className="row wrap">
         <span className="chip neutral">
           Your code: <b className="num p2p-code">{p.online.playerId}</b>
         </span>
         <button className="btn secondary small" onClick={() => void navigator.clipboard?.writeText(p.online!.playerId).then(() => toast('Code copied', 'good'))}>
-          Copy
+          {t('Copy')}
         </button>
         <button className="btn primary small" onClick={() => open('host')}>
-          Wait for a friend
+          {t('Wait for a friend')}
         </button>
       </div>
       <div className="row wrap" style={{ marginTop: 8 }}>
-        <input type="text" placeholder="Friend’s code" aria-label="Friend’s P2P code" value={friend} onChange={(e) => setFriend(e.target.value)} style={{ width: 170 }} />
+        <input type="text" placeholder={t('Friend’s code')} aria-label={t('Friend’s P2P code')} value={friend} onChange={(e) => setFriend(e.target.value)} style={{ width: 170 }} />
         <button className="btn secondary small" disabled={!friend.trim()} onClick={() => open('joiner')}>
-          Connect
+          {t('Connect')}
         </button>
       </div>
       {status.s !== 'idle' && (

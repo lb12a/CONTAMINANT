@@ -1,108 +1,35 @@
-// UI strings (English / German). Game data names stay English as in the Game Plan.
-import { getProfile } from './store.ts';
+// Interface strings in twelve languages. English text is the key; each other language is a dictionary in
+// ./i18n/<lang>.ts, loaded when it is chosen. Missing entries fall back to English.
 
-const de: Record<string, string> = {
-  'Play': 'Spielen',
-  'Play vs Bot': 'Gegen Bot spielen',
-  'Ranked': 'Gewertet',
-  'Casual': 'Gelegenheit',
-  'Team Battle': 'Team-Kampf',
-  'Friendly': 'Freundschaftsspiel',
-  'Collection': 'Sammlung',
-  'Deck Builder': 'Deck-Bauer',
-  'Shop': 'Shop',
-  'Missions': 'Missionen',
-  'Tournaments': 'Turniere',
-  'World Cup': 'WM Online',
-  'Meta': 'Meta',
-  'Ladder': 'Rangliste',
-  'Settings': 'Einstellungen',
-  'Testing Chambers': 'Prüfstände',
-  'History': 'Verlauf',
-  'Spectate': 'Zuschauen',
-  'Ready': 'Bereit',
-  'End planning': 'Planung beenden',
-  'Surrender': 'Aufgeben',
-  'Back': 'Zurück',
-  'Cancel': 'Abbrechen',
-  'Confirm': 'Bestätigen',
-  'Move': 'Bewegen',
-  'Attack': 'Angriff',
-  'Ability': 'Fähigkeit',
-  'Wait': 'Warten',
-  'Rest': 'Rasten',
-  'Hold': 'Halten',
-  'Deploy': 'Einsetzen',
-  'Lock': 'Sperren',
-  'Re-roll': 'Neu würfeln',
-  'Play card': 'Karte spielen',
-  'Victory': 'Sieg',
-  'Defeat': 'Niederlage',
-  'Draw': 'Unentschieden',
-  'Planning': 'Planung',
-  'Resolution': 'Auflösung',
-  'Round': 'Runde',
-  'Your hand': 'Deine Hand',
-  'Offered characters': 'Angebotene Charaktere',
-  'Combat log': 'Kampfprotokoll',
-  'Action order': 'Aktionsreihenfolge',
-  'Start tutorial': 'Tutorial starten',
-  'Later': 'Später',
-  'Next': 'Weiter',
-  'Skip': 'Überspringen',
-  'Try another plan': 'Anders planen',
-  'Open chest': 'Truhe öffnen',
-  'Buy': 'Kaufen',
-  'Level up': 'Aufwerten',
-  'Queue': 'Warteschlange',
-  'Teams': 'Teams',
-  'Game modes': 'Spielmodi',
-  'Replays': 'Wiederholungen',
-  'Leave queue': 'Warteschlange verlassen',
-  'Register': 'Anmelden',
-  'Check in': 'Einchecken',
-  'Hall of Fame': 'Ruhmeshalle',
-  'Trophy Hall': 'Trophäenhalle',
-  'Tier list': 'Stufenliste',
-  'Anomalies': 'Auffälligkeiten',
-  'Go online': 'Online gehen',
-  'Offline': 'Offline',
-  'Online': 'Online',
-  'Plan in secret. Everything resolves at once: Priority first, then Speed. First to 100 Victory Points wins.':
-    'Plane im Geheimen. Alles passiert gleichzeitig: erst Priorität, dann Tempo. Wer zuerst 100 Siegpunkte hat, gewinnt.',
-  'Welcome, Subject.': 'Willkommen, Proband.',
-  'Basic Training walks you through your first round: you deploy, move, attack and seal your plan yourself. About five minutes, 200 gold.':
-    'Die Grundausbildung führt dich durch deine erste Runde: Du setzt ein, bewegst, greifst an und versiegelst deinen Plan selbst. Etwa fünf Minuten, 200 Gold.',
-  'Your name': 'Dein Name',
-  'Start Basic Training': 'Grundausbildung starten',
-  'I know how to play': 'Ich kenne das Spiel',
-  'Skip training': 'Ausbildung überspringen',
-  'Keep playing': 'Weiterspielen',
-  'Real match': 'Echtes Match',
-  'Nicely done': 'Gut gemacht',
-  'Your move…': 'Du bist dran …',
-  'Basic Training complete · +200 gold': 'Grundausbildung abgeschlossen · +200 Gold',
-  'Profile': 'Profil',
-  'Direct match (P2P)': 'Direktes Match (P2P)',
-  'Wait for a friend': 'Auf Freund warten',
-  'Connect': 'Verbinden',
-  'Copy': 'Kopieren',
-  'Road to Halloween': 'Der Weg nach Halloween',
-  'Reigning World Champion': 'Amtierender Weltmeister',
-  'Circuit Points': 'Circuit-Punkte',
-  'Champions': 'Champions',
-  'Team ladder': 'Team-Rangliste',
-  'Found a team': 'Team gründen',
-  'Join team': 'Team beitreten',
-  'Leave team': 'Team verlassen',
-  'Recent matches': 'Letzte Matches',
-  'Honours': 'Ehrungen',
-  'Replay': 'Wiederholung',
-  'LAN server': 'LAN-Server',
-  'Host server': 'Server starten',
-  'Stop server': 'Server stoppen',
-};
+import { getProfile } from './store.ts';
+import { isLang, type Lang } from './i18n/langs.ts';
+
+export { LANGUAGES, detectLanguage, type Lang } from './i18n/langs.ts';
+
+const loaders = import.meta.glob<{ default: Record<string, string> }>(['./i18n/*.ts', '!./i18n/langs.ts']);
+const dicts: Partial<Record<Lang, Record<string, string>>> = {};
+
+function lang(): Lang {
+  const l = getProfile().settings.lang;
+  return isLang(l) ? l : 'en';
+}
+
+/** Loads a language's dictionary (call before switching to it). */
+export async function loadLanguage(l: Lang): Promise<void> {
+  if (l === 'en' || dicts[l]) return;
+  const load = loaders[`./i18n/${l}.ts`];
+  if (load) dicts[l] = (await load()).default;
+}
 
 export function t(s: string): string {
-  return getProfile().settings.lang === 'de' ? de[s] ?? s : s;
+  const l = lang();
+  if (l === 'en') return s;
+  return dicts[l]?.[s] ?? s;
+}
+
+/** For text that ships with its own German version (tutorial scripts, missions): German from the data, other languages from the dictionaries. */
+export function tx(en: string, de?: string): string {
+  const l = lang();
+  if (l === 'de' && de) return de;
+  return t(en);
 }

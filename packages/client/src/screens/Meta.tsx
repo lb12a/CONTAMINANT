@@ -83,8 +83,8 @@ export function MetaScreen() {
   }, [p.online, mode, zone, minMmr, sims]);
 
   const chars = useMemo(() => (snap?.characters ?? []).filter((c) => c.games > 0).sort((a, b) => b.winRate - a.winRate), [snap]);
-  if (!p.online) return <p className="muted">Go online to see the live meta.</p>;
-  if (!snap) return <p className="muted">Loading the meta…</p>;
+  if (!p.online) return <p className="muted">{t('Go online to see the live meta.')}</p>;
+  if (!snap) return <p className="muted">{t('Loading the meta…')}</p>;
   const empty = snap.matches === 0;
 
   return (
@@ -96,28 +96,28 @@ export function MetaScreen() {
           {snap.matches} {sims ? 'matches incl. bot simulations' : 'human matches'} · updated {new Date(snap.generated).toLocaleTimeString()}
         </span>
         {p.dev && (
-          <label className="row small" title="Developer view: bot-vs-bot simulations, never part of the public meta">
+          <label className="row small" title={t('Developer view: bot-vs-bot simulations, never part of the public meta')}>
             <input type="checkbox" checked={sims} onChange={(e) => setSims(e.target.checked)} /> bot simulations
           </label>
         )}
       </div>
-      {empty && <p className="panel muted">No human matches recorded yet. The meta only counts matches between players; bots and developer accounts never influence it.</p>}
+      {empty && <p className="panel muted">{t('No human matches recorded yet. The meta only counts matches between players; bots and developer accounts never influence it.')}</p>}
       {/* filters: one row above the charts */}
       <div className="row wrap">
-        <select value={mode} onChange={(e) => setMode(e.target.value)} aria-label="Mode">
-          <option value="">All modes</option>
+        <select value={mode} onChange={(e) => setMode(e.target.value)} aria-label={t('Mode')}>
+          <option value="">{t('All modes')}</option>
           {['contamination', 'elimination', 'domination', 'research', 'escape', 'anomaly'].map((m) => (
             <option key={m}>{m}</option>
           ))}
         </select>
-        <select value={zone} onChange={(e) => setZone(e.target.value)} aria-label="Zone">
-          <option value="">All zones</option>
+        <select value={zone} onChange={(e) => setZone(e.target.value)} aria-label={t('Zone')}>
+          <option value="">{t('All zones')}</option>
           {['laboratory', 'graveyard', 'bog', 'toyroom', 'forest', 'tomb'].map((m) => (
             <option key={m}>{m}</option>
           ))}
         </select>
-        <select value={minMmr} onChange={(e) => setMinMmr(e.target.value)} aria-label="Minimum MMR">
-          <option value="">All MMR</option>
+        <select value={minMmr} onChange={(e) => setMinMmr(e.target.value)} aria-label={t('Minimum MMR')}>
+          <option value="">{t('All MMR')}</option>
           {[1000, 1200, 1400, 1600, 1800, 2000].map((m) => (
             <option key={m} value={m}>
               ≥ {m}
@@ -139,21 +139,21 @@ export function MetaScreen() {
                 </div>
               </div>
             ))}
-            <p className="small muted">Tiers use a Bayesian-adjusted win rate plus a small pick-rate bonus.</p>
+            <p className="small muted">{t('Tiers use a Bayesian-adjusted win rate plus a small pick-rate bonus.')}</p>
           </div>
         )}
         {tab === 'characters' && (
           <div className="col">
-            <h3 style={{ margin: 0 }}>Win rate vs 50% (characters in deck)</h3>
+            <h3 style={{ margin: 0 }}>{t('Win rate vs 50% (characters in deck)')}</h3>
             <DivergingBars rows={chars} onTip={setTip} />
-            <h3 style={{ margin: '10px 0 0' }}>Pick rate</h3>
+            <h3 style={{ margin: '10px 0 0' }}>{t('Pick rate')}</h3>
             <MagnitudeBars rows={[...chars].sort((a, b) => b.pickRate - a.pickRate)} onTip={setTip} />
             <StatTable rows={chars} />
           </div>
         )}
         {tab === 'items' && (
           <div className="col">
-            <h3 style={{ margin: 0 }}>Item popularity (share of decks)</h3>
+            <h3 style={{ margin: 0 }}>{t('Item popularity (share of decks)')}</h3>
             <MagnitudeBars rows={(snap.items ?? []).filter((i) => i.games > 0).slice(0, 30)} onTip={setTip} />
             <StatTable rows={(snap.items ?? []).filter((i) => i.games > 0)} items />
           </div>
@@ -163,11 +163,11 @@ export function MetaScreen() {
             <table className="table">
               <thead>
                 <tr>
-                  <th>Archetype</th>
-                  <th className="num">Share</th>
-                  <th className="num">Games</th>
-                  <th className="num">Win rate</th>
-                  <th className="num">95% low</th>
+                  <th>{t('Archetype')}</th>
+                  <th className="num">{t('Share')}</th>
+                  <th className="num">{t('Games')}</th>
+                  <th className="num">{t('Win rate')}</th>
+                  <th className="num">{t('95% low')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -182,15 +182,15 @@ export function MetaScreen() {
                 ))}
               </tbody>
             </table>
-            <h3>Maps & modes</h3>
+            <h3>{t('Maps & modes')}</h3>
             <table className="table">
               <thead>
                 <tr>
-                  <th>Zone</th>
-                  <th>Mode</th>
-                  <th className="num">Games</th>
-                  <th className="num">First-seat win %</th>
-                  <th className="num">Avg rounds</th>
+                  <th>{t('Zone')}</th>
+                  <th>{t('Mode')}</th>
+                  <th className="num">{t('Games')}</th>
+                  <th className="num">{t('First-seat win %')}</th>
+                  <th className="num">{t('Avg rounds')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -209,8 +209,8 @@ export function MetaScreen() {
         )}
         {tab === 'anomalies' && (
           <div className="col">
-            <p className="small muted">Automatic flags: single cards and combinations whose win rate is significantly above what their parts predict (z ≥ 2.5, win rate ≥ 58%, at least 20 games). Each flag suggests the first balance lever from the Game Plan.</p>
-            {snap.anomalies.length === 0 && <span className="muted">No anomalies at the current sample size.</span>}
+            <p className="small muted">{t('Automatic flags: single cards and combinations whose win rate is significantly above what their parts predict (z ≥ 2.5, win rate ≥ 58%, at least 20 games). Each flag suggests the first balance lever from the Game Plan.')}</p>
+            {snap.anomalies.length === 0 && <span className="muted">{t('No anomalies at the current sample size.')}</span>}
             {snap.anomalies.map((a, i) => {
               const sev = SEVERITY[a.severity];
               return (
@@ -246,7 +246,7 @@ function tipHtml(r: CardStat): string {
 function DivergingBars({ rows, onTip }: { rows: CardStat[]; onTip: Tip }) {
   const max = Math.max(0.05, ...rows.map((r) => Math.abs(r.winRate - 0.5)));
   return (
-    <div className="col" style={{ gap: 2 }} role="img" aria-label="Win rate difference from 50% per character">
+    <div className="col" style={{ gap: 2 }} role="img" aria-label={t('Win rate difference from 50% per character')}>
       {rows.map((r) => {
         const d = r.winRate - 0.5;
         const w = (Math.abs(d) / max) * 45;
@@ -271,7 +271,7 @@ function DivergingBars({ rows, onTip }: { rows: CardStat[]; onTip: Tip }) {
 function MagnitudeBars({ rows, onTip }: { rows: CardStat[]; onTip: Tip }) {
   const max = Math.max(0.01, ...rows.map((r) => r.pickRate));
   return (
-    <div className="col" style={{ gap: 2 }} role="img" aria-label="Pick rate per card">
+    <div className="col" style={{ gap: 2 }} role="img" aria-label={t('Pick rate per card')}>
       {rows.map((r) => (
         <div key={r.id} className="row small" style={{ gap: 6, minHeight: 20 }} onMouseMove={(e) => onTip({ x: e.clientX, y: e.clientY, html: tipHtml(r) })} onMouseLeave={() => onTip(null)}>
           <span style={{ width: 150, textAlign: 'right', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.name}</span>
@@ -290,19 +290,19 @@ function MagnitudeBars({ rows, onTip }: { rows: CardStat[]; onTip: Tip }) {
 function StatTable({ rows, items }: { rows: CardStat[]; items?: boolean }) {
   return (
     <details>
-      <summary className="small">Table view</summary>
+      <summary className="small">{t('Table view')}</summary>
       <div className="scroll-x">
         <table className="table">
           <thead>
             <tr>
               <th>{items ? 'Item' : 'Character'}</th>
-              <th>Tier</th>
-              <th className="num">Games</th>
-              <th className="num">Pick</th>
+              <th>{t('Tier')}</th>
+              <th className="num">{t('Games')}</th>
+              <th className="num">{t('Pick')}</th>
               <th className="num">{items ? 'Played' : 'Deployed'}</th>
-              <th className="num">Win</th>
-              <th className="num">95% CI</th>
-              {!items && <th className="num">Avg dmg</th>}
+              <th className="num">{t('Win')}</th>
+              <th className="num">{t('95% CI')}</th>
+              {!items && <th className="num">{t('Avg dmg')}</th>}
             </tr>
           </thead>
           <tbody>

@@ -33,7 +33,8 @@
     "smoke": "npm run build:server && npm run smoke -w @contaminant/server",
     "qa:shots": "node tools/qa/shots.ts",
     "qa:training": "node tools/qa/training.ts",
-    "qa:desktop": "node tools/qa/desktop.ts"
+    "qa:desktop": "node tools/qa/desktop.ts",
+    "qa:i18n": "node tools/qa/i18n.ts"
   },
   "devDependencies": {
     "@types/node": "^24.19.2",

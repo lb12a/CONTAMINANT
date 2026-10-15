@@ -1,6 +1,8 @@
 import { createRoot } from 'react-dom/client';
 import { App } from './App.tsx';
 import { loadAssetManifest, preloadAssets } from './render/assets.ts';
+import { loadLanguage } from './i18n.ts';
+import { getProfile } from './store.ts';
 import '@fontsource/grenze-gotisch/600.css';
 import '@fontsource/grenze-gotisch/800.css';
 import '@fontsource/barlow-semi-condensed/400.css';
@@ -22,7 +24,7 @@ const rotate = window.setInterval(() => msg && (msg.textContent = LINES[++line %
 const progress = (f: number) => fill && (fill.style.width = `${Math.round(8 + f * 90)}%`);
 
 // generated sprites are decoded before the first render so card portraits can be composed synchronously
-await loadAssetManifest();
+await Promise.all([loadAssetManifest(), loadLanguage(getProfile().settings.lang)]);
 progress(0.08);
 await preloadAssets(['tokens/', 'items/', 'backdrops/', 'icons/'], 9000, (done, total) => progress(done / Math.max(1, total)));
 progress(1);

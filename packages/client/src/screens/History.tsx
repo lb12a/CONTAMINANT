@@ -34,13 +34,13 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
     <div className="col">
       <h1>{t('History')}</h1>
       <div className="panel">
-        <h3>Local matches</h3>
-        {p.history.length === 0 && <span className="muted small">No matches yet.</span>}
+        <h3>{t('Local matches')}</h3>
+        {p.history.length === 0 && <span className="muted small">{t('No matches yet.')}</span>}
         {p.history.map((h) => (
           <div key={h.id + h.at} className="col" style={{ borderBottom: '1px solid #2c2535', padding: '6px 0' }}>
             <div className="row wrap" style={{ justifyContent: 'space-between' }}>
               <span>
-                <Icon name={h.won === null ? 'ui/scales' : h.won ? 'ui/trophy' : 'ui/skull'} size={18} /> vs <b>{h.opponent}</b> · {h.mode} · <span className="num">{h.vp[0]}:{h.vp[1]}</span> · {h.rounds} rounds
+                <Icon name={h.won === null ? 'ui/scales' : h.won ? 'ui/trophy' : 'ui/skull'} size={18} /> {t('vs')} <b>{h.opponent}</b> · {h.mode} · <span className="num">{h.vp[0]}:{h.vp[1]}</span> · {h.rounds} rounds
               </span>
               <span className="small muted">{new Date(h.at).toLocaleString()}</span>
               <button className="btn secondary small" onClick={() => setOpen(open === h.id ? null : h.id)}>
@@ -59,16 +59,16 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
       </div>
       {p.online && (
         <div className="panel scroll-x">
-          <h3>Online matches</h3>
+          <h3>{t('Online matches')}</h3>
           <table className="table">
             <thead>
               <tr>
-                <th>When</th>
-                <th>Kind</th>
-                <th>Players</th>
-                <th className="num">VP</th>
-                <th className="num">Rounds</th>
-                <th>Replay</th>
+                <th>{t('When')}</th>
+                <th>{t('Kind')}</th>
+                <th>{t('Players')}</th>
+                <th className="num">{t('VP')}</th>
+                <th className="num">{t('Rounds')}</th>
+                <th>{t('Replay')}</th>
               </tr>
             </thead>
             <tbody>
@@ -94,7 +94,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                         setVerify((x) => ({ ...x, [r.id]: v.ok ? `verified (${v.rounds} rounds)` : 'mismatch' }));
                       }}
                     >
-                      Verify
+                      {t('Verify')}
                     </button>{' '}
                     <span className="small">{verify[r.id]}</span>
                   </td>

@@ -42,7 +42,7 @@ export function LadderScreen({ nav }: { nav: Nav }) {
       .then((r) => setDivs(r.divisions))
       .catch(() => undefined);
   }, [p.online]);
-  if (!p.online) return <p className="muted">Go online to see the global ladder.</p>;
+  if (!p.online) return <p className="muted">{t('Go online to see the global ladder.')}</p>;
   const color = (id: string) => divs.find((d) => d.id === id)?.color ?? '#888';
   return (
     <div className="col">
@@ -71,11 +71,11 @@ export function LadderScreen({ nav }: { nav: Nav }) {
           <thead>
             <tr>
               <th>#</th>
-              <th>Player</th>
-              <th>Division</th>
-              <th className="num">MMR</th>
+              <th>{t('Player')}</th>
+              <th>{t('Division')}</th>
+              <th className="num">{t('MMR')}</th>
               <th className="num">W–L</th>
-              <th>Titles</th>
+              <th>{t('Titles')}</th>
             </tr>
           </thead>
           <tbody>

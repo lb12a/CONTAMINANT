@@ -1,6 +1,6 @@
 import { dailyMissions } from '@contaminant/engine';
 import { useProfile } from '../store.ts';
-import { t } from '../i18n.ts';
+import { t, tx } from '../i18n.ts';
 import { Icon } from '../ui/Icon.tsx';
 
 export function MissionsScreen() {
@@ -9,18 +9,17 @@ export function MissionsScreen() {
   const list = dailyMissions(day);
   const m = (p.collection as typeof p.collection & { missions?: { day: string; progress: Record<string, number>; claimed: string[] } }).missions;
   const progress = m?.day === day ? m.progress : {};
-  const de = p.settings.lang === 'de';
   return (
     <div className="col" style={{ maxWidth: 720 }}>
       <h1>{t('Missions')}</h1>
-      <p className="muted">A stack of files on the desk. New missions every day (UTC).</p>
+      <p className="muted">{t('A stack of files on the desk. New missions every day (UTC).')}</p>
       {list.map((ms) => {
         const v = progress[ms.stat] ?? 0;
         const done = v >= ms.target;
         return (
           <div key={ms.id} className="paper" style={{ padding: 12, transform: `rotate(${(ms.id.length % 3) - 1}deg)` }}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <b className="display">{de ? ms.textDe : ms.text}</b>
+              <b className="display">{tx(ms.text, ms.textDe)}</b>
               <span className="num">
                 {Math.min(v, ms.target)}/{ms.target}
               </span>

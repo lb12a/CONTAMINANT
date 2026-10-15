@@ -18,7 +18,7 @@ import type { Nav } from '../App.tsx';
 import { CharacterCard, HexIcon, ItemCard, Modal, Tabs } from '../ui/components.tsx';
 import { charRing } from '../ui/glyphs.ts';
 import { getApi, setProfile, toast, useProfile } from '../store.ts';
-import { t } from '../i18n.ts';
+import { t, tx } from '../i18n.ts';
 import { sfx } from '../audio.ts';
 import { Icon } from '../ui/Icon.tsx';
 
@@ -41,7 +41,7 @@ export function CollectionScreen({ nav }: { nav: Nav }) {
       <div className="panel" style={{ borderTopLeftRadius: 0 }}>
         <div className="row wrap" style={{ marginBottom: 10 }}>
           <select value={rarity} onChange={(e) => setRarity(e.target.value as Rarity | 'all')}>
-            <option value="all">All rarities</option>
+            <option value="all">{t('All rarities')}</option>
             {['common', 'uncommon', 'rare', 'epic', 'legendary'].map((r) => (
               <option key={r} value={r}>
                 {r}
@@ -50,7 +50,7 @@ export function CollectionScreen({ nav }: { nav: Nav }) {
           </select>
           {tab === 'items' && (
             <select value={type} onChange={(e) => setType(e.target.value as ItemType | 'all')}>
-              <option value="all">All types</option>
+              <option value="all">{t('All types')}</option>
               {Object.entries(ITEM_TYPE_INFO).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v.name}
@@ -133,7 +133,7 @@ export function CharacterDetail({ def, onClose, nav }: { def: CharacterDef; onCl
           })}
         </div>
       </div>
-      <h3 style={{ marginTop: 12 }}>Attacks</h3>
+      <h3 style={{ marginTop: 12 }}>{t('Attacks')}</h3>
       {def.attacks.map((a) => (
         <div key={a.id} className="paper small" style={{ padding: 8, marginBottom: 6 }}>
           <b>{a.name}</b> — {a.category}
@@ -150,7 +150,7 @@ export function CharacterDetail({ def, onClose, nav }: { def: CharacterDef; onCl
       ))}
       {def.altAttacks && (
         <details className="small">
-          <summary>Alternative forms</summary>
+          <summary>{t('Alternative forms')}</summary>
           {Object.entries(def.altAttacks).map(([form, list]) => (
             <div key={form}>
               <b>{form}</b>: {list.map((a) => `${a.name} (P${a.power ?? '—'}, ${a.ap} AP)`).join(' · ')}
@@ -177,10 +177,10 @@ export function CharacterDetail({ def, onClose, nav }: { def: CharacterDef; onCl
               </button>
             </>
           ) : (
-            <span className="rar-text rarity-legendary">Maximum level</span>
+            <span className="rar-text rarity-legendary">{t('Maximum level')}</span>
           )}
           <button className="btn tutorial" onClick={() => nav({ name: 'match', tutorial: def.id })}>
-            {p.settings.lang === 'de' ? 'Prüfstand' : 'Test chamber'} {o.tutorialDone ? <Icon name="ui/check" size={16} /> : null}
+            {tx('Test chamber', 'Prüfstand')} {o.tutorialDone ? <Icon name="ui/check" size={16} /> : null}
           </button>
         </div>
       )}

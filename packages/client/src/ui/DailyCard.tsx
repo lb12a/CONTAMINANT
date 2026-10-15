@@ -53,7 +53,7 @@ export function DailyCard() {
           return (
             <li key={i} className={`daily-day ${state}`}>
               <span className="small">
-                {t('Day')} {i + 1}
+                {t('Day {n}').replace('{n}', String(i + 1))}
               </span>
               <Icon name={d.chest ? 'ui/gift' : 'ui/gold'} size={28} />
               <b className="num small">{d.gold}</b>

@@ -68,7 +68,7 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
     const i = setInterval(f, 5000);
     return () => clearInterval(i);
   }, [sel, p.online]);
-  if (!p.online) return <p className="muted">Go online to join automatic tournaments.</p>;
+  if (!p.online) return <p className="muted">{t('Go online to join automatic tournaments.')}</p>;
   const act = async (tid: string, what: 'register' | 'unregister' | 'checkin') => {
     try {
       const r = await getApi().post<{ ok?: boolean; error?: string }>(`/api/tournaments/${tid}/${what}`, { deckId: p.activeDeck });
@@ -83,16 +83,16 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
   return (
     <div className="col">
       <h1>{t('Tournaments')}</h1>
-      <p className="muted">Daily Spore Cup (single elimination, 18:00 UTC), Daily Rust Swiss (5 rounds, 20:30 UTC), Weekly Bone Harvest (double elimination, Sunday 17:00 UTC). Check in during the 30-minute window before the start. Empty seats are filled with bots.</p>
+      <p className="muted">{t('Daily Spore Cup (single elimination, 18:00 UTC), Daily Rust Swiss (5 rounds, 20:30 UTC), Weekly Bone Harvest (double elimination, Sunday 17:00 UTC). Check in during the 30-minute window before the start. Empty seats are filled with bots.')}</p>
       <div className="panel scroll-x">
         <table className="table">
           <thead>
             <tr>
-              <th>Event</th>
-              <th>Format</th>
-              <th>Status</th>
-              <th>Starts</th>
-              <th className="num">Players</th>
+              <th>{t('Event')}</th>
+              <th>{t('Format')}</th>
+              <th>{t('Status')}</th>
+              <th>{t('Starts')}</th>
+              <th className="num">{t('Players')}</th>
               <th />
             </tr>
           </thead>
@@ -106,8 +106,8 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
                       {tr.name}
                     </button>
                     {tr.circuit && (
-                      <span className="chip buff" style={{ marginLeft: 6 }} title="Monthly Major: earns Circuit Points towards the Halloween World Cup">
-                        Major · World Cup points
+                      <span className="chip buff" style={{ marginLeft: 6 }} title={t('Monthly Major: earns Circuit Points towards the Halloween World Cup')}>
+                        {t('Major · World Cup points')}
                       </span>
                     )}
                     {tr.requirement?.minMmr && (
@@ -148,9 +148,9 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
           <h2>{detail.tournament.name}</h2>
           {(detail.tournament.status === 'scheduled' || detail.tournament.status === 'checkin') && (
             <div className="row wrap countdown-row">
-              <span className="muted small">Check-in</span>
+              <span className="muted small">{t('Check-in')}</span>
               <Countdown to={detail.tournament.checkinOpensAt} done="open" />
-              <span className="muted small">Start</span>
+              <span className="muted small">{t('Start')}</span>
               <Countdown to={detail.tournament.startsAt} done="running" />
             </div>
           )}
@@ -171,7 +171,7 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
       )}
       <div className="panel">
         <h3>{t('Trophy Hall')}</h3>
-        {hall.length === 0 && <span className="muted small">No champions yet.</span>}
+        {hall.length === 0 && <span className="muted small">{t('No champions yet.')}</span>}
         {hall.slice(0, 30).map((h, i) => (
           <div key={i} className="small">
             <Icon name="ui/trophy" size={16} /> <b>{h.player_name}</b> — {h.title} <span className="muted">({new Date(h.created).toLocaleDateString()})</span>
@@ -215,11 +215,11 @@ export function SwissView({ standings, matches, names, nav }: { standings: Swiss
           <thead>
             <tr>
               <th>#</th>
-              <th>Player</th>
-              <th className="num">Pts</th>
+              <th>{t('Player')}</th>
+              <th className="num">{t('Pts')}</th>
               <th className="num">W-D-L</th>
-              <th className="num">Buchholz</th>
-              <th className="num">VP ±</th>
+              <th className="num">{t('Buchholz')}</th>
+              <th className="num">{t('VP ±')}</th>
             </tr>
           </thead>
           <tbody>

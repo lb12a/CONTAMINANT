@@ -4,6 +4,7 @@ import { itemArtUrl, portraitUrl } from '../render/art.ts';
 import { charRing, statusKind } from './glyphs.ts';
 import { Icon } from './Icon.tsx';
 import { useToasts } from '../store.ts';
+import { t } from '../i18n.ts';
 
 export function HexIcon({ ring, children, title }: { ring?: string; children: ReactNode; title?: string }) {
   return (
@@ -52,9 +53,9 @@ export function CharacterCard({ defId, level, onClick, selected, locked, isNew, 
       </div>
       <div className="name">{locked ? '???' : def.name}</div>
       <div className="stats num">
-        <span title="HP"><Icon name="ui/heart" size={12} />{def.stats.hp}</span>
-        <span title="PAtk / PDef"><Icon name="ui/sword" size={12} />{def.stats.patk}/{def.stats.pdef}</span>
-        <span title="SAtk / SDef"><Icon name="ui/rune" size={12} />{def.stats.satk}/{def.stats.sdef}</span>
+        <span title={t('HP')}><Icon name="ui/heart" size={12} />{def.stats.hp}</span>
+        <span title={t('PAtk / PDef')}><Icon name="ui/sword" size={12} />{def.stats.patk}/{def.stats.pdef}</span>
+        <span title={t('SAtk / SDef')}><Icon name="ui/rune" size={12} />{def.stats.satk}/{def.stats.sdef}</span>
       </div>
       {level ? <div className="level">L{level}</div> : null}
       {children}
@@ -66,7 +67,7 @@ export function ItemCard({ itemId, onClick, selected, tarnished, width, attached
   const it: ItemDef | undefined = ITEMS[itemId];
   if (hidden || !it) {
     return (
-      <div className="card item rarity-common" style={width ? ({ ['--w' as string]: typeof width === 'number' ? `${width}px` : width } as React.CSSProperties) : undefined} title="Hidden card">
+      <div className="card item rarity-common" style={width ? ({ ['--w' as string]: typeof width === 'number' ? `${width}px` : width } as React.CSSProperties) : undefined} title={t('Hidden card')}>
         <div className="portrait" style={{ display: 'grid', placeItems: 'center', fontSize: '2.4em' }}>
           <Icon name="ui/envelope" size={44} />
         </div>
@@ -92,7 +93,7 @@ export function ItemCard({ itemId, onClick, selected, tarnished, width, attached
       </div>
       <div className="name">{it.name}</div>
       {it.free ? <div className="free">FREE · {it.free}</div> : <div className="small center" style={{ fontSize: '0.75em', opacity: 0.85 }}>{info.name}</div>}
-      {tarnished && <div className="tarnish">TARNISHED</div>}
+      {tarnished && <div className="tarnish">{t('TARNISHED')}</div>}
     </div>
   );
 }

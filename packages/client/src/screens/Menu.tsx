@@ -42,7 +42,7 @@ export function MenuScreen({ nav }: { nav: Nav }) {
       <section className="hero">
         <div className="hero-art" style={backdrop ? { backgroundImage: `url(${backdrop})` } : undefined} aria-hidden />
         <div className="hero-copy">
-          <h1 className="hero-title">Contaminant</h1>
+          <h1 className="hero-title">{t('Contaminant')}</h1>
           <p className="hero-tag">{t('Plan in secret. Everything resolves at once: Priority first, then Speed. First to 100 Victory Points wins.')}</p>
           <div className="row wrap" style={{ gap: 10 }}>
             <button className="btn seal l" onClick={() => play('contamination')}>
@@ -88,10 +88,10 @@ export function MenuScreen({ nav }: { nav: Nav }) {
             </button>
             Bot:
             <select value={diff} onChange={(e) => setDiff(e.target.value as Difficulty)}>
-              <option value="easy">Easy</option>
-              <option value="normal">Normal</option>
-              <option value="hard">Hard</option>
-              <option value="boss">Boss AI</option>
+              <option value="easy">{t('Easy')}</option>
+              <option value="normal">{t('Normal')}</option>
+              <option value="hard">{t('Hard')}</option>
+              <option value="boss">{t('Boss AI')}</option>
             </select>
           </div>
         </div>
@@ -110,12 +110,12 @@ export function MenuScreen({ nav }: { nav: Nav }) {
 
       <section className="row wrap" style={{ gap: 12 }}>
         <div className="panel grow" style={{ minWidth: 280 }}>
-          <h3>Trophy ladder</h3>
+          <h3>{t('Trophy ladder')}</h3>
           <TrophyLadder trophies={p.collection.bestTrophies} />
           <p className="small muted">{next ? `${next.trophies - p.collection.bestTrophies} trophies until the ${next.name} opens.` : 'All areas are open.'}</p>
         </div>
         <div className="panel grow" style={{ minWidth: 280 }}>
-          <h3>Online</h3>
+          <h3>{t('Online')}</h3>
           {p.online ? (
             <div className="col">
               <span>
@@ -135,7 +135,7 @@ export function MenuScreen({ nav }: { nav: Nav }) {
             </div>
           ) : (
             <div className="col">
-              <span className="muted small">Ranked ladder, tournaments, the World Cup, spectating and the live meta need a server.</span>
+              <span className="muted small">{t('Ranked ladder, tournaments, the World Cup, spectating and the live meta need a server.')}</span>
               <button className="btn primary" onClick={() => nav({ name: 'online' })}>
                 {t('Go online')}
               </button>

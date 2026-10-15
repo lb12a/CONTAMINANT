@@ -81,10 +81,10 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
       <div className="panel col">
         <input type="text" value={deck.name} onChange={(e) => setDeck((d) => ({ ...d, name: e.target.value.slice(0, 24) }))} />
         <div className="row small">
-          <b>Deploy budget</b> <span className="num">{budget}/{DEPLOY_BUDGET}</span>
-          <span className="muted">(typical decks land at 42–50)</span>
+          <b>{t('Deploy budget')}</b> <span className="num">{budget}/{DEPLOY_BUDGET}</span>
+          <span className="muted">{t('(typical decks land at 42–50)')}</span>
         </div>
-        <div style={{ position: 'relative', height: 22, background: '#160f12', border: '2px solid #0b080e', borderRadius: 6, overflow: 'hidden', display: 'flex' }} title="Ribs as dividers, segment colour by tier">
+        <div style={{ position: 'relative', height: 22, background: '#160f12', border: '2px solid #0b080e', borderRadius: 6, overflow: 'hidden', display: 'flex' }} title={t('Ribs as dividers, segment colour by tier')}>
           {segments.map((d, i) => (
             <div key={i} style={{ width: `${(d.deploy / 64) * 100}%`, background: TIER_COLOR[d.tier], borderRight: '2px solid #0b080e' }} title={`${d.name} ${d.deploy}`} />
           ))}
@@ -95,7 +95,7 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
             <Icon name="ui/warning" size={16} /> {e}
           </span>
         ))}
-        {cc.ok && ic.ok && <span className="small" style={{ color: 'var(--spore)' }}><Icon name="ui/check" size={16} /> Deck is legal</span>}
+        {cc.ok && ic.ok && <span className="small" style={{ color: 'var(--spore)' }}><Icon name="ui/check" size={16} /> {t('Deck is legal')}</span>}
       </div>
 
       <div className="panel">
@@ -110,7 +110,7 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
             </div>
           ))}
         </div>
-        <h3 style={{ marginTop: 12 }}>Add characters</h3>
+        <h3 style={{ marginTop: 12 }}>{t('Add characters')}</h3>
         <div className="row wrap" style={{ gap: 8 }}>
           {CHARACTER_LIST.filter((c) => ownedChars(c.id)).map((c) => (
             <CharacterCard key={c.id} defId={c.id} level={p.collection.chars[c.id]?.level} width={92} onClick={() => addChar(c.id)} />
@@ -125,7 +125,7 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
             <ItemCard key={i} itemId={id} width={86} onClick={() => setDeck((d) => ({ ...d, items: d.items.filter((_, j) => j !== i) }))} />
           ))}
         </div>
-        <h3 style={{ marginTop: 12 }}>Add items</h3>
+        <h3 style={{ marginTop: 12 }}>{t('Add items')}</h3>
         <div className="row wrap" style={{ gap: 8 }}>
           {ITEM_LIST.filter((i) => (p.collection.items[i.id] ?? 0) > 0).map((i) => (
             <div key={i.id} className="col" style={{ gap: 2 }}>
@@ -139,12 +139,12 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
       </div>
 
       <div className="panel">
-        <h3>Example decks</h3>
+        <h3>{t('Example decks')}</h3>
         {EXAMPLE_DECKS.map((d) => (
           <div key={d.id} className="row wrap small" style={{ marginBottom: 6 }}>
             <b>{d.name}</b> <span className="muted">{d.plan}</span>
             <button className="btn secondary small" onClick={() => setDeck({ id: d.id, name: d.name, characters: d.characters.map((defId) => ({ defId, level: p.collection.chars[defId]?.level ?? 1 })), items: d.items })}>
-              Load
+              {t('Load')}
             </button>
           </div>
         ))}

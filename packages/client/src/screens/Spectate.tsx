@@ -51,12 +51,12 @@ export function SpectateScreen({ match }: { nav: Nav; match?: string }) {
       s.send({ t: 'unspectate', match: sel });
     };
   }, [sel, p.online]);
-  if (!p.online) return <p className="muted">Go online to watch live matches.</p>;
+  if (!p.online) return <p className="muted">{t('Go online to watch live matches.')}</p>;
   return (
     <div className="col">
       <h1>{t('Spectate')}</h1>
       <div className="row wrap">
-        {list.length === 0 && <span className="muted">No live matches right now.</span>}
+        {list.length === 0 && <span className="muted">{t('No live matches right now.')}</span>}
         {list.map((m) => (
           <button key={m.id} className={`btn ${m.id === sel ? 'primary' : 'secondary'} small`} onClick={() => setSel(m.id)}>
             {m.featured ? <Icon name="ui/featured" size={16} label="Featured" /> : null}
@@ -66,7 +66,7 @@ export function SpectateScreen({ match }: { nav: Nav; match?: string }) {
       </div>
       {sel && (
         <div className="row small">
-          <span className="muted">Stream overlay for OBS:</span>
+          <span className="muted">{t('Stream overlay for OBS:')}</span>
           <code>{`${getApi().base}/overlay/${sel}`}</code>
         </div>
       )}

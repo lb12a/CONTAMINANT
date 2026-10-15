@@ -61,7 +61,7 @@ export function ShopScreen() {
   return (
     <div className="col">
       <h1>{t('Shop')}</h1>
-      <p className="muted">An auction hall for coffins and chests. Rarity changes how often a card drops, not its power. Duplicates drop about four times as often as new cards.</p>
+      <p className="muted">{t('An auction hall for coffins and chests. Rarity changes how often a card drops, not its power. Duplicates drop about four times as often as new cards.')}</p>
       <div className="row wrap">
         {(Object.keys(CHESTS) as ChestSize[]).map((size) => (
           <div key={size} className="panel rivets col" style={{ width: 230, alignItems: 'center' }}>
@@ -78,7 +78,7 @@ export function ShopScreen() {
       </div>
       <div className="panel">
         <h3>Your chests ({p.collection.chests.length})</h3>
-        {p.collection.chests.length === 0 && <span className="muted small">Win matches and finish missions to earn chests.</span>}
+        {p.collection.chests.length === 0 && <span className="muted small">{t('Win matches and finish missions to earn chests.')}</span>}
         <div className="row wrap">
           {p.collection.chests.map((c, i) => (
             <button key={i} className="btn secondary" onClick={() => open(i)}>
@@ -87,7 +87,7 @@ export function ShopScreen() {
           ))}
         </div>
       </div>
-      <div className="panel small muted">Drop shares: Common 45% · Uncommon 28% · Rare 16% · Epic 8% · Legendary 3%. New areas (Graveyard, Bog, Toy Room, Haunted Forest, Tomb) add their cards to the pool at trophy milestones.</div>
+      <div className="panel small muted">{t('Drop shares: Common 45% · Uncommon 28% · Rare 16% · Epic 8% · Legendary 3%. New areas (Graveyard, Bog, Toy Room, Haunted Forest, Tomb) add their cards to the pool at trophy milestones.')}</div>
 
       {opening && (
         <Modal title={CHESTS[opening.size].name} onClose={() => opening.result && setOpening(null)}>
@@ -127,14 +127,14 @@ export function ShopScreen() {
 export function UnlockStage({ defId, onClose }: { defId: string; onClose: () => void }) {
   const def = CHARACTERS[defId]!;
   return (
-    <Modal title="A sealed file opens…" onClose={onClose}>
+    <Modal title={t('A sealed file opens…')} onClose={onClose}>
       <div className="col" style={{ alignItems: 'center', background: 'radial-gradient(ellipse at 50% 30%, #e8dfc833, transparent 60%)', padding: 12 }}>
         <div className="float-in">
           <CharacterCard defId={defId} width={190} isNew />
         </div>
         <p className="display">{def.name}</p>
         <p className="small muted center">{def.title}</p>
-        <p className="small center">Open its Testing Chamber from the collection or the Testing Chambers list.</p>
+        <p className="small center">{t('Open its Testing Chamber from the collection or the Testing Chambers list.')}</p>
         <button className="btn secondary" onClick={onClose}>
           {t('Later')}
         </button>

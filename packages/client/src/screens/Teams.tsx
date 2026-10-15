@@ -235,7 +235,7 @@ export function TeamsScreen({ nav, id }: { nav: Nav; id?: string }) {
               >
                 <label className="col small">
                   {tr('Name')}
-                  <input value={form.name} maxLength={24} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Night Shift" />
+                  <input value={form.name} maxLength={24} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={tr('Night Shift')} />
                 </label>
                 <label className="col small">
                   {tr('Tag (2–4)')}
@@ -243,7 +243,7 @@ export function TeamsScreen({ nav, id }: { nav: Nav; id?: string }) {
                 </label>
                 <label className="col small">
                   {tr('Motto')}
-                  <input value={form.motto} maxLength={80} onChange={(e) => setForm({ ...form, motto: e.target.value })} placeholder="We never sleep." />
+                  <input value={form.motto} maxLength={80} onChange={(e) => setForm({ ...form, motto: e.target.value })} placeholder={tr('We never sleep.')} />
                 </label>
                 <ColorSwatches value={form.color} onChange={(color) => setForm({ ...form, color })} />
                 <label className="row small" style={{ gap: 8 }}>

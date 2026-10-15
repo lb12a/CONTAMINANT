@@ -96,11 +96,11 @@ export function App() {
     <div className="shell">
       <div className="backdrop" />
       <header className="topbar">
-        <button className="brand" onClick={() => nav({ name: 'menu' })} aria-label="Contaminant home">
+        <button className="brand" onClick={() => nav({ name: 'menu' })} aria-label={t('Contaminant home')}>
           <Icon name="mode/contamination" size={26} />
-          <span>Contaminant</span>
+          <span>{t('Contaminant')}</span>
         </button>
-        <nav className="groups" aria-label="Sections">
+        <nav className="groups" aria-label={t('Sections')}>
           {NAV_GROUPS.map((g) => (
             <button key={g.id} className={`group-tab${group?.id === g.id ? ' current' : ''}`} aria-current={group?.id === g.id ? 'page' : undefined} onClick={() => nav({ name: g.routes[0]![0] } as Route)}>
               <Icon name={g.icon} size={24} />
@@ -110,7 +110,7 @@ export function App() {
         </nav>
         <span className="spacer" />
         {profile.dev && (
-          <span className="chip dev-badge" title="Developer profile: everything unlocked, unlimited gold, no ranked, tournaments, ladder or meta">
+          <span className="chip dev-badge" title={t('Developer profile: everything unlocked, unlimited gold, no ranked, tournaments, ladder or meta')}>
             DEV
           </span>
         )}
@@ -160,7 +160,7 @@ export function App() {
         {route.name === 'missions' && <MissionsScreen />}
         {route.name === 'friends' && <FriendsScreen nav={nav} />}
       </main>
-      <nav className="tabbar" aria-label="Sections">
+      <nav className="tabbar" aria-label={t('Sections')}>
         {NAV_GROUPS.map((g) => (
           <button key={g.id} className={group?.id === g.id ? 'current' : ''} onClick={() => nav({ name: g.routes[0]![0] } as Route)}>
             <Icon name={g.icon} size={26} />

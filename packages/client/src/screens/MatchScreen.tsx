@@ -388,9 +388,9 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             <div className="ap-num">
               <b className="num">{pv.apLeft}</b>
               <span className="num">/{pl.ap}</span>
-              <small>AP</small>
+              <small>{t('AP')}</small>
             </div>
-            <div className="row small muted" style={{ gap: 6 }} title="Idle Bonus: spend less than half your AP to bank extra AP next round">
+            <div className="row small muted" style={{ gap: 6 }} title={t('Idle Bonus: spend less than half your AP to bank extra AP next round')}>
               <IdleSteps bonus={pl.idleBonus} />
               <span>+{pl.idleBonus}</span>
             </div>
@@ -420,11 +420,11 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
               <Fuse deadline={playing ? 0 : snap.deadline} total={snap.info.planningSeconds || 30} />
             </div>
             <span className="num">{snap.deadline && !playing ? `${tsecs}s` : playing ? '…' : '∞'}</span>
-            {snap.opponentReady && !playing && <span className="chip buff" title="Your opponent has sealed their plan">rival sealed</span>}
+            {snap.opponentReady && !playing && <span className="chip buff" title={t('Your opponent has sealed their plan')}>{t('rival sealed')}</span>}
           </div>
         </div>
         <div className="hud-actions">
-          <button className="icon-btn glass menu-burger" onClick={() => setShowLeft((v) => !v)} title="Units and plan" aria-label="Units and plan">
+          <button className="icon-btn glass menu-burger" onClick={() => setShowLeft((v) => !v)} title={t('Units and plan')} aria-label={t('Units and plan')}>
             <Icon name="ui/pawn" size={24} />
           </button>
           <button className="icon-btn glass" onClick={() => setShowRight((v) => !v)} title={t('Combat log')} aria-label={t('Combat log')}>
@@ -455,8 +455,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           <UnitPanel view={view} me={me} u={selected} ps={ps} setPs={setPs} setMode={setMode} toggleRest={toggleRest} removeCmd={removeCmd} handCards={handCards} />
         ) : (
           <div className="col">
-            <h3>Your units</h3>
-            {myUnits.length === 0 && <p className="muted small">No characters on the board. Deploy from the offered characters below.</p>}
+            <h3>{t('Your units')}</h3>
+            {myUnits.length === 0 && <p className="muted small">{t('No characters on the board. Deploy from the offered characters below.')}</p>}
             {myUnits.map((u) => (
               <button key={u.uid} className="btn secondary small" style={{ justifyContent: 'flex-start', textAlign: 'left' }} onClick={() => setPs((p) => ({ ...p, selected: u.uid, mode: { kind: 'idle' } }))}>
                 {u.name} · {u.hp}/{u.maxHp}
@@ -466,7 +466,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         )}
         <div className="col" style={{ marginTop: 10 }}>
           <h3>Plan · {pv.cost} AP</h3>
-          {ps.commands.length === 0 && <span className="muted small">Nothing planned. Spending less than 50% of your AP builds the Idle Bonus.</span>}
+          {ps.commands.length === 0 && <span className="muted small">{t('Nothing planned. Spending less than 50% of your AP builds the Idle Bonus.')}</span>}
           {ps.commands.map((c, i) => (
             <div key={i} className="row small" style={{ justifyContent: 'space-between', background: '#ffffff08', borderRadius: 6, padding: '3px 6px' }}>
               <span>
@@ -478,20 +478,20 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
                 <button
                   className="btn secondary small"
                   disabled={(ps.deployChoices[c.card]?.rerolls ?? 0) >= 3}
-                  title="Corrupt: the three magenta tiles are corrupted when Nexus arrives (hidden from the enemy). Re-roll them up to 3 times this round."
+                  title={t('Corrupt: the three magenta tiles are corrupted when Nexus arrives (hidden from the enemy). Re-roll them up to 3 times this round.')}
                   onClick={() => setPs((p) => ({ ...p, deployChoices: { ...p.deployChoices, [c.card]: { ...p.deployChoices[c.card], rerolls: Math.min(3, (p.deployChoices[c.card]?.rerolls ?? 0) + 1) } } }))}
                 >
                   Re-roll tiles {3 - (ps.deployChoices[c.card]?.rerolls ?? 0)}/3
                 </button>
               )}
-              <button className="icon-btn" style={{ width: 26, height: 26, fontSize: 12 }} onClick={() => removeCmd(i)} aria-label="remove">
+              <button className="icon-btn" style={{ width: 26, height: 26, fontSize: 12 }} onClick={() => removeCmd(i)} aria-label={t('remove')}>
                 ✕
               </button>
             </div>
           ))}
           {ps.commands.length > 0 && (
             <button className="btn secondary small" onClick={() => setPs(emptyPlanner())}>
-              Clear plan
+              {t('Clear plan')}
             </button>
           )}
         </div>
@@ -560,7 +560,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           <div className="panel notebook" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <h3 style={{ margin: 0 }}>{t('Combat log')}</h3>
-              <button className="icon-btn" style={{ width: 30, height: 30, fontSize: 13 }} onClick={() => setShowRight(false)} aria-label="Close log">
+              <button className="icon-btn" style={{ width: 30, height: 30, fontSize: 13 }} onClick={() => setShowRight(false)} aria-label={t('Close log')}>
                 ✕
               </button>
             </div>
@@ -575,7 +575,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           <div className="dock-group">
             <div className="dock-label">
               <span>{t('Offered characters')}</span>
-              <button className="btn secondary small" disabled={playing || ready} onClick={async () => { const r = await ctrl.op({ kind: 'reroll', card: 'all' }); if (!r.ok) toast(r.error ?? 'Cannot re-roll', 'bad'); }} title="Re-roll all unlocked offered characters (3 AP)">
+              <button className="btn secondary small" disabled={playing || ready} onClick={async () => { const r = await ctrl.op({ kind: 'reroll', card: 'all' }); if (!r.ok) toast(r.error ?? 'Cannot re-roll', 'bad'); }} title={t('Re-roll all unlocked offered characters (3 AP)')}>
                 <Icon name="ui/dice" size={16} /> 3 AP
               </button>
             </div>
@@ -615,8 +615,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       </div>
 
       {moodFor && (
-        <Modal title="Pokerface: choose a mood" onClose={() => setMoodFor(null)}>
-          <p className="muted">It cannot change later. The enemy learns it when he first attacks.</p>
+        <Modal title={t('Pokerface: choose a mood')} onClose={() => setMoodFor(null)}>
+          <p className="muted">{t('It cannot change later. The enemy learns it when he first attacks.')}</p>
           <div className="row">
             {['happy', 'sad', 'angry'].map((m) => (
               <button key={m} className="btn primary" onClick={() => { setPs((p) => ({ ...p, deployChoices: { ...p.deployChoices, [moodFor]: { mood: m } } })); setMoodFor(null); }}>
@@ -690,7 +690,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
             {u.hp}/{u.maxHp} HP
           </span>
         </div>
-        <button className="icon-btn" style={{ width: 28, height: 28, fontSize: 12 }} onClick={() => setPs((p) => ({ ...p, selected: undefined, mode: { kind: 'idle' } }))} aria-label="close">
+        <button className="icon-btn" style={{ width: 28, height: 28, fontSize: 12 }} onClick={() => setPs((p) => ({ ...p, selected: undefined, mode: { kind: 'idle' } }))} aria-label={t('close')}>
           ✕
         </button>
       </div>
@@ -713,7 +713,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
       {u.gear && <span className="chip">Gear: {ITEMS[u.gear]?.name}</span>}
       {mine && !u.isObject && (
         <>
-          {fresh && <span className="small" style={{ color: 'var(--marigold)' }}>Deployed this round — cannot act yet.</span>}
+          {fresh && <span className="small" style={{ color: 'var(--marigold)' }}>{t('Deployed this round — cannot act yet.')}</span>}
           <div className="row wrap" style={{ gap: 4 }}>
             <button className={`cmd${ps.mode.kind === 'move' && ps.mode.unit === u.uid ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--cyan)' }} disabled={fresh || !acts.canMove || entranced} onClick={() => setMode({ kind: 'move', unit: u.uid })}>
               <span className="lens"><Icon name="ui/footprints" size={22} /></span>
@@ -748,15 +748,15 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
                 </span>
               </button>
             ))}
-            <button className="cmd" style={{ ['--fam' as string]: 'var(--bone)' }} disabled={fresh} onClick={() => setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'wait', unit: u.uid }] }))} title="Wait: this character's next actions come after everyone else at the same Priority">
+            <button className="cmd" style={{ ['--fam' as string]: 'var(--bone)' }} disabled={fresh} onClick={() => setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'wait', unit: u.uid }] }))} title={t('Wait: this character\'s next actions come after everyone else at the same Priority')}>
               <span className="lens"><Icon name="ui/hourglass" size={22} /></span>
               {t('Wait')}
             </button>
-            <button className="cmd" style={{ ['--fam' as string]: 'var(--ghost)' }} disabled={fresh} onClick={() => setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'hold', unit: u.uid }] }))} title="Hold Position (0 AP): no voluntary movement, ignores the first tile of forced movement, −10% damage from the first hit">
+            <button className="cmd" style={{ ['--fam' as string]: 'var(--ghost)' }} disabled={fresh} onClick={() => setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'hold', unit: u.uid }] }))} title={t('Hold Position (0 AP): no voluntary movement, ignores the first tile of forced movement, −10% damage from the first hit')}>
               <span className="lens"><Icon name="ui/anchor" size={22} /></span>
               {t('Hold')}
             </button>
-            <button className={`cmd${ps.rest.includes(u.uid) ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--gold)' }} disabled={fresh} onClick={() => toggleRest(u.uid)} title="Rest: halves this character's Effective Speed for the whole round">
+            <button className={`cmd${ps.rest.includes(u.uid) ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--gold)' }} disabled={fresh} onClick={() => toggleRest(u.uid)} title={t('Rest: halves this character\'s Effective Speed for the whole round')}>
               <span className="lens"><Icon name="ui/coffin" size={22} /></span>
               {t('Rest')}
             </button>
@@ -782,7 +782,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
                     })
                   }
                 >
-                  <option value="">nobody (random)</option>
+                  <option value="">{t('nobody (random)')}</option>
                   {view.units
                     .filter((x) => x.owner === me && x.uid !== u.uid && !x.isObject)
                     .map((x) => (
@@ -793,7 +793,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
                 </select>
                 {ps.mindsEye?.[u.uid] && (
                   <select value={ps.mindsEye[u.uid]!.action ?? 1} onChange={(e) => setPs((p) => ({ ...p, mindsEye: { ...p.mindsEye, [u.uid]: { after: p.mindsEye![u.uid]!.after, action: Number(e.target.value) } } }))}>
-                    <option value={0}>before its actions</option>
+                    <option value={0}>{t('before its actions')}</option>
                     {[1, 2, 3, 4].map((n) => (
                       <option key={n} value={n}>
                         after its action {n}
@@ -806,7 +806,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
           )}
           {u.defId === 'scarecrow' && (
             <label className="small col">
-              Watchful Eye target
+              {t('Watchful Eye target')}
               <select value={ps.watch ?? ''} onChange={(e) => setPs((p) => ({ ...p, watch: e.target.value || undefined }))}>
                 <option value="">—</option>
                 {view.units
@@ -884,18 +884,18 @@ function AimChooser({ at, unit, enemy, onPick, onCancel }: { at?: { x: number; y
     return () => window.removeEventListener('keydown', k);
   }, [onCancel]);
   return (
-    <div className="panel aim-chooser" role="dialog" aria-label="Choose the target" style={at ? { left: at.x, top: at.y } : { left: '50%', top: '40%' }}>
-      <b className="small">Aim at …</b>
+    <div className="panel aim-chooser" role="dialog" aria-label={t('Choose the target')} style={at ? { left: at.x, top: at.y } : { left: '50%', top: '40%' }}>
+      <b className="small">{t('Aim at …')}</b>
       <button className="btn primary small" onClick={() => onPick('unit')} autoFocus>
         {enemy ? 'the creature' : unit.name}
         <span className="aim-sub">follows {unit.name} if it moves</span>
       </button>
       <button className="btn secondary small" onClick={() => onPick('tile')}>
         the tile
-        <span className="aim-sub">hits whoever stands here</span>
+        <span className="aim-sub">{t('hits whoever stands here')}</span>
       </button>
       <button className="coach-skip" onClick={onCancel}>
-        Cancel
+        {t('Cancel')}
       </button>
     </div>
   );
@@ -924,7 +924,7 @@ function LogBook({ entries }: { entries: { text: string; kind: string }[] }) {
   }, [entries.length]);
   return (
     <div className="logbook" ref={ref} style={{ flex: 1 }}>
-      {entries.length === 0 && <span className="muted">The notebook is empty. Fingerprints only.</span>}
+      {entries.length === 0 && <span className="muted">{t('The notebook is empty. Fingerprints only.')}</span>}
       {entries.map((e, i) => (
         <div key={i} className={e.kind}>
           {e.text}
@@ -974,7 +974,7 @@ function EndSeal({ snap, me, onExit }: { snap: MatchSnapshot; me: PlayerId; onEx
           </p>
         )}
         <button className="btn primary l" onClick={onExit}>
-          Continue
+          {t('Continue')}
         </button>
       </div>
     </Modal>

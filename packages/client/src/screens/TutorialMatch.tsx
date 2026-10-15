@@ -6,7 +6,7 @@ import { TutorialController } from '../game/tutorialController.ts';
 import { CharacterCard, HexIcon, Modal } from '../ui/components.tsx';
 import { charRing } from '../ui/glyphs.ts';
 import { getApi, getProfile, setProfile, toast } from '../store.ts';
-import { t } from '../i18n.ts';
+import { t, tx } from '../i18n.ts';
 import { Icon } from '../ui/Icon.tsx';
 
 export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
@@ -23,7 +23,6 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
   const sess = ctrl.sess;
   const plan = sess.plan;
   const def = CHARACTERS[plan.main]!;
-  const de = getProfile().settings.lang === 'de';
   const probe = isProbe(sess);
   const act = sess.stage >= 1 && sess.stage <= plan.acts.length ? plan.acts[sess.stage - 1] : undefined;
   const tasks = currentTasks(sess);
@@ -50,7 +49,7 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
         <b className="display">Testing Chamber · {def.name}</b>
         <span className="small muted">{plan.duration}</span>
       </div>
-      <div className="stations" title="Five acts">
+      <div className="stations" title={t('Five acts')}>
         {stations.map((d, i) => (
           <span key={i} className="row" style={{ gap: 0 }}>
             {i > 0 && <span className="thread" />}
@@ -65,15 +64,15 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
         <div className="note">
           {probe ? (
             <>
-              <b>{de ? 'Probe' : 'Final test'}:</b> {de ? plan.probe.de : plan.probe.en}
-              <div className="small">{de ? 'Keine Hinweise. Echte Zufälle.' : 'No hints. Real randomness.'} ({3 - sess.probeTries} tries)</div>
+              <b>{tx('Final test', 'Probe')}:</b> {tx(plan.probe.en, plan.probe.de)}
+              <div className="small">{tx('No hints. Real randomness.', 'Keine Hinweise. Echte Zufälle.')} ({3 - sess.probeTries} tries)</div>
             </>
           ) : act ? (
             <>
               <b>
                 {act.mark} · {act.title}
               </b>
-              <div>{de ? act.de : act.en}</div>
+              <div>{tx(act.en, act.de)}</div>
               <ul style={{ margin: '6px 0 0 16px', padding: 0 }}>
                 {act.hints.map((h) => (
                   <li key={h} className="small">
@@ -83,22 +82,22 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
               </ul>
             </>
           ) : sess.passed ? (
-            <b>{de ? 'Bestanden. Die Kammer öffnet sich.' : 'Passed. The chamber opens.'}</b>
+            <b>{tx('Passed. The chamber opens.', 'Bestanden. Die Kammer öffnet sich.')}</b>
           ) : (
-            <span>{de ? plan.intro.de : plan.intro.en}</span>
+            <span>{tx(plan.intro.en, plan.intro.de)}</span>
           )}
         </div>
       </div>
       {tasks.map((tk, i) => (
         <div key={i} className={`task${sess.done[i] && !probe ? ' done' : ''}`}>
           <span className="tube" />
-          <span className="small">{de ? tk.de : tk.en}</span>
+          <span className="small">{tx(tk.en, tk.de)}</span>
         </div>
       ))}
-      {ctrl.last && !ctrl.last.passed && !sess.passed && <div className="small" style={{ color: '#ff9da2' }}>{de ? 'Aufgabe nicht erfüllt.' : 'Task not completed.'}</div>}
+      {ctrl.last && !ctrl.last.passed && !sess.passed && <div className="small" style={{ color: '#ff9da2' }}>{tx('Task not completed.', 'Aufgabe nicht erfüllt.')}</div>}
       {sess.showSolution && (
         <div className="paper small" style={{ padding: 8 }}>
-          <Icon name="tag/soul" size={18} /> {de ? 'Geister-Vorschau' : 'Ghost preview'}: {plan.probe.solution}
+          <Icon name="tag/soul" size={18} /> {tx('Ghost preview', 'Geister-Vorschau')}: {plan.probe.solution}
         </div>
       )}
       <div className="row wrap">
@@ -117,7 +116,7 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
         )}
       </div>
       <details className="small">
-        <summary>{de ? 'Synergien und Schwäche' : 'Synergies and weakness'}</summary>
+        <summary>{tx('Synergies and weakness', 'Synergien und Schwäche')}</summary>
         <p>
           <b>+</b> {plan.synergies}
         </p>
@@ -138,7 +137,7 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
               <CharacterCard defId={def.id} width={170} />
             </div>
             <div className="col grow" style={{ minWidth: 240 }}>
-              <p className="display">{de ? plan.titleDe : plan.title}</p>
+              <p className="display">{tx(plan.title, plan.titleDe)}</p>
               {CATEGORY_ORDER.map((cat, i) => {
                 const ch = CHARACTERISTICS[def.chars[cat]]!;
                 return (
@@ -150,7 +149,7 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
                   </div>
                 );
               })}
-              <p className="small">{de ? plan.intro.de : plan.intro.en}</p>
+              <p className="small">{tx(plan.intro.en, plan.intro.de)}</p>
               {plan.intro.quote && <p className="paper small" style={{ padding: 8 }}>„{plan.intro.quote}“ — Wärter</p>}
               <div className="row">
                 <button className="btn primary" onClick={() => { setIntro(false); ctrl.start(); }}>

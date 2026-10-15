@@ -6,6 +6,7 @@ import type { Floater, Flash, Overlay, Pulse } from '../render/types.ts';
 import { getApi, toast, useProfile } from '../store.ts';
 import { VpRace } from '../ui/components.tsx';
 import { Icon } from '../ui/Icon.tsx';
+import { t } from '../i18n.ts';
 
 interface StoredMatch {
   id: string;
@@ -97,12 +98,12 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [i]);
 
-  if (!p.online) return <p className="muted">Go online to watch replays.</p>;
+  if (!p.online) return <p className="muted">{t('Go online to watch replays.')}</p>;
   if (!match)
     return (
       <div className="col">
-        <h1>Replays</h1>
-        {!list.length && <span className="muted">No recorded matches yet.</span>}
+        <h1>{t('Replays')}</h1>
+        {!list.length && <span className="muted">{t('No recorded matches yet.')}</span>}
         {list.map((m) => (
           <button key={m.id} className="btn secondary small" style={{ justifyContent: 'flex-start' }} onClick={() => nav({ name: 'replay', match: m.id })}>
             <Icon name="ui/play" size={16} /> {m.p0_name} {m.vp0}:{m.vp1} {m.p1_name} · {m.kind} {m.ended ? `· ${new Date(m.ended).toLocaleDateString()}` : ''}
@@ -110,16 +111,16 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
         ))}
       </div>
     );
-  if (!frames || !stored) return <p className="muted">Rebuilding the match from its seed…</p>;
+  if (!frames || !stored) return <p className="muted">{t('Rebuilding the match from its seed…')}</p>;
   const f = frames[i]!;
   const allVerified = frames.every((x) => x.verified);
   return (
     <div className="col replay-page">
       <div className="row wrap" style={{ justifyContent: 'space-between' }}>
         <h1 style={{ margin: 0 }}>
-          {stored.p0_name} <span className="muted">vs</span> {stored.p1_name}
+          {stored.p0_name} <span className="muted">{t('vs')}</span> {stored.p1_name}
         </h1>
-        <span className={`chip ${allVerified ? 'buff' : 'debuff'}`} title="Every round was re-simulated and compared with the recorded state hash">
+        <span className={`chip ${allVerified ? 'buff' : 'debuff'}`} title={t('Every round was re-simulated and compared with the recorded state hash')}>
           <Icon name={allVerified ? 'ui/check' : 'ui/warning'} size={16} /> {allVerified ? 'verified replay' : 'hash mismatch'}
         </span>
       </div>
@@ -138,26 +139,26 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
           <BoardCanvas state={f.state} me={0} overlay={overlay} />
         </div>
         <div className="row replay-controls">
-          <button className="btn secondary small" onClick={() => (setI(0), setFx({}))} aria-label="First round">
+          <button className="btn secondary small" onClick={() => (setI(0), setFx({}))} aria-label={t('First round')}>
             <Icon name="ui/first" size={18} />
           </button>
-          <button className="btn secondary small" onClick={() => step(-1)} aria-label="Previous round">
+          <button className="btn secondary small" onClick={() => step(-1)} aria-label={t('Previous round')}>
             <Icon name="ui/step_back" size={18} />
           </button>
           <button className="btn primary small" onClick={() => setPlaying((v) => !v)}>
             <Icon name={playing ? 'ui/pause' : 'ui/play'} size={18} /> {playing ? 'Pause' : 'Play'}
           </button>
-          <button className="btn secondary small" onClick={() => step(1)} aria-label="Next round">
+          <button className="btn secondary small" onClick={() => step(1)} aria-label={t('Next round')}>
             <Icon name="ui/play" size={18} />
           </button>
-          <input className="spine grow" type="range" min={0} max={frames.length - 1} value={i} onChange={(e) => (setI(Number(e.target.value)), setFx({}))} aria-label="Round" />
+          <input className="spine grow" type="range" min={0} max={frames.length - 1} value={i} onChange={(e) => (setI(Number(e.target.value)), setFx({}))} aria-label={t('Round')} />
           <span className="num small">
             {i}/{frames.length - 1}
           </span>
         </div>
       </div>
       <div className="panel notebook logbook" ref={logRef} style={{ maxHeight: 260 }}>
-        {i === 0 && <span className="muted">Both labs are prepared. Press play.</span>}
+        {i === 0 && <span className="muted">{t('Both labs are prepared. Press play.')}</span>}
         {f.events
           .filter((e) => LOGGED.has(e.kind) && e.privateTo === undefined)
           .map((e, k) => (
