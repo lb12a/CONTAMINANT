@@ -375,6 +375,7 @@ export class DioramaRenderer {
   private tex = new TexCache();
   private texVersion = -1;
   private iconSeen = 0;
+  private frameError = false;
   private reduce = reducedMotion();
 
   private world = new Container();
@@ -467,7 +468,15 @@ export class DioramaRenderer {
 
     this.ready = true;
     this.app.ticker.maxFPS = 60;
-    this.app.ticker.add(() => this.frame(performance.now()));
+    // one bad frame must never stop the board: an exception inside a ticker callback ends Pixi's loop
+    this.app.ticker.add(() => {
+      try {
+        this.frame(performance.now());
+      } catch (e) {
+        if (!this.frameError) console.error('board frame failed', e);
+        this.frameError = true;
+      }
+    });
     if (this.state) this.sync();
   }
 
@@ -995,7 +1004,7 @@ export class DioramaRenderer {
 
   private syncTombs(): void {
     const tombs = this.ov.tombs ?? [];
-    while (this.tombSprites.length > tombs.length) this.tombSprites.pop()!.destroy();
+    while (this.tombSprites.length > tombs.length) this.tombSprites.pop()?.destroy();
     tombs.forEach((h, i) => {
       let d = this.tombSprites[i];
       if (!d) {
@@ -1390,8 +1399,9 @@ export class DioramaRenderer {
   private drawGhosts(now: number): void {
     const ghosts = this.ov.ghosts;
     const t = now / 1000;
-    while (this.ghostSprites.length > ghosts.length) this.ghostSprites.pop()!.destroy();
-    while (this.badgeTexts.length > ghosts.length) this.badgeTexts.pop()!.destroy();
+    // the badge list has holes (ghosts without an order number), so pop() may return undefined
+    while (this.ghostSprites.length > ghosts.length) this.ghostSprites.pop()?.destroy();
+    while (this.badgeTexts.length > ghosts.length) this.badgeTexts.pop()?.destroy();
     ghosts.forEach((gh, i) => {
       const { tex } = this.unitTexture(gh.unit);
       let sp = this.ghostSprites[i];

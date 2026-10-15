@@ -322,7 +322,7 @@ export function svgIconUrl(name: string): string | null {
   if (hit) return hit;
   const body = ICONS[name];
   if (!body) return null;
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 34 34"><defs>${WOBBLE}</defs><g filter="url(#w)">${body}</g></svg>`;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="-1 -1 34 34"><defs>${WOBBLE}</defs><g>${body}</g></svg>`;
   const url = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
   cache.set(name, url);
   return url;
