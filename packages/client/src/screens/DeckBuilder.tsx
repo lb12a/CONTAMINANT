@@ -4,6 +4,8 @@ import {
   CHARACTER_LIST,
   DEPLOY_BUDGET,
   EXAMPLE_DECKS,
+  CHAR_DECK_SIZE,
+  ITEM_DECK_SIZE,
   ITEMS,
   ITEM_COPIES,
   ITEM_LIST,
@@ -34,12 +36,12 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
   const budget = deck.characters.reduce((s, c) => s + (CHARACTERS[c.defId]?.deploy ?? 0), 0);
 
   const addChar = (id: string) => {
-    if (deck.characters.length >= 10) return toast('The Character Deck holds exactly 10 characters', 'bad');
+    if (deck.characters.length >= CHAR_DECK_SIZE) return toast(t('A Character Deck holds at most 10 characters'), 'bad');
     if (charCount(id) >= (CHARACTERS[id]?.maxCopies ?? 1)) return toast('No more copies allowed', 'bad');
     setDeck((d) => ({ ...d, characters: [...d.characters, { defId: id, level: p.collection.chars[id]?.level ?? 1 }] }));
   };
   const addItem = (id: string) => {
-    if (deck.items.length >= 20) return toast('The Item Deck holds exactly 20 cards', 'bad');
+    if (deck.items.length >= ITEM_DECK_SIZE) return toast(t('An Item Deck holds at most 20 cards'), 'bad');
     const it = ITEMS[id]!;
     if (itemCount(id) >= Math.min(ITEM_COPIES[it.rarity], p.collection.items[id] ?? 0)) return toast(`Copy limit (${ITEM_COPIES[it.rarity]}) or not enough owned copies`, 'bad');
     setDeck((d) => ({ ...d, items: [...d.items, id] }));

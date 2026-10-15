@@ -1,11 +1,11 @@
 // Offline play: bot matches with the local profile's deck, local rewards and match history.
 import {
   EXAMPLE_DECKS,
+  fairBotDeck,
   applyMatchReward,
   hashString,
   makeRng,
   matchReward,
-  randomDeck,
   recordPlayed,
   type Difficulty,
   type ModeId,
@@ -20,15 +20,16 @@ export function startBotMatch(opts: { difficulty?: Difficulty; mode?: ModeId; bo
   const deck = activeDeck(p);
   const seed = (Date.now() ^ Math.floor(Math.random() * 2 ** 31)) >>> 0;
   const rng = makeRng(hashString(`bot:${seed}`));
-  const bd = opts.botDeck !== undefined ? EXAMPLE_DECKS[opts.botDeck]! : seed % 4 === 3 ? randomDeck(rng) : EXAMPLE_DECKS[seed % 3]!;
-  const avgLevel = Math.max(1, Math.round(deck.characters.reduce((s, c) => s + (p.collection.chars[c.defId]?.level ?? 1), 0) / deck.characters.length));
+  // the bot only brings characters the player could own by now, never above the player's level
+  const mine = { characters: deck.characters.map((c) => ({ defId: c.defId, level: p.collection.chars[c.defId]?.level ?? 1 })), items: deck.items };
+  const fair = opts.botDeck !== undefined ? { characters: EXAMPLE_DECKS[opts.botDeck]!.characters.map((defId) => ({ defId, level: 1 })), items: EXAMPLE_DECKS[opts.botDeck]!.items } : fairBotDeck(rng, mine, p.dev ? 99_999 : p.collection.bestTrophies);
   const zones = ['laboratory', 'graveyard', 'bog', 'toyroom', 'forest', 'tomb'] as const;
   return new LocalMatch({
     seed,
     settings: { mode: opts.mode ?? p.settings.mode, planningSeconds: opts.planningSeconds ?? p.settings.planningSeconds, friendly: false, zone: zones[seed % 6]!, maxRounds: 40 },
     players: [
       { name: p.name, cards: cardsFor(deck.characters.map((c) => ({ defId: c.defId, level: p.collection.chars[c.defId]?.level ?? 1 })), 'm'), items: deck.items },
-      { name: BOT_NAMES[seed % BOT_NAMES.length]!, cards: cardsFor(bd.characters.map((defId) => ({ defId, level: avgLevel })), 'b'), items: bd.items, isBot: true },
+      { name: BOT_NAMES[seed % BOT_NAMES.length]!, cards: cardsFor(fair.characters, 'b'), items: fair.items, isBot: true },
     ],
     bot: { difficulty: opts.difficulty ?? p.settings.difficulty },
     planningSeconds: opts.planningSeconds ?? p.settings.planningSeconds,

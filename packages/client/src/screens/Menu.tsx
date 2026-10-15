@@ -19,7 +19,7 @@ const CAST = [
 
 const MODES: [ModeId, string, string][] = [
   ['contamination', 'Contamination', 'First to 100 VP, or wipe the enemy out'],
-  ['elimination', 'Elimination', "All 10 enemy characters KO'd"],
+  ['elimination', 'Elimination', "All enemy characters KO'd"],
   ['domination', 'Domination', 'First to 75 VP, 3 Control Fields'],
   ['research', 'Research', 'First to 90 VP, 3 Research Terminals'],
   ['escape', 'Escape', 'Reach the far zone with 1 AP left'],

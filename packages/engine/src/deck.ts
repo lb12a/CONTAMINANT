@@ -1,12 +1,15 @@
-// Section 6: Character Deck (10) and Item Deck (20) rules plus the three example decks.
+// Section 6: Character Deck (4–10) and Item Deck (5–20) rules, the starter deck and the three example decks.
 
-import { CHARACTERS } from './data/characters.ts';
+import { CHARACTERS, MILESTONES } from './data/characters.ts';
 import { ITEMS, ITEM_LIST } from './data/items.ts';
 import { validateTuning } from './formulas.ts';
-import type { CharCard, Rarity, Tuning } from './types.ts';
+import type { CharCard, Rarity, Tuning, Zone } from './types.ts';
 import * as rngFns from './rng.ts';
 
+/** a Character Deck holds 4 to 10 characters, an Item Deck 5 to 20 cards */
+export const CHAR_DECK_MIN = 4;
 export const CHAR_DECK_SIZE = 10;
+export const ITEM_DECK_MIN = 5;
 export const ITEM_DECK_SIZE = 20;
 export const DEPLOY_BUDGET = 58;
 export const ITEM_COPIES: Record<Rarity, number> = { common: 3, uncommon: 2, rare: 2, epic: 1, legendary: 1 };
@@ -25,7 +28,7 @@ export interface DeckCardInput {
 
 export function validateCharDeck(cards: DeckCardInput[]): DeckCheck {
   const errors: string[] = [];
-  if (cards.length !== CHAR_DECK_SIZE) errors.push(`Character Deck needs exactly ${CHAR_DECK_SIZE} characters (has ${cards.length})`);
+  if (cards.length < CHAR_DECK_MIN || cards.length > CHAR_DECK_SIZE) errors.push(`Character Deck needs ${CHAR_DECK_MIN}–${CHAR_DECK_SIZE} characters (has ${cards.length})`);
   const counts: Record<string, number> = {};
   let legendary = 0;
   let epicPlus = 0;
@@ -58,7 +61,7 @@ export function validateCharDeck(cards: DeckCardInput[]): DeckCheck {
 
 export function validateItemDeck(items: string[]): DeckCheck {
   const errors: string[] = [];
-  if (items.length !== ITEM_DECK_SIZE) errors.push(`Item Deck needs exactly ${ITEM_DECK_SIZE} cards (has ${items.length})`);
+  if (items.length < ITEM_DECK_MIN || items.length > ITEM_DECK_SIZE) errors.push(`Item Deck needs ${ITEM_DECK_MIN}–${ITEM_DECK_SIZE} cards (has ${items.length})`);
   const counts: Record<string, number> = {};
   let epicPlus = 0;
   for (const id of items) {
@@ -85,6 +88,15 @@ export interface DeckDef {
   characters: string[];
   items: string[];
 }
+
+/** What a new subject starts with: the four lab residents and a handful of basic cards. */
+export const STARTER_DECK: DeckDef = {
+  id: 'starter',
+  name: 'Lab Crew',
+  plan: 'The four residents of the lab. Open chests and climb the trophy ladder to unlock the rest.',
+  characters: ['nexus', 'lab_assistant', 'frankenstein', 'crystal_eye'],
+  items: ['field_medkit', 'field_medkit', 'whetstone', 'whetstone', 'smoke_candle', 'scout_card'],
+};
 
 export const EXAMPLE_DECKS: DeckDef[] = [
   {
@@ -161,4 +173,41 @@ export function randomDeck(rng: rngFns.RngState, owned?: { chars?: string[]; ite
     return { id: `random-${attempt}`, name: 'Random Deck', plan: 'Random legal deck', characters: chars, items };
   }
   return EXAMPLE_DECKS[0]!;
+}
+
+/**
+ * A legal deck from the characters of the given zones only, with `chars` characters and `items` item cards
+ * (common to rare). Bots use it so they never field characters the player could not have yet.
+ */
+export function zoneDeck(rng: rngFns.RngState, zones: Zone[], chars: number, items: number): DeckDef {
+  const { rand } = rngFns;
+  const wanted = Math.max(CHAR_DECK_MIN, Math.min(CHAR_DECK_SIZE, chars));
+  const wantedItems = Math.max(ITEM_DECK_MIN, Math.min(ITEM_DECK_SIZE, items));
+  const allowed = new Set(MILESTONES.filter((m) => zones.includes(m.zone)).flatMap((m) => m.cards));
+  const charPool = Object.values(CHARACTERS).filter((c) => allowed.has(c.id));
+  for (let attempt = 0; attempt < 120; attempt++) {
+    const deck: string[] = [];
+    for (const c of rngFns.shuffle(rng, charPool.slice())) {
+      if (deck.length >= wanted) break;
+      const trial = [...deck, c.id];
+      if (validateCharDeck(trial.map((defId) => ({ defId }))).errors.every((e) => e.startsWith('Character Deck needs'))) deck.push(c.id);
+    }
+    // small zone pools: repeat characters that allow copies
+    for (const c of rngFns.shuffle(rng, charPool.slice())) {
+      while (deck.length < wanted && validateCharDeck([...deck, c.id].map((defId) => ({ defId }))).errors.every((e) => e.startsWith('Character Deck needs'))) deck.push(c.id);
+    }
+    if (deck.length < CHAR_DECK_MIN || !validateCharDeck(deck.map((defId) => ({ defId }))).ok) continue;
+    const pool = rngFns.shuffle(rng, ITEM_LIST.filter((i) => (i.rarity === 'common' || i.rarity === 'uncommon' || i.rarity === 'rare') && i.id !== 'midas_touch_card'));
+    const itemDeck: string[] = [];
+    for (const it of pool) {
+      if (itemDeck.length >= wantedItems) break;
+      const n = 1 + Math.floor(rand(rng) * ITEM_COPIES[it.rarity]);
+      for (let k = 0; k < n && itemDeck.length < wantedItems; k++) {
+        if (validateItemDeck([...itemDeck, it.id]).errors.every((e) => e.startsWith('Item Deck needs'))) itemDeck.push(it.id);
+      }
+    }
+    if (!validateItemDeck(itemDeck).ok) continue;
+    return { id: `zone-${attempt}`, name: 'Lab Specimens', plan: 'Characters from the unlocked areas', characters: deck, items: itemDeck };
+  }
+  return STARTER_DECK;
 }

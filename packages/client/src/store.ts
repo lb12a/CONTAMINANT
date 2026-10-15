@@ -1,6 +1,6 @@
 // App store: local profile (offline progression), settings and the optional online account.
 import { useSyncExternalStore } from 'react';
-import { EXAMPLE_DECKS, devCollection, isDevName, starterCollection, type Collection, type DeckCardInput, type Difficulty, type ModeId, type DailyState } from '@contaminant/engine';
+import { STARTER_DECK, devCollection, isDevName, starterCollection, type Collection, type DeckCardInput, type Difficulty, type ModeId, type DailyState } from '@contaminant/engine';
 import { Api, defaultServerUrl } from './net/api.ts';
 import { GameSocket } from './net/socket.ts';
 import { cleanUrl, desktop, findServers, hostOwnServer, type FoundServer } from './net/discovery.ts';
@@ -88,15 +88,27 @@ export function isDevProfile(p: Profile = profile): boolean {
   return !!p.dev;
 }
 
-const KEY = 'contaminant.profile.v1';
+/** the single profile of older versions; becomes the first entry of the profile list */
+const LEGACY_KEY = 'contaminant.profile.v1';
+const INDEX_KEY = 'contaminant.profiles.v1';
+const dataKey = (id: string) => `contaminant.profile.${id}`;
+
+export interface ProfileEntry {
+  id: string;
+  name: string;
+  created: number;
+}
+interface ProfileIndex {
+  active: string | null;
+  list: ProfileEntry[];
+}
 
 function defaultProfile(): Profile {
-  const deck = EXAMPLE_DECKS[2]!;
   return {
     name: 'Subject',
-    collection: starterCollection(2),
-    decks: EXAMPLE_DECKS.map((d) => ({ id: d.id, name: d.name, characters: d.characters.map((defId) => ({ defId, level: 1 })), items: d.items })),
-    activeDeck: deck.id,
+    collection: starterCollection(),
+    decks: [{ id: STARTER_DECK.id, name: STARTER_DECK.name, characters: STARTER_DECK.characters.map((defId) => ({ defId, level: 1 })), items: STARTER_DECK.items }],
+    activeDeck: STARTER_DECK.id,
     history: [],
     settings: { lang: detectLanguage(), planningSeconds: 45, animSpeed: 1, volume: 0.6, showCoords: false, difficulty: 'normal', mode: 'contamination' },
     online: null,
@@ -104,9 +116,28 @@ function defaultProfile(): Profile {
   };
 }
 
-function load(): Profile {
+function readIndex(): ProfileIndex {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(INDEX_KEY);
+    if (raw) return JSON.parse(raw) as ProfileIndex;
+    // migrate the single profile of older versions
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy) {
+      const p = JSON.parse(legacy) as Profile;
+      const idx: ProfileIndex = { active: 'p1', list: [{ id: 'p1', name: p.name ?? 'Subject', created: Date.now() }] };
+      localStorage.setItem(dataKey('p1'), legacy);
+      localStorage.setItem(INDEX_KEY, JSON.stringify(idx));
+      return idx;
+    }
+  } catch {
+    /* storage blocked or corrupted */
+  }
+  return { active: null, list: [] };
+}
+
+function loadData(id: string): Profile {
+  try {
+    const raw = localStorage.getItem(dataKey(id));
     if (raw) {
       const p = JSON.parse(raw) as Profile;
       const d = defaultProfile();
@@ -118,8 +149,83 @@ function load(): Profile {
   return defaultProfile();
 }
 
-let profile: Profile = load();
+let index: ProfileIndex = readIndex();
+let profile: Profile = index.active ? loadData(index.active) : defaultProfile();
 const listeners = new Set<() => void>();
+
+function saveIndex(): void {
+  try {
+    localStorage.setItem(INDEX_KEY, JSON.stringify(index));
+  } catch {
+    /* storage blocked */
+  }
+}
+
+function notify(): void {
+  for (const l of listeners) l();
+}
+
+/** No profile yet: the game opens the profile setup first. */
+export function needsProfileSetup(): boolean {
+  return !index.active;
+}
+
+export function profileList(): ProfileEntry[] {
+  return index.list;
+}
+
+export function activeProfileId(): string | null {
+  return index.active;
+}
+
+function resetOnline(): void {
+  socket?.close();
+  socket = null;
+  api = null;
+}
+
+/** Creates a new profile (fresh starter collection) and switches to it. A name ending in '#' is a developer profile. */
+export function createProfile(name: string, opts: { avatar?: string; lang?: Lang } = {}): void {
+  const id = `p${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`;
+  const clean = name.trim().slice(0, 20) || 'Subject';
+  const fresh = defaultProfile();
+  index = { active: id, list: [...index.list, { id, name: clean, created: Date.now() }] };
+  saveIndex();
+  resetOnline();
+  profile = applyDev({ ...fresh, name: clean, look: opts.avatar ? { avatar: opts.avatar } : undefined, settings: { ...fresh.settings, lang: opts.lang ?? profile.settings.lang } });
+  try {
+    localStorage.setItem(dataKey(id), JSON.stringify(profile));
+  } catch {
+    /* storage blocked */
+  }
+  notify();
+}
+
+export function switchProfile(id: string): void {
+  if (!index.list.some((e) => e.id === id) || id === index.active) return;
+  index = { ...index, active: id };
+  saveIndex();
+  resetOnline();
+  profile = loadData(id);
+  notify();
+}
+
+export function deleteProfile(id: string): void {
+  index = { ...index, list: index.list.filter((e) => e.id !== id) };
+  try {
+    localStorage.removeItem(dataKey(id));
+    localStorage.removeItem(`contaminant.accounts.${id}`);
+  } catch {
+    /* storage blocked */
+  }
+  if (index.active === id) {
+    index.active = index.list[0]?.id ?? null;
+    resetOnline();
+    profile = index.active ? loadData(index.active) : defaultProfile();
+  }
+  saveIndex();
+  notify();
+}
 
 export function getProfile(): Profile {
   return profile;
@@ -127,10 +233,17 @@ export function getProfile(): Profile {
 
 export function setProfile(fn: (p: Profile) => Profile): void {
   profile = applyDev(fn(profile));
-  try {
-    localStorage.setItem(KEY, JSON.stringify(profile));
-  } catch {
-    /* storage full or blocked */
+  if (index.active) {
+    try {
+      localStorage.setItem(dataKey(index.active), JSON.stringify(profile));
+    } catch {
+      /* storage full or blocked */
+    }
+    const entry = index.list.find((e) => e.id === index.active);
+    if (entry && entry.name !== profile.name) {
+      entry.name = profile.name;
+      saveIndex();
+    }
   }
   for (const l of listeners) l();
 }
@@ -165,12 +278,12 @@ export function getSocket(): GameSocket | null {
   return socket;
 }
 
-const ACCOUNTS = 'contaminant.accounts';
+const accountsKey = () => `contaminant.accounts.${index.active ?? 'none'}`;
 
 /** Accounts per server, so reconnecting keeps the same name, friends and rating. */
 function savedAccounts(): Record<string, OnlineAccount> {
   try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS) ?? '{}') as Record<string, OnlineAccount>;
+    return JSON.parse(localStorage.getItem(accountsKey()) ?? '{}') as Record<string, OnlineAccount>;
   } catch {
     return {};
   }
@@ -199,7 +312,7 @@ export async function connectOnline(server: string, name: string, serverName?: s
   }
   if (serverName) acc.serverName = serverName;
   try {
-    localStorage.setItem(ACCOUNTS, JSON.stringify({ ...savedAccounts(), [url]: acc }));
+    localStorage.setItem(accountsKey(), JSON.stringify({ ...savedAccounts(), [url]: acc }));
   } catch {
     /* storage blocked */
   }

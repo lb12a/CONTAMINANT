@@ -5,6 +5,7 @@ import {
   devCollection,
   isDevName,
   EXAMPLE_DECKS,
+  STARTER_DECK,
   starterCollection,
   validateCharDeck,
   validateItemDeck,
@@ -61,8 +62,9 @@ export class PlayerService {
     const id = `p_${randomBytes(6).toString('hex')}`;
     const token = randomBytes(24).toString('hex');
     const now = Date.now();
-    const col = starterCollection(opts.starter ?? 2);
-    const deck = EXAMPLE_DECKS[opts.starter ?? 2]!;
+    const col = starterCollection();
+    // new players start with the Lab Crew; bots keep the strong example decks (tournament opponents)
+    const deck = opts.bot ? EXAMPLE_DECKS[opts.starter ?? 2]! : STARTER_DECK;
     const decks: SavedDeck[] = [{ id: 'starter', name: deck.name, characters: deck.characters.map((defId) => ({ defId, level: 1 })), items: deck.items }];
     const mmr = opts.mmr ?? START_MMR;
     this.db.run(

@@ -3,6 +3,7 @@
 
 import { randomBytes } from 'node:crypto';
 import type { QueueKind, ServerMsg, DeckCardInput } from '@contaminant/engine';
+import { fairBotDeck, hashString, isDevName, makeRng } from '@contaminant/engine';
 import type { RoomManager, MatchRoom, RoomResult, Clock } from './rooms.ts';
 import type { PlayerService } from './players.ts';
 import { rate, teamRating } from './rating.ts';
@@ -139,7 +140,10 @@ export class Matchmaker {
 
   startBotMatch(e: QueueEntry, difficulty: 'easy' | 'normal' | 'hard', kind: 'ranked' | 'casual' | 'bot' = 'bot'): MatchRoom {
     const bot = this.players.ensureBots(1)[0]!;
-    const deck = this.players.deck(bot.id)!;
+    // a fair opponent: only characters the player could own by now, never above the player's level
+    const human = this.players.byId(e.playerId);
+    const best = human && !isDevName(human.name) ? this.players.collection(e.playerId).bestTrophies : 99_999;
+    const deck = fairBotDeck(makeRng(hashString(`bot:${e.playerId}:${this.clock.now()}`)), e.deck, best);
     const room = this.rooms.create(
       [
         { playerId: e.playerId, name: e.name, deck: e.deck, mmr: e.mmr },

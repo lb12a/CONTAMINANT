@@ -3,7 +3,7 @@
 import { CHARACTER_LIST, CHARACTERS, MILESTONES } from './data/characters.ts';
 import { ITEM_LIST, ITEMS } from './data/items.ts';
 import { duplicatesForLevel, goldForLevel, trophyDelta } from './formulas.ts';
-import { EXAMPLE_DECKS } from './deck.ts';
+import { CHAR_DECK_MIN, ITEM_DECK_MIN, STARTER_DECK, zoneDeck } from './deck.ts';
 import { hashString, makeRng, rand, randInt, weighted, type RngState } from './rng.ts';
 import type { Rarity, Zone } from './types.ts';
 
@@ -53,16 +53,26 @@ export function nextMilestone(trophies: number) {
   return MILESTONES.find((m) => m.trophies > trophies) ?? null;
 }
 
-/** New players pick one of the example decks as their starter archive. */
-export function starterCollection(deckIndex = 2): Collection {
-  const deck = EXAMPLE_DECKS[deckIndex] ?? EXAMPLE_DECKS[0]!;
+/** New subjects start small: the four lab residents, a few basic cards and one chest. Everything else comes
+ * from chests, and the other areas' characters only drop once the trophy ladder reaches them. */
+export function starterCollection(_deckIndex = 0): Collection {
   const chars: Record<string, OwnedChar> = {};
-  for (const id of deck.characters) chars[id] = { level: 1, dups: 0, tutorialDone: false };
-  // laboratory cards are always available
-  for (const id of MILESTONES[0]!.cards) chars[id] ??= { level: 1, dups: 0, tutorialDone: false };
+  for (const id of STARTER_DECK.characters) chars[id] = { level: 1, dups: 0, tutorialDone: false };
   const items: Record<string, number> = {};
-  for (const id of deck.items) items[id] = (items[id] ?? 0) + 1;
-  return { gold: 500, trophies: 0, bestTrophies: 0, chars, items, chests: ['small'], cardBacks: ['biohazard'], titles: [] };
+  for (const id of STARTER_DECK.items) items[id] = (items[id] ?? 0) + 1;
+  return { gold: 300, trophies: 0, bestTrophies: 0, chars, items, chests: ['small'], cardBacks: ['biohazard'], titles: [] };
+}
+
+/**
+ * The bot's deck for a fair match: only characters from areas the player has unlocked, as many characters
+ * and cards as the player brings, and never above the player's average level. (Tournament bots are strong
+ * on purpose and do not use this.)
+ */
+export function fairBotDeck(rng: RngState, player: { characters: { defId: string; level?: number }[]; items: string[] }, bestTrophies: number): { characters: { defId: string; level: number }[]; items: string[] } {
+  const levels = player.characters.map((c) => c.level ?? 1);
+  const level = Math.max(1, Math.floor(levels.reduce((a, b) => a + b, 0) / Math.max(1, levels.length)));
+  const d = zoneDeck(rng, zonesForTrophies(bestTrophies), Math.max(CHAR_DECK_MIN, player.characters.length), Math.max(ITEM_DECK_MIN, player.items.length));
+  return { characters: d.characters.map((defId) => ({ defId, level })), items: d.items };
 }
 
 export interface Drop {
