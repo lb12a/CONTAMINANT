@@ -15,7 +15,7 @@ import {
 import { BoardCanvas } from '../render/BoardCanvas.tsx';
 import type { DioramaRenderer } from '../render/diorama.ts';
 import type { Floater, Flash, HighlightKind, Insets, Overlay, Pulse } from '../render/types.ts';
-import { computeOverlay, emptyPlanner, plannedPos, tapTile, toPlan, unitActions, commandLabel, type PlannerState } from '../game/planner.ts';
+import { aimAttack, computeOverlay, emptyPlanner, needsAimChoice, plannedPos, tapTile, toPlan, unitActions, commandLabel, type PlannerState } from '../game/planner.ts';
 import type { MatchController, MatchSnapshot } from '../game/controller.ts';
 import { ApBattery, CharTraits, Fuse, HpBar, IdleSteps, ItemCard, Modal, StatusChips, VpRace, secondsLeft } from '../ui/components.tsx';
 import { figureCanvas, lookKey, portraitUrl } from '../render/art.ts';
@@ -215,9 +215,15 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
     return () => clearTimeout(h);
   }, [ps, playing, snap.ended, ready, ctrl, me]);
 
+  const [aim, setAim] = useState<{ h: Hex; unit: Unit } | null>(null);
   const onTile = useCallback(
     (h: Hex) => {
       if (playing || ready || snap.ended) return;
+      const ambiguous = needsAimChoice(view, ps, h);
+      if (ambiguous) {
+        setAim({ h, unit: ambiguous });
+        return;
+      }
       setPs((cur) => {
         const r = tapTile(view, me, cur, h);
         if (r.msg) toast(r.msg);
@@ -231,7 +237,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         return r.ps;
       });
     },
-    [view, me, playing, ready, snap.ended],
+    [view, me, playing, ready, snap.ended, ps],
   );
 
   const setMode = (mode: PlannerState['mode']) => setPs((p) => ({ ...p, mode }));
@@ -377,6 +383,16 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
                 {commandLabel(view, c)}
                 {(c.kind === 'attack' || c.kind === 'ability') && c.item ? ` + ${ITEMS[handCards.find((h) => h.uid === c.item)?.itemId ?? '']?.name ?? 'card'}` : ''}
               </span>
+              {c.kind === 'deploy' && pl.cards.find((x) => x.uid === c.card)?.defId === 'nexus' && (
+                <button
+                  className="btn secondary small"
+                  disabled={(ps.deployChoices[c.card]?.rerolls ?? 0) >= 3}
+                  title="Corrupt: the three magenta tiles are corrupted when Nexus arrives (hidden from the enemy). Re-roll them up to 3 times this round."
+                  onClick={() => setPs((p) => ({ ...p, deployChoices: { ...p.deployChoices, [c.card]: { ...p.deployChoices[c.card], rerolls: Math.min(3, (p.deployChoices[c.card]?.rerolls ?? 0) + 1) } } }))}
+                >
+                  Re-roll tiles {3 - (ps.deployChoices[c.card]?.rerolls ?? 0)}/3
+                </button>
+              )}
               <button className="icon-btn" style={{ width: 26, height: 26, fontSize: 12 }} onClick={() => removeCmd(i)} aria-label="remove">
                 ✕
               </button>
@@ -411,6 +427,19 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           </div>
         )}
       </div>
+      {aim && !playing && (
+        <AimChooser
+          at={renderer?.screenOf(aim.h)}
+          unit={aim.unit}
+          enemy={aim.unit.owner !== me}
+          onPick={(which) => {
+            setPs((p) => aimAttack(p, which === 'unit' ? { unit: aim.unit.uid } : { tile: aim.h }));
+            setAim(null);
+            sfx('click');
+          }}
+          onCancel={() => setAim(null)}
+        />
+      )}
       {ps.mode.kind !== 'idle' && !playing && (
         <div className="panel mode-hint">
           <span>{modeHint(view, ps)}</span>
@@ -736,6 +765,31 @@ function useBoardInsets(): Insets {
     if (w <= 760) return { top: 150, right: 4, bottom: 158, left: 4 };
     return { top: 108, right: 24, bottom: 176, left: 24 };
   }, [w]);
+}
+
+/** "Creature or tile?" when a single-target attack is aimed at an occupied tile. */
+function AimChooser({ at, unit, enemy, onPick, onCancel }: { at?: { x: number; y: number }; unit: Unit; enemy: boolean; onPick: (which: 'unit' | 'tile') => void; onCancel: () => void }) {
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => e.key === 'Escape' && onCancel();
+    window.addEventListener('keydown', k);
+    return () => window.removeEventListener('keydown', k);
+  }, [onCancel]);
+  return (
+    <div className="panel aim-chooser" role="dialog" aria-label="Choose the target" style={at ? { left: at.x, top: at.y } : { left: '50%', top: '40%' }}>
+      <b className="small">Aim at …</b>
+      <button className="btn primary small" onClick={() => onPick('unit')} autoFocus>
+        {enemy ? 'the creature' : unit.name}
+        <span className="aim-sub">follows {unit.name} if it moves</span>
+      </button>
+      <button className="btn secondary small" onClick={() => onPick('tile')}>
+        the tile
+        <span className="aim-sub">hits whoever stands here</span>
+      </button>
+      <button className="coach-skip" onClick={onCancel}>
+        Cancel
+      </button>
+    </div>
+  );
 }
 
 function HoverInfo({ view, h, me, at }: { view: GameState; h: Hex; me: PlayerId; at?: { x: number; y: number } }) {

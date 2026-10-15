@@ -1,6 +1,10 @@
 {
- "generated": "2026-10-15T08:49:58.057Z",
+ "generated": "2026-10-15T08:57:33.172Z",
  "files": {
+  "backdrops/loading.webp": {
+   "w": 1344,
+   "h": 576
+  },
   "backdrops/menu.webp": {
    "w": 1344,
    "h": 576
@@ -32,6 +36,10 @@
   "ground/toyroom.webp": {
    "w": 1344,
    "h": 576
+  },
+  "icons/status/poison.webp": {
+   "w": 141,
+   "h": 160
   },
   "items/acid_mine.webp": {
    "w": 170,
@@ -550,11 +558,11 @@
    "h": 512
   },
   "tokens/werewolf.webp": {
-   "w": 311,
+   "w": 364,
    "h": 512
   },
   "tokens/werewolf_wolf.webp": {
-   "w": 424,
+   "w": 407,
    "h": 512
   },
   "tokens/wisp.webp": {
@@ -562,7 +570,7 @@
    "h": 512
   },
   "tokens/zombie_brute.webp": {
-   "w": 363,
+   "w": 345,
    "h": 512
   },
   "tokens/zombie_limb.webp": {

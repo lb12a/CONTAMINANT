@@ -28,6 +28,8 @@ import {
   ring,
   trapTileAllowed,
   validatePlan,
+  createUnitFromCard,
+  nexusCorruptTiles,
   type AttackDef,
   type Command,
   type GameState,
@@ -56,7 +58,25 @@ export interface PlannerState {
   watch?: string;
   selected?: string;
   mode: Mode;
-  deployChoices: Record<string, { mood?: string }>;
+  /** On-Deploy choices: Pokerface mood, Nexus corrupted-tile re-rolls */
+  deployChoices: Record<string, { mood?: string; rerolls?: number }>;
+}
+
+const previewCache = new Map<string, Unit>();
+/** A throw-away unit for a planned deployment (built on a copy, the real view is not touched). */
+export function previewDeploy(view: GameState, me: PlayerId, cardUid: string, tile: Hex): Unit | null {
+  const card = view.players[me].cards.find((c) => c.uid === cardUid);
+  if (!card) return null;
+  const k = `${view.id}:${cardUid}:${tile.c},${tile.r}`;
+  let u = previewCache.get(k);
+  if (!u) {
+    const scratch = structuredClone(view);
+    u = createUnitFromCard(scratch, me, card, tile);
+    u.uid = `preview:${cardUid}`;
+    previewCache.set(k, u);
+    if (previewCache.size > 64) previewCache.delete(previewCache.keys().next().value!);
+  }
+  return u;
 }
 
 export const emptyPlanner = (): PlannerState => ({ commands: [], rest: [], speedShift: {}, mode: { kind: 'idle' }, deployChoices: {} });
@@ -154,7 +174,15 @@ export function computeOverlay(view: GameState, me: PlayerId, ps: PlannerState, 
       }
       for (const t of c.target.tiles ?? []) targets.push({ from, to: t, color: '#ff9a1f' });
     }
-    if (c.kind === 'deploy') highlights.set(key(c.tile), 'ally');
+    if (c.kind === 'deploy') {
+      highlights.set(key(c.tile), 'ally');
+      // the arriving creature shows as a hologram already, so spawn-round choices can be planned
+      const preview = previewDeploy(view, me, c.card, c.tile);
+      if (preview) ghosts.push({ unit: preview, pos: c.tile, order: 0 });
+      if (preview?.defId === 'nexus') {
+        for (const t of nexusCorruptTiles(view, me, c.card, ps.deployChoices[c.card]?.rerolls ?? 0)) highlights.set(key(t), 'corrupt');
+      }
+    }
   }
   for (const [uid, pos] of posAt) {
     const u = view.units.find((x) => x.uid === uid);
@@ -231,6 +259,28 @@ export function computeOverlay(view: GameState, me: PlayerId, ps: PlannerState, 
 }
 
 /** Handles a tap on a tile. Returns the new planner state and an optional toast message. */
+/**
+ * Tapping a creature with a single-target attack is ambiguous: aim at the creature (the attack follows
+ * it when it moves) or at its tile (hits whoever stands there when the attack resolves).
+ * Returns the creature on the tile when the player should be asked.
+ */
+export function needsAimChoice(view: GameState, ps: PlannerState, h: Hex): Unit | null {
+  const m = ps.mode;
+  if (m.kind !== 'attack') return null;
+  const u = view.units.find((x) => x.uid === m.unit);
+  const a = u ? attackDefFor(view, u, m.attack) : undefined;
+  if (!u || !a || a.targeting !== 'character') return null;
+  const here = view.units.find((x) => eq(x.pos, h) && !x.isObject && x.uid !== u.uid);
+  return here ?? null;
+}
+
+/** Completes an attack in planning with the chosen aim. */
+export function aimAttack(ps: PlannerState, target: { unit?: string; tile?: Hex }): PlannerState {
+  const m = ps.mode;
+  if (m.kind !== 'attack') return ps;
+  return { ...ps, commands: [...ps.commands, { kind: 'attack', unit: m.unit, attack: m.attack, target, item: m.item }], mode: { kind: 'idle' } };
+}
+
 export function tapTile(view: GameState, me: PlayerId, ps: PlannerState, h: Hex): { ps: PlannerState; msg?: string } {
   const unitHere = view.units.find((u) => eq(u.pos, h) && u.blocks) ?? view.units.find((u) => eq(u.pos, h));
   const m = ps.mode;

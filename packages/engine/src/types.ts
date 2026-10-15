@@ -259,6 +259,8 @@ export interface OfferSlot {
 export interface PlayerState {
   id: PlayerId;
   name: string;
+  /** private salt for owner-only randomness (Nexus' hidden tiles); blanked in the enemy's view */
+  secret: string;
   side: 'left' | 'right';
   isBot: boolean;
   ap: number;
@@ -473,7 +475,7 @@ export interface DeployCmd {
   card: string;
   tile: Hex;
   /** On-Deploy choices: pokerface mood, candle tile, swamp heart tile, corrupted tiles (rerolled) */
-  choice?: { mood?: string; tile?: Hex; tiles?: Hex[] };
+  choice?: { mood?: string; tile?: Hex; tiles?: Hex[]; rerolls?: number };
 }
 export interface ItemCmd {
   kind: 'item';

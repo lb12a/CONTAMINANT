@@ -41,7 +41,10 @@ export function viewFor(s: GameState, p: PlayerId): GameState {
       return true;
     });
   }
+  // the match seed and the enemy's secret would let a client recompute hidden choices
+  v.seed = 0;
   const ep = v.players[enemy];
+  ep.secret = '';
   ep.hand = ep.hand.map((c) => (ep.revealedToEnemy.includes(c.uid) ? c : { uid: c.uid, itemId: HIDDEN_CARD }));
   ep.itemDeck = ep.itemDeck.map((c) => ({ uid: '?', itemId: HIDDEN_CARD, tarnished: c.tarnished }));
   ep.offered = ep.offered.map(() => ({ cardUid: HIDDEN_CARD, locked: false }));

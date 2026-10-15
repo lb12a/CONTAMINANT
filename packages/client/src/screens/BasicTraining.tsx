@@ -93,8 +93,8 @@ const STEPS: Step[] = [
   },
   {
     title: 'Attack',
-    text: 'Now choose Reaper’s Slash and tap the training dummy. Range 1: your planned position counts, so the attack comes after the move.',
-    de: { title: 'Angreifen', text: 'Wähle jetzt Reaper’s Slash und tippe auf die Trainingspuppe. Reichweite 1: Deine geplante Position zählt, der Angriff kommt also nach der Bewegung.' },
+    text: 'Now choose Reaper’s Slash and tap the training dummy, then aim at the creature (the attack follows it if it moves). Range 1: your planned position counts, so the attack comes after the move.',
+    de: { title: 'Angreifen', text: 'Wähle jetzt Reaper’s Slash, tippe auf die Trainingspuppe und ziele auf die Kreatur (der Angriff folgt ihr, wenn sie sich bewegt). Reichweite 1: Deine geplante Position zählt, der Angriff kommt also nach der Bewegung.' },
     target: '.left .cmd',
     done: (c) => c.ps.commands.some((x) => x.kind === 'attack' && 'target' in x && x.target.unit === dummyUid(c)),
   },

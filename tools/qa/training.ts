@@ -71,6 +71,7 @@ await clickTile(page, 6, 4);
 await step(page, 9, 'attack');
 await page.locator('.left .cmd', { hasText: 'Reaper' }).click();
 await clickTile(page, 7, 4);
+await page.locator('.aim-chooser').getByRole('button', { name: /the creature/ }).click();
 await step(page, 10, 'order');
 await next(page);
 await step(page, 11, 'card');

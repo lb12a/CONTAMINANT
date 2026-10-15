@@ -268,6 +268,7 @@ function makePlayer(s: GameState, id: PlayerId, setup: PlayerSetup, side: 'left'
   return {
     id,
     name: setup.name,
+    secret: hashString(`${s.seed}:player-secret:${id}`).toString(36),
     side,
     isBot: !!setup.isBot,
     ap: 0,

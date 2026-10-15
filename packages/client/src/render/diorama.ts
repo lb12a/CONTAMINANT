@@ -39,6 +39,7 @@ const HL: Record<HighlightKind, number> = {
   deploy: 0x8cff5a,
   ally: 0x8cff5a,
   invalid: 0x777777,
+  corrupt: 0xff2bd6,
 };
 
 const reducedMotion = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;

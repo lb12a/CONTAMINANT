@@ -2,7 +2,7 @@
 
 import type { Hex, Unit } from '@contaminant/engine';
 
-export type HighlightKind = 'move' | 'attack' | 'deploy' | 'target' | 'invalid' | 'area' | 'ally' | 'path';
+export type HighlightKind = 'move' | 'attack' | 'deploy' | 'target' | 'invalid' | 'area' | 'ally' | 'path' | 'corrupt';
 
 export interface Floater {
   /** tile the number rises from (preferred) */

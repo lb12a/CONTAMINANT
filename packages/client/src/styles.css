@@ -2067,3 +2067,26 @@ input[type='number'] {
   font-weight: 800;
   letter-spacing: 0.08em;
 }
+
+/* "creature or tile?" chooser next to the tapped tile */
+.aim-chooser {
+  position: absolute;
+  z-index: 40;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  min-width: 210px;
+  transform: translate(-50%, calc(-100% - 26px));
+}
+.aim-chooser .btn {
+  display: grid;
+  justify-items: start;
+  text-align: left;
+  line-height: 1.1;
+}
+.aim-sub {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0.8;
+}

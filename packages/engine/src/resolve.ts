@@ -167,8 +167,9 @@ function growMini(s: GameState, mini: Unit): void {
 }
 
 /** Nexus Corrupt: deterministic candidate tiles for re-roll index 0..3 (client preview == server result). */
+/** Nexus' hidden tiles: derived from the owner's secret, so the owner's planner can preview them and the enemy cannot. */
 export function nexusCorruptTiles(s: GameState, p: PlayerId, cardUid: string, reroll: number): Hex[] {
-  const rng = makeRng(hashString(`${s.seed}:${s.round}:${cardUid}:corrupt:${reroll}`));
+  const rng = makeRng(hashString(`${s.players[p].secret}:${s.round}:${cardUid}:corrupt:${reroll}`));
   const enemySide = s.players[other(p)].side;
   const cands = s.tiles
     .filter((t) => !t.wall && !t.objective && !inDeployZone(t, enemySide, bounds(s)) && !t.fields.some((f) => f.id === 'corrupted'))
@@ -556,7 +557,7 @@ function onDeploy(s: GameState, u: Unit, cmd: Extract<Command, { kind: 'deploy' 
       break;
     case 'nexus': {
       if (s.units.some((o) => o !== u && o.defId === 'nexus' && o.owner === u.owner)) break; // does not stack with a second Nexus
-      const rerolls = Math.max(0, Math.min(3, (choice as any).rerolls ?? 0));
+      const rerolls = Math.max(0, Math.min(3, choice.rerolls ?? 0));
       const tiles = nexusCorruptTiles(s, u.owner, cmd.card, rerolls);
       for (const h of tiles) addField(s, h, 'corrupted', { owner: u.owner, duration: null, data: { nexus: u.uid }, silent: true, noCombo: true });
       addEvent(s, { kind: 'field', text: `${u.name} corrupts 3 hidden tiles`, tiles, field: 'corrupted', privateTo: u.owner });
