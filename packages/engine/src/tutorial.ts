@@ -4,6 +4,8 @@ import { CHARACTERS } from './data/characters.ts';
 import { ITEMS } from './data/items.ts';
 import { TUTORIAL_BY_ID, type Check, type TutorialPlan } from './data/tutorials.ts';
 import { createSandbox, type SandboxUnit } from './sandbox.ts';
+import { createSummon, createUnitFromCard, freshRound, isFree } from './state.ts';
+import { neighbors } from './hex.ts';
 import { botPlan } from './ai.ts';
 import { playRound } from './match.ts';
 import { eventsFor } from './visibility.ts';
@@ -59,7 +61,26 @@ export function createTutorial(id: string, seed = 7): TutorialSession {
     round: plan.startRound ?? 1,
     names: ['You', 'Warden'],
   });
+  state.settings.protectOwner = 0;
   return { plan, state, stage: 0, snapshot: structuredClone(state), rewindsLeft: 2, probeTries: 0, done: [], passed: false, lastEvents: [], showSolution: false };
+}
+
+/** Training enemies that were knocked out come back to their slot, so the next task always has a target. */
+export function refillEnemies(sess: TutorialSession): void {
+  const s = sess.state;
+  sess.plan.enemies.forEach((defId, i) => {
+    const tag = `enemy${i}`;
+    if (s.units.some((u) => u.data.tag === tag)) return;
+    const slot = ENEMY_SLOTS[i]!;
+    const pos = isFree(s, slot) ? slot : neighbors(slot, s.settings.bounds).find((h) => isFree(s, h));
+    if (!pos) return;
+    const u = defId.startsWith('training_') ? createSummon(s, 1, defId, pos) : createUnitFromCard(s, 1, { uid: `refill-${i}-${s.round}`, defId, level: 1, tuning: {} }, pos);
+    u.data.tag = tag;
+    u.deployedRound = 0;
+    u.rt = freshRound(u);
+    s.units.push(u);
+    s.graveyard = s.graveyard.filter((g) => g.data.tag !== tag);
+  });
 }
 
 export function mainUnit(s: GameState, plan: TutorialPlan): Unit | undefined {
@@ -214,6 +235,7 @@ export function playTutorialRound(sess: TutorialSession, playerPlan: Plan): Tuto
     sess.state.phase = 'planning';
     sess.state.winner = null;
   }
+  refillEnemies(sess);
   if (probe) {
     if (passed) {
       sess.passed = true;

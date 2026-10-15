@@ -9,7 +9,7 @@ import { distance, eq, neighbors, ring, burst, cone, coneWedgeToward, directionT
 import { makeRng, rand, shuffle, hashString, type RngState } from './rng.ts';
 import { attacksOf, activeAbilities } from './actions.ts';
 import { bounds, charactersOnBoard, getUnit, inZone, isFree, tileAt } from './state.ts';
-import { accuracyMods, damageMods, effectiveAtk, effectiveDef, hasLos, hasStatus, hpPct, maxMove, tagMultiplier } from './stats.ts';
+import { accuracyMods, damageMods, effectiveAtk, effectiveDef, hasChar, hasLos, hasStatus, hpPct, maxMove, tagMultiplier } from './stats.ts';
 import { canEnd, canPass, pathCost, canMoveVoluntarily } from './movement.ts';
 import { deployCost, validatePlan, MAX_ON_BOARD } from './planning.ts';
 import { fieldTileAllowed, itemCost, trapTileAllowed } from './itemfx.ts';
@@ -197,14 +197,83 @@ function attackOptions(s: GameState, u: Unit, a: AttackDef, positions: Reach[], 
   return out;
 }
 
+/** Fields that hurt or hinder whoever ends a move on them. */
+const HARMFUL_FIELDS = new Set(['fire', 'wildfire', 'scalded', 'toxic', 'toxic_smoke', 'acid', 'diluted_acid', 'electrified_water', 'contaminated_water', 'radiation', 'shock_storm', 'corrupted', 'snare', 'swamp']);
+
+function hazard(s: GameState, h: Hex, u: Unit): number {
+  const t = tileAt(s, h);
+  if (!t) return 0;
+  let n = 0;
+  for (const f of t.fields) if (HARMFUL_FIELDS.has(f.id) && !(f.id === 'corrupted' && u.defId === 'nexus')) n += f.id === 'snare' || f.id === 'swamp' ? 1 : 3;
+  return n;
+}
+
+/**
+ * Walking distance to `goal` around walls (BFS over every tile without a wall; other units are ignored
+ * because they move too). Tiles that cannot reach the goal get Infinity.
+ */
+function distanceField(s: GameState, u: Unit, goal: Hex): Map<string, number> {
+  const field = new Map<string, number>();
+  const k = (h: Hex) => `${h.c},${h.r}`;
+  const passable = (h: Hex) => {
+    const t = tileAt(s, h);
+    return !!t && (!t.wall || hasChar(u, 'phasing') || hasChar(u, 'burrowing'));
+  };
+  field.set(k(goal), 0);
+  let frontier = [goal];
+  let d = 0;
+  while (frontier.length) {
+    d++;
+    const next: Hex[] = [];
+    for (const f of frontier) {
+      for (const n of neighbors(f, bounds(s))) {
+        if (field.has(k(n)) || !passable(n)) continue;
+        field.set(k(n), d);
+        next.push(n);
+      }
+    }
+    frontier = next;
+  }
+  return field;
+}
+
+/**
+ * Best reachable position toward `goal`: real walking distance around walls (no dead ends behind a
+ * wall), the wanted range for ranged attackers, then fewer hazards and cheaper paths.
+ */
 function moveToward(s: GameState, u: Unit, goal: Hex, positions: Reach[], keepRange: number): Reach | null {
+  const field = distanceField(s, u, goal);
+  const walk = (h: Hex) => field.get(`${h.c},${h.r}`) ?? 99;
+  const score = (r: Reach) => {
+    const w = walk(r.pos);
+    const rangeMiss = keepRange > 1 ? Math.abs(distance(r.pos, goal) - keepRange) * 1.5 + (w > keepRange + 2 ? w - keepRange : 0) : Math.abs(w - keepRange);
+    return rangeMiss + hazard(s, r.pos, u) * 2 + r.cost * 0.05;
+  };
   let best: Reach | null = null;
-  let bestD = distance(u.pos, goal);
+  let bestScore = score({ pos: u.pos, path: [], cost: 0 });
   for (const r of positions) {
     if (!r.path.length) continue;
-    const d = Math.abs(distance(r.pos, goal) - keepRange);
-    if (d < bestD || (d === bestD && best && r.cost < best.cost)) {
-      bestD = d;
+    const sc = score(r);
+    if (sc < bestScore - 0.01) {
+      bestScore = sc;
+      best = r;
+    }
+  }
+  return best;
+}
+
+/** A badly hurt creature with no finishing blow falls back toward its allies, away from enemies. */
+function retreat(s: GameState, u: Unit, positions: Reach[], enemies: Unit[], allies: Unit[]): Reach | null {
+  if (!enemies.length) return null;
+  const threat = (h: Hex) => enemies.reduce((m, e) => Math.min(m, distance(e.pos, h)), 99);
+  const support = (h: Hex) => (allies.length ? allies.reduce((m, a) => Math.min(m, distance(a.pos, h)), 99) : 0);
+  let best: Reach | null = null;
+  let bestScore = threat(u.pos) * 2 - support(u.pos) * 0.5 - hazard(s, u.pos, u) * 3;
+  for (const r of positions) {
+    if (!r.path.length) continue;
+    const sc = threat(r.pos) * 2 - support(r.pos) * 0.5 - hazard(s, r.pos, u) * 3 - r.cost * 0.1;
+    if (sc > bestScore) {
+      bestScore = sc;
       best = r;
     }
   }
@@ -293,6 +362,16 @@ export function botPlan(real: GameState, p: PlayerId, opts: BotOptions = {}): Pl
       }
       continue;
     }
+    // badly hurt and nothing worth hitting: fall back toward allies (normal+)
+    if (difficulty !== 'easy' && hpPct(u) <= 0.25 && !options.some((o) => o.score > 30)) {
+      const back = retreat(s, u, positions, enemies, allies);
+      if (back && back.cost <= ap) {
+        reserve(back.cost);
+        cmds.push({ kind: 'move', unit: u.uid, path: back.path });
+        occupied.push(back.pos);
+        continue;
+      }
+    }
     // no good attack: move toward the nearest enemy, or hold an objective
     const onObjective = objectives.some((h) => eq(h, u.pos));
     if (onObjective && difficulty !== 'easy') {
@@ -300,7 +379,7 @@ export function botPlan(real: GameState, p: PlayerId, opts: BotOptions = {}): Pl
       continue;
     }
     const ranged = atks.some((a) => a.range >= 4);
-    const nearestEnemy = enemies.slice().sort((a, b) => distance(a.pos, u.pos) - distance(b.pos, u.pos))[0];
+    const nearestEnemy = enemies.slice().sort((a, b) => distance(a.pos, u.pos) - distance(b.pos, u.pos) + (a.hp - b.hp) / 2000)[0];
     const nearestObj = objectives.slice().sort((a, b) => distance(a, u.pos) - distance(b, u.pos))[0];
     const goal = nearestEnemy && (!nearestObj || distance(nearestEnemy.pos, u.pos) < 6) ? nearestEnemy.pos : nearestObj;
     if (!goal) continue;

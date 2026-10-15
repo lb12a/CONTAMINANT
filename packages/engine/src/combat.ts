@@ -268,6 +268,11 @@ export function dealDamage(s: GameState, target: Unit, amount: number, info: Dea
   if (info.tag === 'fire') target.rt.damagedByFireOrAcid = true;
   if (info.tag === 'fire' && target.chars.material === 'gas') applyStatus(s, target, 'burn');
 
+  if (target.hp <= 0 && s.settings.protectOwner === target.owner && !target.isSummon && !target.isObject) {
+    // Testing Chambers: the Warden never lets the subject die, so every lesson stays possible
+    target.hp = 1;
+    addEvent(s, { kind: 'info', text: `The Warden pulls ${target.name} back from the brink (1 HP)`, target: target.uid });
+  }
   if (target.hp <= 0) {
     koUnit(s, target, att, { bonusVp: info.bonusVpOnKo });
     return { damage: dmg, ko: true };

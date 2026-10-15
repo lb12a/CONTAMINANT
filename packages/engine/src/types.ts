@@ -377,6 +377,8 @@ export interface MatchSettings {
   maxRounds: number;
   bounds: Bounds;
   tutorial?: boolean;
+  /** Testing Chambers: this player's characters cannot be KO'd (they stay at 1 HP) */
+  protectOwner?: PlayerId;
   /** fixed randomness for tutorials: hits always land, crits only when scripted */
   fixedRandom?: boolean;
   bossId?: string;

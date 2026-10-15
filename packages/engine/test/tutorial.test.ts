@@ -79,3 +79,36 @@ test('Basic Training: the guided path (deploy Vile, walk up, Reaper\'s Slash + W
   playRound(s, [r2, trainingWardenPlan(s)]);
   assert.ok(findTagged(s, 'dummy')!.hp < hp0, 'the dummy took damage');
 });
+
+test('Testing Chambers never become impossible: the subject survives and knocked-out enemies return', async () => {
+  const { dealDamage, koUnit } = await import('../src/index.ts');
+  // direct check: a lethal hit leaves the subject at 1 HP, a KO'd training enemy is back next round
+  const probe = createTutorial('vile', 3);
+  beginActs(probe);
+  const subject = mainUnit(probe.state, probe.plan)!;
+  dealDamage(probe.state, subject, 99999, { attacker: null, tag: null, label: 'test' });
+  assert.equal(subject.hp, 1);
+  const enemy = probe.state.units.find((u) => u.owner === 1)!;
+  koUnit(probe.state, enemy, subject, {});
+  playTutorialRound(probe, { player: 0, commands: [], rest: [] });
+  assert.ok(probe.state.units.some((u) => u.owner === 1 && u.data.tag === enemy.data.tag), 'the knocked-out enemy returned');
+  for (const t of TUTORIALS) {
+    const sess = createTutorial(t.id, 3);
+    beginActs(sess);
+    for (let round = 0; round < 10; round++) {
+      // the player does nothing useful while the Warden attacks at full strength
+      const enemyOnly: Plan = { player: 0, commands: [], rest: [] };
+      if (t.deployMain && round === 0 && sess.state.players[0].offered.length) {
+        enemyOnly.commands.push({ kind: 'deploy', card: sess.state.players[0].offered[0]!.cardUid, tile: { c: 1, r: 2 } });
+      }
+      // a hard bot hits the subject's own units too (worst case for the protection)
+      const hard = botPlan(sess.state, 1, { difficulty: 'hard' });
+      void hard;
+      playTutorialRound(sess, enemyOnly);
+      if (round > 0 || !t.deployMain) assert.ok(mainUnit(sess.state, t), `${t.id}: the subject was KO'd in round ${round}`);
+      const enemies = sess.state.units.filter((u) => u.owner === 1 && typeof u.data.tag === 'string' && (u.data.tag as string).startsWith('enemy'));
+      assert.equal(enemies.length, t.enemies.length, `${t.id}: enemies missing after round ${round}`);
+      if (sess.stage > t.acts.length + 1) break;
+    }
+  }
+});
