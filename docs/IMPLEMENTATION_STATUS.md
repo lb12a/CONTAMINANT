@@ -78,11 +78,16 @@ limits that remain.
 
 ### Art pipeline (`tools/assetgen`)
 
-- Catalog of prompts for 43 creatures and forms, 18 zone props, 6 ground textures, 2 backdrops,
-  3 objective props and icons for all 70 item cards plus the Midas Touch card, in one style (thick
-  outlines, flat colours, creepy).
-- ComfyUI HTTP client (SDXL DreamShaper XL Lightning, 6 steps), BiRefNet cut-outs inside ComfyUI, trim,
-  WebP export, manifest, contact sheets, `picks.json` for candidate selection.
+- All 146 assets are generated and shipped (5.5 MB of WebP): 43 creatures and forms, 18 zone props,
+  6 ground textures, 2 backdrops, 3 objective props, 3 shop chests and icons for all 70 item cards plus
+  the Midas Touch card, in one style (thick outlines, flat colours, creepy).
+- ComfyUI HTTP client (SDXL DreamShaper XL Lightning, 6 steps), BiRefNet cut-outs inside ComfyUI, cleanup
+  that keeps the main figure, trim, WebP export, manifest, contact sheets, `picks.json` for candidates.
+- Gentle mode (default) for integrated GPUs: one image per job, smaller renders, tiled VAE decoding and a
+  pause after every image. Full-size batches froze the development machine twice (Intel GPU driver
+  timeout, LiveKernelEvent 141); in gentle mode the whole catalog rendered without a freeze.
+- On the board, ground textures sit at a fixed size per hex, centred and mirror-tiled; props stand on wall
+  hexes and around the board edge.
 
 ## Decisions where the documents leave room
 
@@ -105,8 +110,10 @@ limits that remain.
 
 ## Known limits
 
-- Generated art is produced locally and varies in quality; prompts are tuned per asset and candidates are
-  picked by hand. Animations are code-driven transforms and particles, not frame-by-frame sprite sheets.
+- Generated art varies in how literally it follows a description (the Rotten Flesh Steak is a meat monster
+  rather than a literal steak, Ghost Train's palm eyes are missing); prompts and picks can be refined and
+  re-rendered per asset. Animations are code-driven transforms and particles, not frame-by-frame sprite
+  sheets.
 - Strict NATs can block direct P2P connections (only STUN is configured, no TURN relay); the panel says so
   and server-hosted friendlies remain available.
 - Installers are not code-signed, so Windows SmartScreen and macOS Gatekeeper will warn on first launch.
