@@ -22,6 +22,8 @@ import { MissionsScreen } from './screens/Missions.tsx';
 import { ProfileScreen } from './screens/Profile.tsx';
 import { TeamsScreen } from './screens/Teams.tsx';
 import { ReplayScreen } from './screens/Replay.tsx';
+import { FriendsScreen } from './screens/Friends.tsx';
+import { InviteHost } from './ui/InviteHost.tsx';
 import type { MatchController } from './game/controller.ts';
 
 export type Route =
@@ -42,7 +44,8 @@ export type Route =
   | { name: 'missions' }
   | { name: 'profile'; id?: string }
   | { name: 'teams'; id?: string }
-  | { name: 'replay'; match?: string };
+  | { name: 'replay'; match?: string }
+  | { name: 'friends' };
 
 export type Nav = (r: Route) => void;
 
@@ -50,7 +53,7 @@ export type Nav = (r: Route) => void;
 export const NAV_GROUPS: { id: string; label: string; icon: string; routes: [Route['name'], string][] }[] = [
   { id: 'play', label: 'Play', icon: 'mode/contamination', routes: [['menu', 'Home'], ['tutorials', 'Testing Chambers'], ['missions', 'Missions']] },
   { id: 'collection', label: 'Collection', icon: 'ui/cards', routes: [['collection', 'Collection'], ['deck', 'Deck Builder'], ['shop', 'Shop']] },
-  { id: 'compete', label: 'Compete', icon: 'ui/trophy', routes: [['online', 'Online'], ['tournaments', 'Tournaments'], ['worldcup', 'World Cup'], ['ladder', 'Ladder'], ['teams', 'Teams']] },
+  { id: 'compete', label: 'Compete', icon: 'ui/trophy', routes: [['online', 'Online'], ['friends', 'Friends'], ['tournaments', 'Tournaments'], ['worldcup', 'World Cup'], ['ladder', 'Ladder'], ['teams', 'Teams']] },
   { id: 'watch', label: 'Watch', icon: 'ui/eye', routes: [['replay', 'Replays'], ['spectate', 'Spectate'], ['meta', 'Meta'], ['history', 'History']] },
 ];
 
@@ -82,6 +85,7 @@ export function App() {
         <div className="backdrop" />
         <PlayHost route={route} nav={nav} />
         <Toasts />
+        <InviteHost />
       </>
     );
   }
@@ -153,6 +157,7 @@ export function App() {
         {route.name === 'spectate' && <SpectateScreen nav={nav} match={route.match} />}
         {route.name === 'tutorials' && <TutorialsScreen nav={nav} defId={route.defId} />}
         {route.name === 'missions' && <MissionsScreen />}
+        {route.name === 'friends' && <FriendsScreen nav={nav} />}
       </main>
       <nav className="tabbar" aria-label="Sections">
         {NAV_GROUPS.map((g) => (
@@ -163,6 +168,7 @@ export function App() {
         ))}
       </nav>
       <Toasts />
+      <InviteHost />
     </div>
   );
 }

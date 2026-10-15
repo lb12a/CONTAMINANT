@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import type { QueueKind, ServerMsg } from '@contaminant/engine';
 import type { Nav } from '../App.tsx';
-import { activeDeck, connectOnline, disconnectOnline, getApi, getSocket, toast, useProfile } from '../store.ts';
-import { defaultServerUrl, Api } from '../net/api.ts';
+import { activeDeck, connectAuto, connectOnline, disconnectOnline, getApi, getSocket, toast, useProfile } from '../store.ts';
+import { cleanUrl, desktop, probe, scanWifi, type FoundServer } from '../net/discovery.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 import { PeerLink, startP2P, type P2PMatch, type PeerInfo } from '../game/p2p.ts';
+import { NearbyPanel, OnlineFriends } from './Friends.tsx';
 
 interface Me {
   player: { name: string; mmr: number; division: string; divisionId: string; games: number; wins: number; losses: number; titles: string[] };
@@ -13,11 +15,130 @@ interface Me {
   queue: QueueKind | null;
 }
 
+const SOURCE_LABEL: Record<FoundServer['source'], string> = {
+  config: 'Official server',
+  page: 'This website',
+  saved: 'Last played',
+  lan: 'Same Wi-Fi',
+  local: 'This PC',
+  own: 'This PC',
+  scan: 'Same Wi-Fi',
+};
+
+/** One button to go online; everything else (finding or hosting a server, signing in) happens by itself. */
+export function OnlineConnect() {
+  const p = useProfile();
+  const [name, setName] = useState(p.name === 'Subject' ? '' : p.name);
+  const [busy, setBusy] = useState(false);
+  const [status, setStatus] = useState('');
+  const [found, setFound] = useState<FoundServer[] | null>(null);
+  const [scan, setScan] = useState<{ done: number; total: number } | null>(null);
+  const [addr, setAddr] = useState('');
+
+  const join = async (s: FoundServer) => {
+    setBusy(true);
+    setStatus(`${t('Connecting to')} ${s.name}…`);
+    try {
+      await connectOnline(s.url, name || p.name, s.name);
+      toast(`${t('Online')}: ${s.name}`, 'good');
+    } catch (e) {
+      toast((e as Error).message, 'bad');
+      setStatus('');
+    }
+    setBusy(false);
+  };
+
+  const go = async () => {
+    setBusy(true);
+    setFound(null);
+    try {
+      const r = await connectAuto(name || p.name, (m) => setStatus(t(m)));
+      if (r.ok) toast(`${t('Online')}: ${r.server.name}`, 'good');
+      else {
+        setFound(r.found);
+        setStatus(t('No server found yet.'));
+      }
+    } catch (e) {
+      toast((e as Error).message, 'bad');
+      setStatus('');
+    }
+    setBusy(false);
+  };
+
+  const wifi = async () => {
+    setScan({ done: 0, total: 1 });
+    const list = await scanWifi((done, total) => setScan({ done, total }));
+    setScan(null);
+    setFound((f) => [...(f ?? []), ...list.filter((x) => !(f ?? []).some((y) => y.url === x.url))]);
+    if (!list.length) toast(t('No game found on this Wi-Fi'), 'bad');
+  };
+
+  const manual = async () => {
+    const s = await probe(cleanUrl(addr), 'saved', 4000);
+    if (!s) return toast(t('No Contaminant server answers at that address'), 'bad');
+    await join(s);
+  };
+
+  return (
+    <div className="panel col online-connect">
+      <label className="col small">
+        {t('Your name')}
+        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder={t('Your name')} maxLength={20} />
+      </label>
+      <button className="btn primary big" disabled={busy} onClick={() => void go()}>
+        <Icon name="ui/online" size={24} /> {busy ? status || t('Connecting…') : t('Play online')}
+      </button>
+      {!busy && status && (
+        <span className="small muted" aria-live="polite">
+          {status}
+        </span>
+      )}
+      {found && (
+        <div className="col" style={{ gap: 6 }}>
+          {found.map((s) => (
+            <button key={s.url} className="server-row" onClick={() => void join(s)}>
+              <b>{s.name}</b>
+              <span className="small muted">
+                {t(SOURCE_LABEL[s.source])} · {s.players} {t('online')} · {s.ping} ms
+              </span>
+            </button>
+          ))}
+          {location.protocol !== 'https:' && (
+            <button className="btn secondary small" disabled={!!scan} onClick={() => void wifi()}>
+              {scan ? `${t('Searching the Wi-Fi…')} ${Math.round((scan.done / scan.total) * 100)}%` : t('Search my Wi-Fi')}
+            </button>
+          )}
+        </div>
+      )}
+      <details className="small">
+        <summary>{t('Enter a server address')}</summary>
+        <div className="row wrap" style={{ marginTop: 6 }}>
+          <input type="text" value={addr} onChange={(e) => setAddr(e.target.value)} placeholder="192.168.1.20 / https://…" style={{ flex: '1 1 200px' }} />
+          <button className="btn secondary small" disabled={!addr.trim() || busy} onClick={() => void manual()}>
+            {t('Connect')}
+          </button>
+        </div>
+      </details>
+    </div>
+  );
+}
+
+/** Shown in the desktop app while it hosts: the address friends on other devices can use. */
+function HostingCard() {
+  const [st, setSt] = useState<{ running: boolean; port: number; lan: string[] } | null>(null);
+  useEffect(() => {
+    void desktop?.server('status').then(setSt);
+  }, []);
+  if (!st?.running) return null;
+  return (
+    <div className="panel small hosting">
+      <Icon name="ui/online" size={20} /> {t('This PC hosts the game. Desktop apps on your Wi-Fi find it by themselves; phones can search the Wi-Fi or enter')} <code>{st.lan.map((a) => `${a}:${st.port}`).join(' · ') || `localhost:${st.port}`}</code>
+    </div>
+  );
+}
+
 export function OnlineScreen({ nav }: { nav: Nav }) {
   const p = useProfile();
-  const [server, setServer] = useState(p.online?.server ?? defaultServerUrl());
-  const [name, setName] = useState(p.name === 'Subject' ? '' : p.name);
-  const [up, setUp] = useState<boolean | null>(null);
   const [me, setMe] = useState<Me | null>(null);
   const [queue, setQueue] = useState<QueueKind | null>(null);
   const [since, setSince] = useState(0);
@@ -25,10 +146,6 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
   const [lobby, setLobby] = useState<string | null>(null);
   const [party, setParty] = useState<{ code: string; members: string[] } | null>(null);
   const [planSecs, setPlanSecs] = useState(30);
-
-  useEffect(() => {
-    void new Api(server, null).health().then(setUp);
-  }, [server]);
 
   const refresh = () => {
     if (!p.online) return;
@@ -60,32 +177,10 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
 
   if (!p.online) {
     return (
-      <div className="col" style={{ maxWidth: 560 }}>
+      <div className="col" style={{ maxWidth: 620 }}>
         <h1>{t('Go online')}</h1>
-        <p className="muted">Connect to a Contaminant server for the ranked ladder, automatic tournaments, the online World Cup, spectating and the live meta. Start one locally with <code>npm run start:server</code>.</p>
-        <label className="col small">
-          Server
-          <input type="text" value={server} onChange={(e) => setServer(e.target.value)} />
-        </label>
-        <span className="small">{up === null ? 'Checking…' : up ? '● Server reachable' : '○ Server not reachable'}</span>
-        <label className="col small">
-          Name
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" maxLength={20} />
-        </label>
-        <button
-          className="btn primary"
-          disabled={!up}
-          onClick={async () => {
-            try {
-              await connectOnline(server, name || p.name);
-              toast('Connected', 'good');
-            } catch (e) {
-              toast((e as Error).message, 'bad');
-            }
-          }}
-        >
-          {t('Go online')}
-        </button>
+        <p className="muted">{t('Ranked ladder, tournaments, the World Cup, friends and players nearby. One click finds a server, or the desktop app hosts one for your Wi-Fi.')}</p>
+        <OnlineConnect />
       </div>
     );
   }
@@ -97,16 +192,12 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
 
   return (
     <div className="col">
-      <div className="row wrap">
-        <h1 style={{ margin: 0 }}>{t('Online')}</h1>
-        <span className="spacer" />
-        <button className="btn secondary small" onClick={() => { disconnectOnline(); toast('Disconnected'); }}>
-          Disconnect
-        </button>
-      </div>
+      <HostingCard />
       {me && (
         <div className="panel rivets row wrap" style={{ gap: 16 }}>
-          <div style={{ width: 64, height: 72, clipPath: 'polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%)', background: me.division.division.color, display: 'grid', placeItems: 'center', color: '#0E0A12', fontFamily: 'var(--font-display)', fontSize: 22 }}>{me.player.divisionId.slice(0, 2).toUpperCase()}</div>
+          <div className="division-hex" style={{ background: me.division.division.color }}>
+            {me.player.divisionId.slice(0, 2).toUpperCase()}
+          </div>
           <div className="col grow" style={{ gap: 4 }}>
             <b className="display">{me.player.name}</b>
             <span>
@@ -117,17 +208,28 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
               <div className="shine" />
             </div>
             <span className="small muted">
-              {me.season.name} · ends {new Date(me.season.end).toLocaleDateString()}
+              {me.season.name} · {t('ends')} {new Date(me.season.end).toLocaleDateString()} · {t('Server')}: {p.online.serverName ?? p.online.server}
             </span>
           </div>
+          <button
+            className="btn ghost small"
+            onClick={() => {
+              disconnectOnline();
+              toast(t('Disconnected'));
+            }}
+          >
+            {t('Disconnect')}
+          </button>
         </div>
       )}
       <div className="panel">
-        <h3>{t('Queue')} — deck: {deck.name}</h3>
+        <h3>
+          {t('Find a match')} <span className="small muted">· {t('deck')}: {deck.name}</span>
+        </h3>
         {queue ? (
           <div className="row wrap">
             <span className="chip buff">
-              Searching {queue}… <QueueTimer since={since} />
+              {t('Searching')} {t(queue)}… <QueueTimer since={since} />
             </span>
             <button className="btn secondary small" onClick={() => getSocket()?.send({ t: 'leave_queue' })}>
               {t('Leave queue')}
@@ -135,84 +237,73 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
           </div>
         ) : (
           <div className="row wrap">
-            <button className="btn primary" disabled={p.dev} title={p.dev ? 'Developer accounts (name ending in #) cannot play ranked' : undefined} onClick={() => join('ranked')}>
-              ⚔ {t('Ranked')}
+            <button className="btn primary" disabled={p.dev} title={p.dev ? t('Developer accounts (name ending in #) cannot play ranked') : undefined} onClick={() => join('ranked')}>
+              <Icon name="ui/sword" size={20} /> {t('Ranked')}
             </button>
             <button className="btn secondary" onClick={() => join('casual')}>
               {t('Casual')}
             </button>
-            <button className="btn secondary" disabled={p.dev} onClick={() => join('team')} title={p.dev ? 'Developer accounts cannot play Team Battles' : '2v2: each member plays a 1v1, most wins decide'}>
-              👥 {t('Team Battle')}
+            <button className="btn secondary" disabled={p.dev} onClick={() => join('team')} title={p.dev ? t('Developer accounts cannot play Team Battles') : t('2v2: each member plays a 1v1, most wins decide')}>
+              <Icon name="ui/team" size={20} /> {t('Team Battle')}
             </button>
             <button className="btn secondary" onClick={() => join('bot')}>
-              🤖 Practice bot
+              <Icon name="ui/gear" size={20} /> {t('Practice bot')}
             </button>
           </div>
         )}
-        <p className="small muted">Ranked uses an MMR window that widens while you wait. Casual fills with a bot after a short wait.</p>
+        <p className="small muted">{t('Ranked uses an MMR window that widens while you wait. Casual fills with a bot after a short wait.')}</p>
       </div>
       <div className="row wrap" style={{ alignItems: 'stretch' }}>
-        <div className="panel grow" style={{ minWidth: 280 }}>
-          <h3>{t('Friendly')}</h3>
-          <label className="col small">
-            Planning time: {planSecs} s
-            <input className="spine" type="range" min={15} max={90} step={5} value={planSecs} onChange={(e) => setPlanSecs(Number(e.target.value))} />
-          </label>
-          <div className="row wrap">
-            <button className="btn primary small" onClick={() => getSocket()?.send({ t: 'friend_create', planningSeconds: planSecs })}>
-              Create lobby
-            </button>
-            {lobby && (
-              <span className="chip neutral">
-                Code: <b className="num">{lobby}</b>
-              </span>
-            )}
-          </div>
-          <div className="row wrap" style={{ marginTop: 8 }}>
-            <input type="text" placeholder="Code" value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ width: 120 }} />
-            <button className="btn secondary small" onClick={() => getSocket()?.send({ t: 'friend_join', code })}>
-              Join
-            </button>
-          </div>
-          <p className="small muted">Friendly matches run every card at Level 10.</p>
-        </div>
-        <PeerPanel nav={nav} />
-        <div className="panel grow" style={{ minWidth: 280 }}>
-          <h3>Party (Team Battle)</h3>
-          {party ? (
-            <span>
-              Party <b className="num">{party.code}</b> · {party.members.length}/2 members
-            </span>
-          ) : (
-            <button className="btn secondary small" onClick={() => getSocket()?.send({ t: 'party_create' })}>
-              Create party
-            </button>
-          )}
-          <div className="row wrap" style={{ marginTop: 8 }}>
-            <input type="text" placeholder="Party code" onKeyDown={(e) => e.key === 'Enter' && getSocket()?.send({ t: 'party_join', code: (e.target as HTMLInputElement).value })} style={{ width: 140 }} />
-          </div>
-        </div>
-        <div className="panel grow" style={{ minWidth: 220 }}>
-          <h3>More</h3>
-          <div className="col">
-            <button className="btn secondary small" onClick={() => nav({ name: 'ladder' })}>
-              {t('Ladder')}
-            </button>
-            <button className="btn secondary small" onClick={() => nav({ name: 'tournaments' })}>
-              {t('Tournaments')}
-            </button>
-            <button className="btn secondary small" onClick={() => nav({ name: 'worldcup' })}>
-              {t('World Cup')}
-            </button>
-            <button className="btn secondary small" onClick={() => nav({ name: 'spectate' })}>
-              {t('Spectate')}
-            </button>
-            <button className="btn secondary small" onClick={() => nav({ name: 'meta' })}>
-              {t('Meta')}
-            </button>
-          </div>
-        </div>
+        <NearbyPanel nav={nav} />
+        <OnlineFriends nav={nav} />
       </div>
+      <details className="panel more-ways">
+        <summary>
+          <b>{t('More ways to play with friends')}</b> <span className="small muted">· {t('lobby codes, direct connection, Team Battle party')}</span>
+        </summary>
+        <div className="row wrap" style={{ alignItems: 'stretch', marginTop: 10 }}>
+          <div className="panel grow" style={{ minWidth: 260 }}>
+            <h3>{t('Private lobby')}</h3>
+            <label className="col small">
+              {t('Planning time')}: {planSecs} s
+              <input className="spine" type="range" min={15} max={90} step={5} value={planSecs} onChange={(e) => setPlanSecs(Number(e.target.value))} />
+            </label>
+            <div className="row wrap">
+              <button className="btn primary small" onClick={() => getSocket()?.send({ t: 'friend_create', planningSeconds: planSecs })}>
+                {t('Create lobby')}
+              </button>
+              {lobby && (
+                <span className="chip neutral">
+                  {t('Code')}: <b className="num">{lobby}</b>
+                </span>
+              )}
+            </div>
+            <div className="row wrap" style={{ marginTop: 8 }}>
+              <input type="text" placeholder={t('Code')} value={code} onChange={(e) => setCode(e.target.value.toUpperCase())} style={{ width: 120 }} />
+              <button className="btn secondary small" onClick={() => getSocket()?.send({ t: 'friend_join', code })}>
+                {t('Join')}
+              </button>
+            </div>
+            <p className="small muted">{t('Friendly matches run every card at Level 10.')}</p>
+          </div>
+          <PeerPanel nav={nav} />
+          <div className="panel grow" style={{ minWidth: 240 }}>
+            <h3>{t('Party (Team Battle)')}</h3>
+            {party ? (
+              <span>
+                {t('Party')} <b className="num">{party.code}</b> · {party.members.length}/2
+              </span>
+            ) : (
+              <button className="btn secondary small" onClick={() => getSocket()?.send({ t: 'party_create' })}>
+                {t('Create party')}
+              </button>
+            )}
+            <div className="row wrap" style={{ marginTop: 8 }}>
+              <input type="text" placeholder={t('Party code')} onKeyDown={(e) => e.key === 'Enter' && getSocket()?.send({ t: 'party_join', code: (e.target as HTMLInputElement).value })} style={{ width: 140 }} />
+            </div>
+          </div>
+        </div>
+      </details>
     </div>
   );
 }
@@ -259,7 +350,7 @@ function PeerPanel({ nav }: { nav: Nav }) {
   };
   return (
     <div className="panel grow" style={{ minWidth: 280 }}>
-      <h3>Direct match (P2P)</h3>
+      <h3>{t('Direct match (P2P)')}</h3>
       <p className="small muted">Play a friend over a direct connection. Plans are sealed with a hash before they are revealed, so nobody can react to the other side.</p>
       <div className="row wrap">
         <span className="chip neutral">

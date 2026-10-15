@@ -1,8 +1,9 @@
 // App store: local profile (offline progression), settings and the optional online account.
 import { useSyncExternalStore } from 'react';
-import { EXAMPLE_DECKS, devCollection, isDevName, starterCollection, type Collection, type DeckCardInput, type Difficulty, type ModeId } from '@contaminant/engine';
+import { EXAMPLE_DECKS, devCollection, isDevName, starterCollection, type Collection, type DeckCardInput, type Difficulty, type ModeId, type DailyState } from '@contaminant/engine';
 import { Api, defaultServerUrl } from './net/api.ts';
 import { GameSocket } from './net/socket.ts';
+import { cleanUrl, desktop, findServers, hostOwnServer, type FoundServer } from './net/discovery.ts';
 
 export interface Settings {
   lang: 'en' | 'de';
@@ -12,6 +13,16 @@ export interface Settings {
   showCoords: boolean;
   difficulty: Difficulty;
   mode: ModeId;
+  /** system notifications for challenges, friend requests and daily rewards */
+  notifications?: boolean;
+}
+
+/** How the player shows up for others: avatar creature, colour, equipped title and a motto. */
+export interface Look {
+  avatar?: string;
+  color?: string;
+  title?: string;
+  motto?: string;
 }
 
 export interface SavedDeck {
@@ -38,6 +49,8 @@ export interface OnlineAccount {
   token: string;
   playerId: string;
   name: string;
+  /** server's display name (computer name or the deployed server's name) */
+  serverName?: string;
 }
 
 export interface Profile {
@@ -55,6 +68,9 @@ export interface Profile {
   dev?: boolean;
   /** the real collection, kept while the profile is in developer mode */
   normalCollection?: Collection;
+  look?: Look;
+  /** daily login streak, free chest and play rewards (offline profile) */
+  daily?: DailyState;
 }
 
 /** A name ending in '#' switches the profile into developer mode; removing it restores the real collection. */
@@ -146,16 +162,66 @@ export function getSocket(): GameSocket | null {
   return socket;
 }
 
-export async function connectOnline(server: string, name: string): Promise<OnlineAccount> {
-  api = new Api(server, null);
-  const r = await api.post<{ token: string; player: { id: string; name: string } }>('/api/register', { name });
-  const acc: OnlineAccount = { server, token: r.token, playerId: r.player.id, name: r.player.name };
-  api = new Api(server, r.token);
-  localStorage.setItem('contaminant.server', server);
-  setProfile((p) => ({ ...p, online: acc }));
+const ACCOUNTS = 'contaminant.accounts';
+
+/** Accounts per server, so reconnecting keeps the same name, friends and rating. */
+function savedAccounts(): Record<string, OnlineAccount> {
+  try {
+    return JSON.parse(localStorage.getItem(ACCOUNTS) ?? '{}') as Record<string, OnlineAccount>;
+  } catch {
+    return {};
+  }
+}
+
+export async function connectOnline(server: string, name: string, serverName?: string): Promise<OnlineAccount> {
+  const url = cleanUrl(server);
+  let acc: OnlineAccount | null = null;
+  const known = savedAccounts()[url];
+  if (known) {
+    try {
+      const a = new Api(url, known.token);
+      let me = await a.get<{ player: { id: string; name: string } }>('/api/me');
+      if (name && me.player.name !== name) {
+        await a.post('/api/me/name', { name });
+        me = await a.get<{ player: { id: string; name: string } }>('/api/me');
+      }
+      acc = { ...known, name: me.player.name };
+    } catch {
+      acc = null; // the server forgot us (new database): register again
+    }
+  }
+  if (!acc) {
+    const r = await new Api(url, null).post<{ token: string; player: { id: string; name: string } }>('/api/register', { name });
+    acc = { server: url, token: r.token, playerId: r.player.id, name: r.player.name };
+  }
+  if (serverName) acc.serverName = serverName;
+  try {
+    localStorage.setItem(ACCOUNTS, JSON.stringify({ ...savedAccounts(), [url]: acc }));
+  } catch {
+    /* storage blocked */
+  }
+  api = new Api(url, acc.token);
+  localStorage.setItem('contaminant.server', url);
+  const done = acc;
+  setProfile((p) => ({ ...p, online: done }));
   socket?.close();
   socket = null;
-  return acc;
+  return done;
+}
+
+/**
+ * One button: find a server (deployed, this page's, last used, same Wi-Fi, this PC), or host one in the
+ * desktop app, then sign in. Returns the servers seen when nothing could be reached.
+ */
+export async function connectAuto(name: string, onStatus: (s: string) => void): Promise<{ ok: true; server: FoundServer } | { ok: false; found: FoundServer[] }> {
+  onStatus('Looking for servers…');
+  const found = await findServers();
+  let best: FoundServer | null = found[0] ?? null;
+  if (!best && desktop) best = await hostOwnServer(onStatus);
+  if (!best) return { ok: false, found };
+  onStatus(`Connecting to ${best.name}…`);
+  await connectOnline(best.url, name, best.name);
+  return { ok: true, server: best };
 }
 
 export function disconnectOnline(): void {

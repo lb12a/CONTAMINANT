@@ -8,6 +8,7 @@ const { fork } = require('node:child_process');
 const path = require('node:path');
 const fs = require('node:fs');
 const os = require('node:os');
+const dgram = require('node:dgram');
 
 const isDev = !app.isPackaged;
 const root = isDev ? path.resolve(__dirname, '../..') : process.resourcesPath;
@@ -19,6 +20,26 @@ const PORT = Number(process.env.CONTAMINANT_PORT || 8787);
 let win = null;
 let server = null;
 let serverLog = '';
+
+// servers on the same network announce themselves on UDP 8788 (see packages/server/src/lan.ts)
+const LAN_PORT = 8788;
+const heard = new Map();
+function listenLan() {
+  const sock = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+  sock.on('message', (buf, rinfo) => {
+    try {
+      const b = JSON.parse(String(buf));
+      if (b.game !== 'contaminant' || !b.port) return;
+      const own = lanAddresses().includes(rinfo.address) || rinfo.address.startsWith('127.');
+      const url = `http://${own ? 'localhost' : rinfo.address}:${b.port}`;
+      heard.set(url, { url, name: String(b.name || rinfo.address).slice(0, 40), players: Number(b.players) || 0, seen: Date.now() });
+    } catch {
+      /* not ours */
+    }
+  });
+  sock.on('error', () => sock.close());
+  sock.bind(LAN_PORT);
+}
 
 function lanAddresses() {
   return Object.values(os.networkInterfaces())
@@ -35,7 +56,7 @@ function startServer() {
   }
   const dataDir = path.join(app.getPath('userData'), 'server');
   fs.mkdirSync(dataDir, { recursive: true });
-  server = fork(serverBundle, ['--port', String(PORT), '--data', path.join(dataDir, 'contaminant.sqlite'), '--static', path.dirname(clientIndex)], {
+  server = fork(serverBundle, ['--port', String(PORT), '--data', path.join(dataDir, 'contaminant.sqlite'), '--static', path.dirname(clientIndex), '--name', os.hostname(), '--lan'], {
     env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
     stdio: ['ignore', 'pipe', 'pipe', 'ipc'],
   });
@@ -128,7 +149,13 @@ ipcMain.handle('desktop:server', (_e, action) => {
   return { running: !!server, port: PORT, lan: lanAddresses() };
 });
 
+ipcMain.handle('desktop:lan', () => {
+  const now = Date.now();
+  return [...heard.values()].filter((s) => now - s.seen < 7000).map(({ url, name, players }) => ({ url, name, players }));
+});
+
 app.whenReady().then(() => {
+  listenLan();
   buildMenu();
   createWindow();
   if (process.argv.includes('--host-server') || process.env.CONTAMINANT_HOST === '1') startServer();

@@ -234,3 +234,90 @@ export function devCollection(base?: Collection): Collection {
     titles: [...new Set([...(base?.titles ?? []), 'Developer'])],
   };
 }
+
+// ---------------------------------------------------------------- daily rewards
+
+/** Seven-day login calendar; the last day repeats while the streak holds. */
+export const DAILY_CALENDAR: { gold: number; chest?: ChestSize }[] = [
+  { gold: 40 },
+  { gold: 60 },
+  { gold: 40, chest: 'small' },
+  { gold: 80 },
+  { gold: 60, chest: 'small' },
+  { gold: 100 },
+  { gold: 120, chest: 'medium' },
+];
+
+/** Rewards for matches finished on the same day (paid automatically when a tier is reached). */
+export const PLAY_TIERS: { games: number; gold: number; chest?: ChestSize }[] = [
+  { games: 1, gold: 30 },
+  { games: 3, gold: 50, chest: 'small' },
+  { games: 5, gold: 80 },
+  { games: 10, gold: 120, chest: 'medium' },
+];
+
+export interface DailyState {
+  /** last day the login reward was claimed (YYYY-MM-DD) */
+  last?: string;
+  streak?: number;
+  /** day the free chest of the day was taken */
+  freeChest?: string;
+  /** matches finished on playedDay and how many play tiers were paid */
+  playedDay?: string;
+  played?: number;
+  playPaid?: number;
+}
+
+/** Calendar day for a timestamp; pass the client's `Date#getTimezoneOffset()` for local days. */
+export function dayKey(now: number, tzOffsetMin = 0): string {
+  return new Date(now - tzOffsetMin * 60_000).toISOString().slice(0, 10);
+}
+
+function prevDay(key: string): string {
+  return new Date(Date.parse(`${key}T12:00:00Z`) - 86_400_000).toISOString().slice(0, 10);
+}
+
+export interface DailyStatus {
+  today: string;
+  canClaim: boolean;
+  /** streak after claiming today (or the current one when already claimed) */
+  streak: number;
+  /** index into DAILY_CALENDAR of today's reward */
+  slot: number;
+  reward: { gold: number; chest?: ChestSize };
+  freeChest: boolean;
+  played: number;
+  nextTier: (typeof PLAY_TIERS)[number] | null;
+}
+
+export function dailyStatus(s: DailyState, now: number, tzOffsetMin = 0): DailyStatus {
+  const today = dayKey(now, tzOffsetMin);
+  const canClaim = s.last !== today;
+  const streak = canClaim ? (s.last === prevDay(today) ? (s.streak ?? 0) + 1 : 1) : (s.streak ?? 1);
+  const slot = Math.min(streak, DAILY_CALENDAR.length) - 1;
+  const played = s.playedDay === today ? (s.played ?? 0) : 0;
+  const paid = s.playedDay === today ? (s.playPaid ?? 0) : 0;
+  return { today, canClaim, streak, slot, reward: DAILY_CALENDAR[slot]!, freeChest: s.freeChest !== today, played, nextTier: PLAY_TIERS[paid] ?? null };
+}
+
+export function claimDaily(s: DailyState, now: number, tzOffsetMin = 0): { state: DailyState; reward: { gold: number; chest?: ChestSize } | null } {
+  const st = dailyStatus(s, now, tzOffsetMin);
+  if (!st.canClaim) return { state: s, reward: null };
+  return { state: { ...s, last: st.today, streak: st.streak }, reward: st.reward };
+}
+
+export function claimFreeChest(s: DailyState, now: number, tzOffsetMin = 0): { state: DailyState; chest: ChestSize | null } {
+  const today = dayKey(now, tzOffsetMin);
+  if (s.freeChest === today) return { state: s, chest: null };
+  return { state: { ...s, freeChest: today }, chest: 'small' };
+}
+
+/** Counts a finished match and returns the play tiers it unlocked. */
+export function recordPlayed(s: DailyState, now: number, tzOffsetMin = 0): { state: DailyState; rewards: (typeof PLAY_TIERS)[number][] } {
+  const today = dayKey(now, tzOffsetMin);
+  const played = (s.playedDay === today ? (s.played ?? 0) : 0) + 1;
+  let paid = s.playedDay === today ? (s.playPaid ?? 0) : 0;
+  const rewards: (typeof PLAY_TIERS)[number][] = [];
+  while (paid < PLAY_TIERS.length && played >= PLAY_TIERS[paid]!.games) rewards.push(PLAY_TIERS[paid++]!);
+  return { state: { ...s, playedDay: today, played, playPaid: paid }, rewards };
+}

@@ -33,7 +33,10 @@ export type ClientMsg =
   | { t: 'party_create' }
   | { t: 'party_join'; code: string }
   | { t: 'rtc_signal'; to: string; data: unknown }
-  | { t: 'resume'; match: string };
+  | { t: 'resume'; match: string }
+  /** challenge a friend or a player nearby to a friendly */
+  | { t: 'invite'; to: string; mode?: string; planningSeconds?: number }
+  | { t: 'invite_decline'; code: string };
 
 export interface MatchInfo {
   match: string;
@@ -62,7 +65,12 @@ export type ServerMsg =
   | { t: 'friend_code'; code: string }
   | { t: 'party'; code: string; members: string[] }
   | { t: 'tournament'; id: string; event: string; data?: unknown }
-  | { t: 'rtc_signal'; from: string; data: unknown };
+  | { t: 'rtc_signal'; from: string; data: unknown }
+  | { t: 'invite'; from: string; name: string; code: string; mode: string }
+  | { t: 'invite_sent'; to: string; name: string; code: string }
+  | { t: 'invite_declined'; name: string; code: string }
+  /** friend requests and acceptances, friends coming online */
+  | { t: 'social'; event: 'request' | 'accepted' | 'online'; from: string; name: string };
 
 export const PROTOCOL_VERSION = '1';
 

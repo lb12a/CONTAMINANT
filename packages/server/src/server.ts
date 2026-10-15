@@ -5,6 +5,7 @@ import { createServer as createHttpServer, type IncomingMessage, type Server, ty
 import { existsSync, readFileSync, statSync } from 'node:fs';
 import { extname, join, normalize, resolve } from 'node:path';
 import { randomBytes } from 'node:crypto';
+import { hostname } from 'node:os';
 import { WebSocketServer, type WebSocket } from 'ws';
 import {
   CHARACTER_LIST,
@@ -26,6 +27,8 @@ import {
   type DeckPayload,
   type ServerMsg,
   isDevName,
+  recordPlayed,
+  type DailyState,
 } from '@contaminant/engine';
 import { Db, type MatchRow, type PlayerRow } from './db.ts';
 import { PlayerService } from './players.ts';
@@ -39,6 +42,7 @@ import { SeasonService } from './seasons.ts';
 import { botWeights, classifyDeck, detectAnomalies, metaSnapshot, recordTelemetry } from './meta.ts';
 import { DIVISIONS, divisionFor } from './rating.ts';
 import { overlayHtml } from './overlay.ts';
+import { SocialService, sameNetwork } from './social.ts';
 
 export interface ServerConfig {
   dataFile: string;
@@ -54,6 +58,10 @@ export interface ServerConfig {
   /** follow the yearly calendar (Monthly Majors, Halloween World Cup); defaults to autoTick */
   calendar?: boolean;
   log?: (msg: string) => void;
+  /** shown to players looking for servers (defaults to the computer name) */
+  name?: string;
+  /** behind a reverse proxy: take the client address from X-Forwarded-For */
+  trustProxy?: boolean;
 }
 
 export const DEFAULT_CONFIG: ServerConfig = {
@@ -74,6 +82,8 @@ interface FriendLobby {
   planningSeconds: number;
   mode: string;
   created: number;
+  /** set when the lobby was made for one invited player */
+  invited?: string;
 }
 
 export class GameServer {
@@ -88,6 +98,7 @@ export class GameServer {
   readonly circuit: CircuitService;
   readonly teams: TeamService;
   readonly seasons: SeasonService;
+  readonly social: SocialService;
   readonly conns = new Map<string, Set<Conn>>();
   readonly lobbies = new Map<string, FriendLobby>();
   http?: Server;
@@ -116,6 +127,7 @@ export class GameServer {
     this.teams = new TeamService(this.db, this.players);
     this.seasons = new SeasonService(this.db, this.players, this.clock);
     this.seasons.current();
+    this.social = new SocialService(this.db, this.players, { online: (id) => this.conns.has(id), inMatch: (id) => !!this.rooms.forPlayer(id) });
   }
 
   log(msg: string): void {
@@ -157,8 +169,15 @@ export class GameServer {
       const col = this.players.collection(s.playerId);
       const unlocked = applyMatchReward(col, reward);
       this.updateMissions(col, room, s.index, won);
+      // rewards for matches played today (tiers at 1, 3, 5 and 10 matches)
+      const played = recordPlayed(this.social.daily(s.playerId), this.clock.now());
+      for (const t of played.rewards) {
+        col.gold += t.gold;
+        if (t.chest) col.chests.push(t.chest);
+      }
+      this.social.saveDaily(s.playerId, played.state satisfies DailyState);
       this.players.saveCollection(s.playerId, col);
-      out[s.playerId] = { ...(out[s.playerId] as object), rewards: { ...reward, unlockedZones: unlocked } };
+      out[s.playerId] = { ...(out[s.playerId] as object), rewards: { ...reward, unlockedZones: unlocked, played: played.state.played, playRewards: played.rewards } };
     }
     if (room.kind === 'tournament') this.tournaments.onRoomEnd(room, result);
     if (room.kind === 'wm') this.worldcup.onRoomEnd(room, result);
@@ -362,7 +381,7 @@ export class GameServer {
     const q = (k: string) => url.searchParams.get(k) ?? undefined;
     let m: RegExpMatchArray | null;
 
-    if (path === '/api/health') return json(res, 200, { ok: true, time: this.clock.now(), rooms: this.rooms.rooms.size, version: '0.1.0' });
+    if (path === '/api/health') return json(res, 200, { ok: true, game: 'contaminant', name: this.cfg.name ?? hostname(), time: this.clock.now(), rooms: this.rooms.rooms.size, players: this.conns.size, version: '0.1.0' });
     if (path === '/api/catalog') return json(res, 200, { characters: CHARACTER_LIST.length, items: ITEM_LIST.length });
     if (path === '/api/register' && req.method === 'POST') {
       const p = this.players.register(String(body.name ?? 'Subject'), { starter: Number(body.starter ?? 2) % 3 });
@@ -482,6 +501,52 @@ export class GameServer {
         .map((t) => ({ id: t.id, name: t.name, season: t.circuit!.season, at: t.startsAt, champion: t.placements!.find((x) => x.place === 1)!.name, playerId: t.placements!.find((x) => x.place === 1)!.playerId }));
       return json(res, 200, { ...this.worldcup.champions(), majors });
     }
+    if (path === '/api/friends' && req.method === 'GET') {
+      const p = need();
+      if (!p) return;
+      return json(res, 200, this.social.list(p.id));
+    }
+    if (path === '/api/friends/add' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.social.request(p, { code: body.code, name: body.name, id: body.id });
+      if (r.ok && r.other) this.notify(r.other.id, { t: 'social', event: r.status === 'friends' ? 'accepted' : 'request', from: p.id, name: p.name });
+      return json(res, r.ok ? 200 : 400, { ok: r.ok, error: r.error, status: r.status, friend: r.other ? this.social.card(r.other) : undefined });
+    }
+    if (path === '/api/friends/accept' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.social.accept(p, String(body.id ?? ''));
+      if (r.ok) this.notify(String(body.id), { t: 'social', event: 'accepted', from: p.id, name: p.name });
+      return json(res, r.ok ? 200 : 400, r);
+    }
+    if (path === '/api/friends/remove' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      return json(res, 200, this.social.remove(p, String(body.id ?? '')));
+    }
+    if (path === '/api/nearby') {
+      // players connected from the same network right now (same Wi-Fi), friends first
+      const p = need();
+      if (!p) return;
+      return json(res, 200, { players: this.nearby(p.id, this.clientIp(req)) });
+    }
+    if (path === '/api/me/profile' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      return json(res, 200, { profile: this.social.setProfile(p, body) });
+    }
+    if (path === '/api/daily' && req.method === 'GET') {
+      const p = need();
+      if (!p) return;
+      return json(res, 200, this.social.dailyStatus(p.id, this.clock.now()));
+    }
+    if (path === '/api/daily/claim' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.social.claimDaily(p, this.clock.now());
+      return json(res, r.ok ? 200 : 400, r);
+    }
     if ((m = path.match(/^\/api\/players\/([\w-]+)$/))) {
       const p = this.players.byId(m[1]!);
       if (!p) return json(res, 404, { error: 'not found' });
@@ -494,6 +559,9 @@ export class GameServer {
         player: this.players.public(p),
         rank: p.is_bot || isDevName(p.name) ? null : rank + 1,
         team: team ? { id: team.id, name: team.name, tag: team.tag } : null,
+        profile: this.social.profile(p.id),
+        code: this.social.codeOf(p.id),
+        friend: me ? this.social.areFriends(me.id, p.id) : false,
         circuit: this.circuit.standings(season).entries[p.id] ?? null,
         recent,
         honours,
@@ -584,9 +652,28 @@ export class GameServer {
 
   // ---------------------------------------------------------------- WebSocket
 
-  private onSocket(ws: WebSocket, _req: IncomingMessage): void {
+  private clientIp(req: IncomingMessage): string | undefined {
+    const fwd = this.cfg.trustProxy ? String(req.headers['x-forwarded-for'] ?? '').split(',')[0]!.trim() : '';
+    return (fwd || req.socket.remoteAddress || '').replace(/^::ffff:/, '') || undefined;
+  }
+
+  /** Players online from the same network as `ip` (friends first). */
+  nearby(playerId: string, ip: string | undefined) {
+    const friends = new Set(this.social.friendIds(playerId));
+    const out: (ReturnType<SocialService['card']> & { friend: boolean })[] = [];
+    for (const [pid, conns] of this.conns) {
+      if (pid === playerId || ![...conns].some((c) => sameNetwork(c.ip, ip))) continue;
+      const other = this.players.byId(pid);
+      if (!other || other.is_bot) continue;
+      out.push({ ...this.social.card(other), friend: friends.has(pid) });
+    }
+    return out.sort((x, y) => Number(y.friend) - Number(x.friend) || x.name.localeCompare(y.name)).slice(0, 30);
+  }
+
+  private onSocket(ws: WebSocket, req: IncomingMessage): void {
     const conn: Conn = {
       id: randomBytes(6).toString('hex'),
+      ip: this.clientIp(req),
       send: (m) => {
         if (ws.readyState === ws.OPEN) ws.send(JSON.stringify(m));
       },
@@ -641,7 +728,10 @@ export class GameServer {
       const p = this.players.byToken(msg.token);
       if (!p) return conn.send({ t: 'error', msg: 'unknown token', code: 'auth' });
       conn.playerId = p.id;
-      if (!this.conns.has(p.id)) this.conns.set(p.id, new Set());
+      if (!this.conns.has(p.id)) {
+        this.conns.set(p.id, new Set());
+        for (const f of this.social.friendIds(p.id)) this.notify(f, { t: 'social', event: 'online', from: p.id, name: p.name });
+      }
       this.conns.get(p.id)!.add(conn);
       conn.send({ t: 'welcome', player: { id: p.id, name: p.name, mmr: Math.round(p.mmr), division: divisionFor(p.mmr).label }, serverTime: this.clock.now() });
       this.rooms.forPlayer(p.id)?.resume(p.id);
@@ -695,6 +785,8 @@ export class GameServer {
       case 'friend_join': {
         const lobby = this.lobbies.get(String(msg.code).toUpperCase());
         if (!lobby || lobby.host === p.id) return conn.send({ t: 'error', msg: 'lobby not found' });
+        if (lobby.invited && lobby.invited !== p.id) return conn.send({ t: 'error', msg: 'This invitation is for someone else' });
+        if (this.rooms.forPlayer(lobby.host)) return conn.send({ t: 'error', msg: 'Your friend is already in a match' });
         this.lobbies.delete(lobby.code);
         const host = this.players.byId(lobby.host)!;
         const d0 = this.resolveDeck(host, lobby.deckId);
@@ -719,6 +811,26 @@ export class GameServer {
         if (!party) return conn.send({ t: 'error', msg: 'party not found or full' });
         for (const mid of party.members) this.notify(mid, { t: 'party', code: party.code, members: party.members });
         return;
+      }
+      case 'invite': {
+        // a friendly challenge to a friend or someone on the same network
+        const other = this.players.byId(String(msg.to));
+        if (!other || other.id === p.id || !this.conns.has(other.id)) return conn.send({ t: 'error', msg: 'That player is not online' });
+        const near = [...(this.conns.get(other.id) ?? [])].some((c) => sameNetwork(c.ip, conn.ip));
+        if (!near && !this.social.areFriends(p.id, other.id)) return conn.send({ t: 'error', msg: 'You can challenge friends and players nearby' });
+        if (this.rooms.forPlayer(other.id)) return conn.send({ t: 'error', msg: `${other.name} is in a match` });
+        for (const [k, l] of this.lobbies) if (l.host === p.id && l.invited) this.lobbies.delete(k);
+        const code = randomBytes(3).toString('hex').toUpperCase();
+        const mode = msg.mode ?? 'contamination';
+        this.lobbies.set(code, { code, host: p.id, planningSeconds: Math.max(15, Math.min(90, Math.round(msg.planningSeconds ?? 30))), mode, created: this.clock.now(), invited: other.id });
+        this.notify(other.id, { t: 'invite', from: p.id, name: p.name, code, mode });
+        return conn.send({ t: 'invite_sent', to: other.id, name: other.name, code });
+      }
+      case 'invite_decline': {
+        const lobby = this.lobbies.get(String(msg.code).toUpperCase());
+        if (!lobby || lobby.invited !== p.id) return;
+        this.lobbies.delete(lobby.code);
+        return this.notify(lobby.host, { t: 'invite_declined', name: p.name, code: lobby.code });
       }
       case 'rtc_signal': {
         // WebRTC signaling relay for peer-to-peer friendly matches (lockstep + commit–reveal on the clients)

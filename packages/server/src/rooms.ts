@@ -31,6 +31,8 @@ import {
 export interface Conn {
   id: string;
   playerId?: string;
+  /** remote address (for "players nearby") */
+  ip?: string;
   send(m: ServerMsg): void;
   close(): void;
 }

@@ -1,0 +1,34 @@
+# Public Contaminant server.
+#   docker compose up -d                                   → http://<server>:8787
+#   DOMAIN=play.example.com docker compose --profile https up -d   → https://play.example.com (Caddy gets the certificate)
+services:
+  contaminant:
+    build: .
+    image: contaminant-server
+    restart: unless-stopped
+    environment:
+      NAME: ${SERVER_NAME:-Contaminant}
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-change-me}
+      # behind Caddy the real player address comes from X-Forwarded-For ("players nearby" needs it)
+      TRUST_PROXY: ${TRUST_PROXY:-1}
+    volumes:
+      - contaminant-data:/data
+    ports:
+      - "8787:8787"
+
+  caddy:
+    image: caddy:2
+    profiles: [https]
+    restart: unless-stopped
+    command: caddy reverse-proxy --from ${DOMAIN:?set DOMAIN=your.domain} --to contaminant:8787
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy-data:/data
+    depends_on:
+      - contaminant
+
+volumes:
+  contaminant-data:
+  caddy-data:

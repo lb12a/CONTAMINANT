@@ -1,0 +1,14 @@
+node_modules
+**/node_modules
+**/dist
+**/release
+apps/desktop/build
+tools/assetgen/raw
+tools/assetgen/.venv
+tools/assetgen/.cache
+tools/qa/shots
+Pdfs
+docs
+.git
+**/*.sqlite
+packages/server/data
