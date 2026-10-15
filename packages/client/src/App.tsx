@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Toasts } from './ui/components.tsx';
 import { Icon } from './ui/Icon.tsx';
-import { autoConnect, useProfile, getSocket, toast } from './store.ts';
+import { autoConnect, needsProfileSetup, useProfile, getSocket, toast } from './store.ts';
 import { canHearWifi } from './net/discovery.ts';
 import { OnlineMatch } from './game/controller.ts';
 import { t } from './i18n.ts';
@@ -25,6 +25,7 @@ import { TeamsScreen } from './screens/Teams.tsx';
 import { ReplayScreen } from './screens/Replay.tsx';
 import { Avatar, FriendsScreen } from './screens/Friends.tsx';
 import { InviteHost } from './ui/InviteHost.tsx';
+import { ProfilesScreen, ProfileWelcome } from './screens/Profiles.tsx';
 import type { MatchController } from './game/controller.ts';
 
 export type Route =
@@ -46,7 +47,8 @@ export type Route =
   | { name: 'profile'; id?: string }
   | { name: 'teams'; id?: string }
   | { name: 'replay'; match?: string }
-  | { name: 'friends' };
+  | { name: 'friends' }
+  | { name: 'profiles' };
 
 export type Nav = (r: Route) => void;
 
@@ -92,6 +94,15 @@ export function App() {
       if (m.t === 'tournament') toast(`${m.event.replace(/_/g, ' ')}${m.data && typeof m.data === 'object' && 'name' in m.data ? `: ${(m.data as { name: string }).name}` : ''}`, 'info');
     });
   }, [profile.online]);
+
+  // first start: the subject file comes before anything else, then Basic Training
+  if (needsProfileSetup())
+    return (
+      <>
+        <ProfileWelcome nav={nav} />
+        <Toasts />
+      </>
+    );
 
   if (route.name === 'match') {
     return (
@@ -159,7 +170,7 @@ export function App() {
         {route.name === 'collection' && <CollectionScreen nav={nav} />}
         {route.name === 'deck' && <DeckBuilder nav={nav} deckId={route.deckId} />}
         {route.name === 'shop' && <ShopScreen />}
-        {route.name === 'settings' && <SettingsScreen />}
+        {route.name === 'settings' && <SettingsScreen nav={nav} />}
         {route.name === 'online' && <OnlineScreen nav={nav} />}
         {route.name === 'tournaments' && <TournamentsScreen nav={nav} id={route.id} />}
         {route.name === 'worldcup' && <WorldCupScreen nav={nav} />}
@@ -173,6 +184,7 @@ export function App() {
         {route.name === 'tutorials' && <TutorialsScreen nav={nav} defId={route.defId} />}
         {route.name === 'missions' && <MissionsScreen />}
         {route.name === 'friends' && <FriendsScreen nav={nav} />}
+        {route.name === 'profiles' && <ProfilesScreen nav={nav} />}
       </main>
       <nav className="tabbar" aria-label={t('Sections')}>
         {NAV_GROUPS.map((g) => (

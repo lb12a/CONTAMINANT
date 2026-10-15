@@ -178,6 +178,12 @@ export function activeProfileId(): string | null {
   return index.active;
 }
 
+/** What the profile cabinet shows about a stored profile without switching to it. */
+export function profilePreview(id: string): { avatar?: string; color?: string; trophies: number; chars: number; lang?: Lang } {
+  const p = id === index.active ? profile : loadData(id);
+  return { avatar: p.look?.avatar, color: p.look?.color, trophies: p.collection.trophies, chars: Object.keys(p.collection.chars).length, lang: p.settings.lang };
+}
+
 function resetOnline(): void {
   socket?.close();
   socket = null;
@@ -347,7 +353,7 @@ let autoBusy = false;
  * best server it can find (deployed server, same Wi-Fi …). Never shows errors; returns whether it is online.
  */
 export async function autoConnect(): Promise<boolean> {
-  if (autoBusy || getProfile().manualOffline) return !!getProfile().online;
+  if (autoBusy || needsProfileSetup() || getProfile().manualOffline) return !!getProfile().online;
   autoBusy = true;
   try {
     const p = getProfile();

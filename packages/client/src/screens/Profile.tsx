@@ -143,9 +143,15 @@ export function ProfileScreen({ nav, id }: { nav: Nav; id?: string }) {
     if (mine && p.online && data && p.look && JSON.stringify(data.profile ?? {}) !== JSON.stringify(p.look)) void getApi().post('/api/me/profile', p.look).catch(() => undefined);
   }, [data]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const switcher = mine && (
+    <button className="btn secondary small" style={{ alignSelf: 'flex-end' }} onClick={() => nav({ name: 'profiles' })}>
+      <Icon name="ui/person" size={18} /> {t('Switch profile')}
+    </button>
+  );
   if (!p.online)
     return (
       <div className="col profile-page">
+        {switcher}
         <LookEditor />
         <LocalRecord />
         <p className="muted small">{t('Go online for a ladder rank, friends and a public profile.')}</p>
@@ -154,6 +160,7 @@ export function ProfileScreen({ nav, id }: { nav: Nav; id?: string }) {
   if (!data)
     return (
       <div className="col profile-page">
+        {switcher}
         {mine && <LookEditor />}
         <p className="muted">{t('Opening the file…')}</p>
       </div>
@@ -163,6 +170,7 @@ export function ProfileScreen({ nav, id }: { nav: Nav; id?: string }) {
   const winRate = pl.games ? Math.round((pl.wins / pl.games) * 100) : 0;
   return (
     <div className="col profile-page">
+      {switcher}
       {mine && <LookEditor />}
       <section className="panel profile-head">
         {!mine && <Avatar avatar={look.avatar} color={look.color} size={84} name={pl.name} />}

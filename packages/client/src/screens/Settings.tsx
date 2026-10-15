@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { setProfile, toast, useProfile } from '../store.ts';
-import { starterCollection, EXAMPLE_DECKS } from '@contaminant/engine';
+import type { Nav } from '../App.tsx';
 import { LANGUAGES, loadLanguage, t, type Lang } from '../i18n.ts';
 import { askNotifications, notificationsAllowed, notificationsSupported } from '../notify.ts';
 import { loadAssetManifest } from '../render/assets.ts';
 import { cleanUrl, desktop, probe, scanWifi } from '../net/discovery.ts';
 import { connectOnline } from '../store.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 /** Advanced: connect to a server by address, or search the Wi-Fi by trying the usual home networks. */
 function AdvancedOnline() {
@@ -75,7 +76,7 @@ function LanServer() {
   );
 }
 
-export function SettingsScreen() {
+export function SettingsScreen({ nav }: { nav: Nav }) {
   const p = useProfile();
   const [notifyOn, setNotifyOn] = useState(notificationsAllowed());
   const s = p.settings;
@@ -151,22 +152,10 @@ export function SettingsScreen() {
       </div>
       <div className="panel col">
         <h3>{t('Profile')}</h3>
-        <p className="small muted">{t('The offline profile lives in this browser. Online accounts keep their collection on the server.')}</p>
-        <div className="row wrap">
-          {EXAMPLE_DECKS.map((d, i) => (
-            <button
-              key={d.id}
-              className="btn danger small"
-              onClick={() => {
-                if (!confirm(`Reset the offline profile and start with ${d.name}?`)) return;
-                setProfile((x) => ({ ...x, collection: starterCollection(i), activeDeck: d.id, history: [], onboarded: false }));
-                toast('Offline profile reset', 'good');
-              }}
-            >
-              Reset with {d.name}
-            </button>
-          ))}
-        </div>
+        <p className="small muted">{t('Every profile has its own collection, decks, trophies and online account. Profiles live on this device.')}</p>
+        <button className="btn secondary small" style={{ alignSelf: 'flex-start' }} onClick={() => nav({ name: 'profiles' })}>
+          <Icon name="ui/person" size={18} /> {t('Switch or create profile')}
+        </button>
       </div>
     </div>
   );

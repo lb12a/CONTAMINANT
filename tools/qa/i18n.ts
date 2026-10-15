@@ -27,5 +27,7 @@ for (const f of langs) {
   const share = missing.length / keys.size;
   if (share > 0.02) failed = true;
   console.log(`${f.replace('.ts', '')}: ${keys.size - missing.length}/${keys.size}${missing.length ? `  missing: ${missing.slice(0, 8).map((m) => JSON.stringify(m)).join(', ')}${missing.length > 8 ? ' …' : ''}` : ''}`);
+  // --keys: the full list of keys missing in German, as JSON (for the translation pass)
+  if (process.argv.includes('--keys') && f === 'de.ts') console.log(JSON.stringify(missing, null, 1));
 }
 process.exit(failed ? 1 : 0);
