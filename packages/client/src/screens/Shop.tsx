@@ -5,13 +5,13 @@ import { CharacterCard, ItemCard, Modal } from '../ui/components.tsx';
 import { getApi, setProfile, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { sfx } from '../audio.ts';
+import { Icon } from '../ui/Icon.tsx';
 
-const CHEST_GLYPH: Record<ChestSize, string> = { small: '🧰', medium: '🗄️', large: '⚰️' };
 
-/** Generated chest art when available, the emoji otherwise. */
+/** Generated chest art when available, the drawn chest icon otherwise. */
 function ChestArt({ size, px }: { size: ChestSize; px: number }) {
   const url = assetUrl(`ui/chest_${size}`);
-  return url ? <img src={url} alt="" style={{ height: px, width: 'auto', filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.55))' }} draggable={false} /> : <span style={{ fontSize: px * 0.8 }}>{CHEST_GLYPH[size]}</span>;
+  return url ? <img src={url} alt="" style={{ height: px, width: 'auto', filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.55))' }} draggable={false} /> : <Icon name="ui/chest" size={px} />;
 }
 
 export function ShopScreen() {
@@ -71,7 +71,7 @@ export function ShopScreen() {
               {CHESTS[size].cards} cards · {CHESTS[size].gold[0]}–{CHESTS[size].gold[1]} gold
             </span>
             <button className="btn buy" onClick={() => buy(size)} disabled={p.collection.gold < CHESTS[size].price}>
-              {t('Buy')} · 🪙 {CHESTS[size].price}
+              {t('Buy')} · <Icon name="ui/gold" size={16} /> {CHESTS[size].price}
             </button>
           </div>
         ))}
@@ -82,7 +82,7 @@ export function ShopScreen() {
         <div className="row wrap">
           {p.collection.chests.map((c, i) => (
             <button key={i} className="btn secondary" onClick={() => open(i)}>
-              {CHEST_GLYPH[c]} {t('Open chest')}
+              <Icon name="ui/chest" size={20} /> {t('Open chest')}
             </button>
           ))}
         </div>
@@ -107,7 +107,9 @@ export function ShopScreen() {
                     </div>
                   ))}
                 </div>
-                <p>🪙 +{opening.result.gold} gold</p>
+                <p>
+              <Icon name="ui/gold" size={20} /> +{opening.result.gold} gold
+            </p>
                 <button className="btn primary" onClick={() => setOpening(null)}>
                   {t('Confirm')}
                 </button>

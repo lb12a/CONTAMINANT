@@ -3,6 +3,7 @@ import type { Nav } from '../App.tsx';
 import { CharacterCard } from '../ui/components.tsx';
 import { useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 export function TutorialsScreen({ nav }: { nav: Nav; defId?: string }) {
   const p = useProfile();
@@ -34,7 +35,11 @@ export function TutorialsScreen({ nav }: { nav: Nav; defId?: string }) {
           return (
             <div key={tu.id} className="col" style={{ gap: 6 }}>
               <CharacterCard defId={tu.id} locked={!owned} isNew={c?.isNew} level={c?.level} onClick={owned ? () => nav({ name: 'match', tutorial: tu.id }) : undefined}>
-                {c?.tutorialDone && <div style={{ position: 'absolute', top: '42%', left: '50%', transform: 'translate(-50%,-50%)', fontSize: 40, color: 'var(--spore)', textShadow: '0 0 8px #000' }}>✔</div>}
+                {c?.tutorialDone && (
+                  <div style={{ position: 'absolute', top: '42%', left: '50%', transform: 'translate(-50%,-50%)' }}>
+                    <Icon name="ui/check" size={56} label="Done" />
+                  </div>
+                )}
               </CharacterCard>
               <button className="btn tutorial" disabled={!owned} onClick={() => nav({ name: 'match', tutorial: tu.id })} title={de ? tu.titleDe : tu.title}>
                 {de ? 'Prüfstand' : 'Test chamber'} · {tu.duration}

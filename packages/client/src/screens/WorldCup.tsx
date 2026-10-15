@@ -3,6 +3,7 @@ import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { BracketView, SwissView, type BMatch } from './Tournaments.tsx';
+import { Icon } from '../ui/Icon.tsx';
 
 interface WorldCup {
   id: string;
@@ -102,7 +103,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
       {/* hero: reigning champion + countdown to the Halloween finals */}
       <section className="wc-hero panel">
         <div className="wc-crown" aria-hidden>
-          👑
+          <Icon name="ui/crown" size={64} />
         </div>
         <div className="col" style={{ gap: 4 }}>
           <span className="muted small">Reigning World Champion</span>
@@ -138,7 +139,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
                 <li key={m.series} className={`road-stop ${state}`}>
                   <span className="road-month">{MONTH[m.month]}</span>
                   <span className="road-pin" />
-                  <span className="small">{m.champion ? `👑 ${m.champion}` : m.status === 'scheduled' || m.status === 'checkin' ? `${m.players} in` : new Date(m.startsAt).getUTCDate() + '.'}</span>
+                  <span className="small">{m.champion ? `Champion: ${m.champion}` : m.status === 'scheduled' || m.status === 'checkin' ? `${m.players} in` : new Date(m.startsAt).getUTCDate() + '.'}</span>
                   {m.tournamentId && (m.status === 'scheduled' || m.status === 'checkin') && (
                     <button className="btn small primary" onClick={() => nav({ name: 'tournaments', id: m.tournamentId! })}>
                       Enter
@@ -212,7 +213,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
               <div className="row wrap">
                 {live.map((m) => (
                   <button key={m.id} className="btn secondary small" onClick={() => nav({ name: 'spectate', match: m.id })}>
-                    👁 {m.names[0]} {m.vp[0]}:{m.vp[1]} {m.names[1]} · R{m.round}
+                    <Icon name="ui/eye" size={16} /> {m.names[0]} {m.vp[0]}:{m.vp[1]} {m.names[1]} · R{m.round}
                   </button>
                 ))}
               </div>
@@ -241,7 +242,11 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
                     {directIds.has(r.playerId) && <span className="chip buff" style={{ marginLeft: 6 }}>seeded</span>}
                   </td>
                   <td className="num">{r.points}</td>
-                  <td className="num muted">{r.majorWins ? `${r.majorWins}× 👑` : ''}</td>
+                  <td className="num muted">{r.majorWins ? (
+                      <>
+                        {r.majorWins}× <Icon name="ui/crown" size={14} />
+                      </>
+                    ) : null}</td>
                 </tr>
               ))}
             </tbody>
@@ -258,7 +263,7 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
             <div key={h.edition} className="champ-card world">
               <span className="small muted">{h.season ? `World Cup ${h.season}` : h.cup}</span>
               <button className="link-name display" onClick={() => nav({ name: 'profile', id: h.playerId })}>
-                👑 {h.champion}
+                <Icon name="ui/crown" size={18} /> {h.champion}
               </button>
               <span className="small muted">{h.podium?.filter((x) => x.place > 1 && x.place <= 3).map((x) => `#${x.place} ${x.name}`).join(' · ')}</span>
             </div>

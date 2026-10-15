@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { CHARACTERISTICS, CHARACTERS, ITEMS, ITEM_TYPE_INFO, STATUSES, type CharacterDef, type ItemDef, type StatusInst } from '@contaminant/engine';
 import { itemArtUrl, portraitUrl } from '../render/art.ts';
-import { ITEM_GLYPH, STATUS_GLYPH, TIER_GLYPH, charRing, statusKind } from './glyphs.ts';
+import { charRing, statusKind } from './glyphs.ts';
+import { Icon } from './Icon.tsx';
 import { useToasts } from '../store.ts';
 
 export function HexIcon({ ring, children, title }: { ring?: string; children: ReactNode; title?: string }) {
@@ -44,16 +45,16 @@ export function CharacterCard({ defId, level, onClick, selected, locked, isNew, 
       {isNew && <div className="new-glow" />}
       <div className="cost">{def.deploy}</div>
       <div className="tier" title={def.tier}>
-        {TIER_GLYPH[def.tier]}
+        <Icon name={`tier/${def.tier}`} size={18} />
       </div>
       <div className="portrait">
         <img src={portraitUrl(defId, form, { silhouette: locked })} alt={def.name} draggable={false} />
       </div>
       <div className="name">{locked ? '???' : def.name}</div>
       <div className="stats num">
-        <span title="HP">♥{def.stats.hp}</span>
-        <span title="PAtk / PDef">⚔{def.stats.patk}/{def.stats.pdef}</span>
-        <span title="SAtk / SDef">✦{def.stats.satk}/{def.stats.sdef}</span>
+        <span title="HP"><Icon name="ui/heart" size={12} />{def.stats.hp}</span>
+        <span title="PAtk / PDef"><Icon name="ui/sword" size={12} />{def.stats.patk}/{def.stats.pdef}</span>
+        <span title="SAtk / SDef"><Icon name="ui/rune" size={12} />{def.stats.satk}/{def.stats.sdef}</span>
       </div>
       {level ? <div className="level">L{level}</div> : null}
       {children}
@@ -67,7 +68,7 @@ export function ItemCard({ itemId, onClick, selected, tarnished, width, attached
     return (
       <div className="card item rarity-common" style={width ? ({ ['--w' as string]: typeof width === 'number' ? `${width}px` : width } as React.CSSProperties) : undefined} title="Hidden card">
         <div className="portrait" style={{ display: 'grid', placeItems: 'center', fontSize: '2.4em' }}>
-          ✉
+          <Icon name="ui/envelope" size={44} />
         </div>
         <div className="name">?</div>
       </div>
@@ -87,7 +88,7 @@ export function ItemCard({ itemId, onClick, selected, tarnished, width, attached
       <div className="cost">{it.cost || '0'}</div>
       <div className="gem" />
       <div className="portrait">
-        <img src={itemArtUrl(it.id, info.color, ITEM_GLYPH[it.id] ?? '✦')} alt={it.name} draggable={false} />
+        <img src={itemArtUrl(it.id, info.color)} alt={it.name} draggable={false} />
       </div>
       <div className="name">{it.name}</div>
       {it.free ? <div className="free">FREE · {it.free}</div> : <div className="small center" style={{ fontSize: '0.75em', opacity: 0.85 }}>{info.name}</div>}
@@ -103,7 +104,7 @@ export function StatusChips({ statuses }: { statuses: StatusInst[] }) {
         .filter((s) => !STATUSES[s.id]?.internal)
         .map((s) => (
           <span key={s.id} className={`chip ${statusKind(s.id)}`} title={`${STATUSES[s.id]?.name}: ${STATUSES[s.id]?.text}`}>
-            {STATUS_GLYPH[s.id] ?? '•'} {STATUSES[s.id]?.name}
+            <Icon name={`status/${s.id}`} size={16} /> {STATUSES[s.id]?.name}
             {s.stacks > 1 ? ` ×${s.stacks}` : ''}
             {s.duration > 0 ? ` (${s.duration})` : ''}
           </span>
@@ -214,7 +215,7 @@ export function secondsLeft(deadline: number): number {
   return deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 0;
 }
 
-export function Modal({ children, onClose, title }: { children: ReactNode; onClose?: () => void; title?: string }) {
+export function Modal({ children, onClose, title, icon }: { children: ReactNode; onClose?: () => void; title?: string; icon?: string }) {
   useEffect(() => {
     const k = (e: KeyboardEvent) => e.key === 'Escape' && onClose?.();
     window.addEventListener('keydown', k);
@@ -223,7 +224,11 @@ export function Modal({ children, onClose, title }: { children: ReactNode; onClo
   return (
     <div className="modal-back" onClick={onClose}>
       <div className="modal panel rivets" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={title}>
-        {title && <h2>{title}</h2>}
+        {title && (
+          <h2>
+            {icon && <Icon name={icon} size={30} className="title-icon" />} {title}
+          </h2>
+        )}
         {children}
       </div>
     </div>

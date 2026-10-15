@@ -22,7 +22,8 @@ import { aimAttack, computeOverlay, emptyPlanner, needsAimChoice, plannedPos, ta
 import type { MatchController, MatchSnapshot } from '../game/controller.ts';
 import { ApBattery, CharTraits, Fuse, HpBar, IdleSteps, ItemCard, Modal, StatusChips, VpRace, secondsLeft } from '../ui/components.tsx';
 import { figureCanvas, lookKey, portraitUrl } from '../render/art.ts';
-import { TAG_GLYPH, TAG_COLOR } from '../ui/glyphs.ts';
+import { TAG_COLOR } from '../ui/glyphs.ts';
+import { Icon } from '../ui/Icon.tsx';
 import { t } from '../i18n.ts';
 import { getProfile, toast } from '../store.ts';
 import { sfx } from '../audio.ts';
@@ -424,10 +425,10 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         </div>
         <div className="hud-actions">
           <button className="icon-btn glass menu-burger" onClick={() => setShowLeft((v) => !v)} title="Units and plan" aria-label="Units and plan">
-            ♟
+            <Icon name="ui/pawn" size={24} />
           </button>
           <button className="icon-btn glass" onClick={() => setShowRight((v) => !v)} title={t('Combat log')} aria-label={t('Combat log')}>
-            📓
+            <Icon name="ui/journal" size={24} />
           </button>
           {playing ? (
             <button className="btn secondary" onClick={() => (skipRef.current = true)}>
@@ -435,7 +436,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             </button>
           ) : (
             <button className={`btn seal${ready ? ' active' : ''}`} disabled={!!snap.ended} onClick={() => (ready ? setReady(false) : submit(true))} title={pv.issues.join('\n') || 'Lock in your plan for this round'}>
-              {ready ? 'Sealed ✓' : t('End planning')}
+              {ready ? t('Sealed') : t('End planning')}
             </button>
           )}
         </div>
@@ -443,7 +444,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       {caption && playing && <BeatCaption {...caption} me={me} />}
       {pv.issues.length > 0 && !playing && (
         <div className="panel small" style={{ position: 'absolute', top: 112, left: '50%', transform: 'translateX(-50%)', zIndex: 13, color: '#ffb0b4', padding: '4px 12px' }}>
-          ⚠ {pv.issues[0]}
+          <Icon name="ui/warning" size={16} /> {pv.issues[0]}
         </div>
       )}
 
@@ -506,13 +507,13 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         )}
         {popups > 0 && (
           <div key={popups} className="popup-enemy" onAnimationEnd={() => setPopups(0)}>
-            ❓ {popups > 1 ? `${popups}× ` : ''}Enemy deploys a character!
+            <Icon name="ui/question" size={20} /> {popups > 1 ? `${popups}× ` : ''}Enemy deploys a character!
           </div>
         )}
         {hover && !playing && <HoverInfo view={view} h={hover} me={me} at={renderer?.screenOf(hover)} />}
         {snap.watch && (
           <div className="panel small" style={{ position: 'absolute', right: 10, bottom: 200, maxWidth: 260, zIndex: 12 }}>
-            👁 Watchful Eye: {view.units.find((u) => u.uid === snap.watch!.unit)?.name} plans {snap.watch.commands.length} command(s):{' '}
+            <Icon name="ui/eye" size={16} /> Watchful Eye: {view.units.find((u) => u.uid === snap.watch!.unit)?.name} plans {snap.watch.commands.length} command(s):{' '}
             {(snap.watch.commands as { kind: string }[]).map((c) => c.kind).join(', ') || 'nothing'}
           </div>
         )}
@@ -575,7 +576,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             <div className="dock-label">
               <span>{t('Offered characters')}</span>
               <button className="btn secondary small" disabled={playing || ready} onClick={async () => { const r = await ctrl.op({ kind: 'reroll', card: 'all' }); if (!r.ok) toast(r.error ?? 'Cannot re-roll', 'bad'); }} title="Re-roll all unlocked offered characters (3 AP)">
-                🎲 3 AP
+                <Icon name="ui/dice" size={16} /> 3 AP
               </button>
             </div>
             <div className="lockers">
@@ -591,7 +592,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
                       <span className="cost-pip">{def.deploy}</span> {def.name}
                     </div>
                     <button className="lock icon-btn" style={{ width: 26, height: 26, fontSize: 11 }} onClick={async (e) => { e.stopPropagation(); await ctrl.op({ kind: 'lock', card: o.cardUid, locked: !o.locked }); }} title={o.locked ? 'Unlock' : 'Lock'} aria-label={o.locked ? 'Unlock' : 'Lock'}>
-                      {o.locked ? '🔒' : '🔓'}
+                      <Icon name={o.locked ? 'ui/lock' : 'ui/unlock'} size={16} />
                     </button>
                   </div>
                 );
@@ -619,7 +620,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           <div className="row">
             {['happy', 'sad', 'angry'].map((m) => (
               <button key={m} className="btn primary" onClick={() => { setPs((p) => ({ ...p, deployChoices: { ...p.deployChoices, [moodFor]: { mood: m } } })); setMoodFor(null); }}>
-                {m === 'happy' ? '😀 Happy' : m === 'sad' ? '😢 Sad' : '😠 Angry'}
+                <Icon name={`mood/${m}`} size={22} /> {m === 'happy' ? 'Happy' : m === 'sad' ? 'Sad' : 'Angry'}
               </button>
             ))}
           </div>
@@ -715,7 +716,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
           {fresh && <span className="small" style={{ color: 'var(--marigold)' }}>Deployed this round — cannot act yet.</span>}
           <div className="row wrap" style={{ gap: 4 }}>
             <button className={`cmd${ps.mode.kind === 'move' && ps.mode.unit === u.uid ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--cyan)' }} disabled={fresh || !acts.canMove || entranced} onClick={() => setMode({ kind: 'move', unit: u.uid })}>
-              <span className="lens">👣</span>
+              <span className="lens"><Icon name="ui/footprints" size={22} /></span>
               {t('Move')}
             </button>
             {acts.attacks.map((a) => (
@@ -727,7 +728,9 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
                 title={`${a.name} — ${a.category}${a.tag ? '/' + a.tag : ''} · Power ${a.power ?? '—'} · Range ${a.range} · ${a.ap} AP · Acc ${a.acc ?? '—'} · Crit ${a.crit}% · max ${a.maxUses}${a.priority ? ` · Priority ${a.priority}` : ''}\n${a.text}`}
                 onClick={() => setMode(a.targeting === 'vector' ? { kind: 'vector', unit: u.uid, attack: a.id } : { kind: 'attack', unit: u.uid, attack: a.id, tiles: [] })}
               >
-                <span className="lens">{a.tag ? TAG_GLYPH[a.tag] : '✚'}</span>
+                <span className="lens">
+                  <Icon name={a.tag ? `tag/${a.tag}` : 'ui/plus'} size={22} />
+                </span>
                 <span style={{ lineHeight: 1 }}>
                   {a.name.split(' ')[0]}
                   <br />
@@ -737,7 +740,7 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
             ))}
             {acts.abilities.map((ab) => (
               <button key={ab.id} className={`cmd${ps.mode.kind === 'ability' && ps.mode.ability === ab.id ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--violet)' }} disabled={fresh && ab.id !== 'mambo.wake'} title={`${ab.name} · ${ab.ap} AP${ab.priority ? ` · Priority ${ab.priority}` : ''}\n${ab.text}`} onClick={() => (ab.targeting === 'self' || ab.targeting === 'none' || ab.targeting === 'choice' ? setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'ability', unit: u.uid, ability: ab.id, target: ab.targeting === 'choice' ? { choice: view.players[me].hand.find((c) => !c.tarnished)?.uid } : {} }] })) : setMode({ kind: 'ability', unit: u.uid, ability: ab.id }))}>
-                <span className="lens">⚙</span>
+                <span className="lens"><Icon name="ui/gear" size={22} /></span>
                 <span style={{ lineHeight: 1 }}>
                   {ab.name.split(' ')[0]}
                   <br />
@@ -746,15 +749,15 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
               </button>
             ))}
             <button className="cmd" style={{ ['--fam' as string]: 'var(--bone)' }} disabled={fresh} onClick={() => setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'wait', unit: u.uid }] }))} title="Wait: this character's next actions come after everyone else at the same Priority">
-              <span className="lens">⏳</span>
+              <span className="lens"><Icon name="ui/hourglass" size={22} /></span>
               {t('Wait')}
             </button>
             <button className="cmd" style={{ ['--fam' as string]: 'var(--ghost)' }} disabled={fresh} onClick={() => setPs((p) => ({ ...p, commands: [...p.commands, { kind: 'hold', unit: u.uid }] }))} title="Hold Position (0 AP): no voluntary movement, ignores the first tile of forced movement, −10% damage from the first hit">
-              <span className="lens">⚓</span>
+              <span className="lens"><Icon name="ui/anchor" size={22} /></span>
               {t('Hold')}
             </button>
             <button className={`cmd${ps.rest.includes(u.uid) ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--gold)' }} disabled={fresh} onClick={() => toggleRest(u.uid)} title="Rest: halves this character's Effective Speed for the whole round">
-              <span className="lens">⚰</span>
+              <span className="lens"><Icon name="ui/coffin" size={22} /></span>
               {t('Rest')}
             </button>
           </div>
@@ -937,10 +940,10 @@ function EndSeal({ snap, me, onExit }: { snap: MatchSnapshot; me: PlayerId; onEx
   const draw = e.winner === 'draw' || e.winner === null;
   const rewards = e.rewards as { trophies?: number; gold?: number; chest?: string | null; unlockedZones?: string[] } | undefined;
   return (
-    <Modal title={draw ? `⚖ ${t('Draw')}` : won ? `🏆 ${t('Victory')}` : `💀 ${t('Defeat')}`}>
+    <Modal title={draw ? t('Draw') : won ? t('Victory') : t('Defeat')} icon={draw ? 'ui/scales' : won ? 'ui/trophy' : 'ui/skull'}>
       <div className="col" style={{ alignItems: 'center' }}>
         <div style={{ width: 120, height: 120, borderRadius: '50%', display: 'grid', placeItems: 'center', fontSize: 54, background: won ? 'radial-gradient(circle,#ffe27a,#D9A93A 60%,#6b5320)' : draw ? '#555' : 'radial-gradient(circle,#c22b33,#8B1A1F 60%,#3a0a0e)', boxShadow: '0 0 30px #000', border: '4px solid #0b080e' }}>
-          {won ? '⬢' : draw ? '≈' : '✖'}
+          <Icon name={won ? 'ui/win' : draw ? 'ui/scales' : 'ui/loss'} size={72} />
         </div>
         <p className="center">{e.reason}</p>
         <p className="num">
@@ -954,7 +957,19 @@ function EndSeal({ snap, me, onExit }: { snap: MatchSnapshot; me: PlayerId; onEx
         )}
         {rewards && (
           <p>
-            {rewards.trophies ? `🏆 ${rewards.trophies > 0 ? '+' : ''}${rewards.trophies} trophies · ` : ''}🪙 +{rewards.gold ?? 0} gold{rewards.chest ? ` · 📦 ${rewards.chest} chest` : ''}
+            {rewards.trophies ? (
+              <>
+                <Icon name="ui/trophy" size={18} /> {rewards.trophies > 0 ? '+' : ''}
+                {rewards.trophies} trophies ·{' '}
+              </>
+            ) : null}
+            <Icon name="ui/gold" size={18} /> +{rewards.gold ?? 0} gold
+            {rewards.chest ? (
+              <>
+                {' · '}
+                <Icon name="ui/chest" size={18} /> {rewards.chest} chest
+              </>
+            ) : null}
             {rewards.unlockedZones?.length ? ` · New area: ${rewards.unlockedZones.join(', ')}` : ''}
           </p>
         )}

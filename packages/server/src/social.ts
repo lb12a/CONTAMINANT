@@ -4,7 +4,7 @@
 // or, on a server inside the home network, any private address.
 
 import { randomInt } from 'node:crypto';
-import { claimDaily, dailyStatus, type DailyState } from '@contaminant/engine';
+import { claimDaily, claimFreeChest, dailyStatus, type DailyState } from '@contaminant/engine';
 import type { Db, PlayerRow } from './db.ts';
 import type { PlayerService } from './players.ts';
 import { divisionFor } from './rating.ts';
@@ -212,6 +212,15 @@ export class SocialService {
     this.saveDaily(p.id, r.state);
     this.players.grant(p.id, { gold: r.reward.gold, chest: r.reward.chest }, 'daily');
     return { ok: true, reward: r.reward, state: r.state };
+  }
+
+  /** The free small chest of the day (shop offer). */
+  freeChest(p: PlayerRow, now: number): { ok: boolean; error?: string } {
+    const r = claimFreeChest(this.daily(p.id), now);
+    if (!r.chest) return { ok: false, error: 'The free chest of the day is already taken' };
+    this.saveDaily(p.id, r.state);
+    this.players.grant(p.id, { chest: r.chest }, 'free-chest');
+    return { ok: true };
   }
 }
 

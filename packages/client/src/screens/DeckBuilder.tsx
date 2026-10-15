@@ -17,6 +17,7 @@ import type { Nav } from '../App.tsx';
 import { CharacterCard, ItemCard, Modal } from '../ui/components.tsx';
 import { getApi, setProfile, toast, useProfile, type SavedDeck } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 const TIER_COLOR: Record<string, string> = { swarm: '#8aa07a', standard: '#9FB7FF', elite: '#D9A93A' };
 
@@ -91,10 +92,10 @@ export function DeckBuilder({ deckId }: { nav: Nav; deckId?: string }) {
         </div>
         {[...cc.errors, ...ic.errors].map((e) => (
           <span key={e} className="small" style={{ color: '#ff9da2' }}>
-            ⚠ {e}
+            <Icon name="ui/warning" size={16} /> {e}
           </span>
         ))}
-        {cc.ok && ic.ok && <span className="small" style={{ color: 'var(--spore)' }}>✔ Deck is legal</span>}
+        {cc.ok && ic.ok && <span className="small" style={{ color: 'var(--spore)' }}><Icon name="ui/check" size={16} /> Deck is legal</span>}
       </div>
 
       <div className="panel">

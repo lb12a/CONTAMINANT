@@ -918,7 +918,7 @@ export function portraitUrl(defId: string, form?: string | null, opts: { silhoue
 const urlCache = new Map<string, string>();
 
 /** Item art: a simple emblem in the item type colour (replaced by generated art when available). */
-export function itemArtUrl(itemId: string, typeColor: string, glyph: string): string {
+export function itemArtUrl(itemId: string, typeColor: string): string {
   const icon = assetImage(`items/${itemId}`);
   const ck = `item|${itemId}|${icon ? 'gen' : 'fig'}`;
   const cached = urlCache.get(ck);
@@ -938,17 +938,8 @@ export function itemArtUrl(itemId: string, typeColor: string, glyph: string): st
   ctx.beginPath();
   ctx.ellipse(W * 0.55, H * 0.82, W * 0.22, H * 0.06, 0, 0, Math.PI * 2);
   ctx.fill();
-  if (icon) {
-    drawSprite(ctx, icon, W * 0.18, H * 0.06, W * 0.64, H * 0.84, false);
-  } else {
-    ctx.font = `${H * 0.5}px "Segoe UI Emoji","Apple Color Emoji","Noto Color Emoji",sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.shadowColor = '#000';
-    ctx.shadowOffsetX = 3;
-    ctx.shadowOffsetY = 3;
-    ctx.fillText(glyph, W / 2, H / 2);
-  }
+  // until the generated item art has loaded the card shows only its type colour
+  if (icon) drawSprite(ctx, icon, W * 0.18, H * 0.06, W * 0.64, H * 0.84, false);
   const url = c.toDataURL();
   urlCache.set(ck, url);
   return url;

@@ -5,6 +5,7 @@ import { BoardCanvas } from '../render/BoardCanvas.tsx';
 import type { Floater, Flash, Overlay, Pulse } from '../render/types.ts';
 import { getApi, toast, useProfile } from '../store.ts';
 import { VpRace } from '../ui/components.tsx';
+import { Icon } from '../ui/Icon.tsx';
 
 interface StoredMatch {
   id: string;
@@ -104,7 +105,7 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
         {!list.length && <span className="muted">No recorded matches yet.</span>}
         {list.map((m) => (
           <button key={m.id} className="btn secondary small" style={{ justifyContent: 'flex-start' }} onClick={() => nav({ name: 'replay', match: m.id })}>
-            ▶ {m.p0_name} {m.vp0}:{m.vp1} {m.p1_name} · {m.kind} {m.ended ? `· ${new Date(m.ended).toLocaleDateString()}` : ''}
+            <Icon name="ui/play" size={16} /> {m.p0_name} {m.vp0}:{m.vp1} {m.p1_name} · {m.kind} {m.ended ? `· ${new Date(m.ended).toLocaleDateString()}` : ''}
           </button>
         ))}
       </div>
@@ -119,7 +120,7 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
           {stored.p0_name} <span className="muted">vs</span> {stored.p1_name}
         </h1>
         <span className={`chip ${allVerified ? 'buff' : 'debuff'}`} title="Every round was re-simulated and compared with the recorded state hash">
-          {allVerified ? '✔ verified replay' : '⚠ hash mismatch'}
+          <Icon name={allVerified ? 'ui/check' : 'ui/warning'} size={16} /> {allVerified ? 'verified replay' : 'hash mismatch'}
         </span>
       </div>
       <div className="replay-stage panel">
@@ -138,16 +139,16 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
         </div>
         <div className="row replay-controls">
           <button className="btn secondary small" onClick={() => (setI(0), setFx({}))} aria-label="First round">
-            ⏮
+            <Icon name="ui/first" size={18} />
           </button>
           <button className="btn secondary small" onClick={() => step(-1)} aria-label="Previous round">
-            ◀
+            <Icon name="ui/step_back" size={18} />
           </button>
           <button className="btn primary small" onClick={() => setPlaying((v) => !v)}>
-            {playing ? '⏸ Pause' : '▶ Play'}
+            <Icon name={playing ? 'ui/pause' : 'ui/play'} size={18} /> {playing ? 'Pause' : 'Play'}
           </button>
           <button className="btn secondary small" onClick={() => step(1)} aria-label="Next round">
-            ▶
+            <Icon name="ui/play" size={18} />
           </button>
           <input className="spine grow" type="range" min={0} max={frames.length - 1} value={i} onChange={(e) => (setI(Number(e.target.value)), setFx({}))} aria-label="Round" />
           <span className="num small">

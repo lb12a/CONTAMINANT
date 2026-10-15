@@ -12,6 +12,7 @@ import { setProfile, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { startBotMatch } from '../game/offline.ts';
 import { MatchScreen } from './MatchScreen.tsx';
+import { Icon } from '../ui/Icon.tsx';
 
 interface Ctx {
   ps: PlannerState;
@@ -237,7 +238,13 @@ export function BasicTraining({ nav }: { nav: Nav }) {
                   </button>
                 </div>
               ) : s.done ? (
-                <span className={`coach-wait${done ? ' ok' : ''}`}>{done ? `✔ ${t('Nicely done')}` : t('Your move…')}</span>
+                <span className={`coach-wait${done ? ' ok' : ''}`}>{done ? (
+            <>
+              <Icon name="ui/check" size={18} /> {t('Nicely done')}
+            </>
+          ) : (
+            t('Your move…')
+          )}</span>
               ) : (
                 <button className="btn primary small" onClick={advance}>
                   {t('Next')}

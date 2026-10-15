@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Nav } from '../App.tsx';
 import { getApi, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 interface Row {
   id: string;
@@ -39,7 +40,7 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
           <div key={h.id + h.at} className="col" style={{ borderBottom: '1px solid #2c2535', padding: '6px 0' }}>
             <div className="row wrap" style={{ justifyContent: 'space-between' }}>
               <span>
-                {h.won === null ? '⚖' : h.won ? '🏆' : '💀'} vs <b>{h.opponent}</b> · {h.mode} · <span className="num">{h.vp[0]}:{h.vp[1]}</span> · {h.rounds} rounds
+                <Icon name={h.won === null ? 'ui/scales' : h.won ? 'ui/trophy' : 'ui/skull'} size={18} /> vs <b>{h.opponent}</b> · {h.mode} · <span className="num">{h.vp[0]}:{h.vp[1]}</span> · {h.rounds} rounds
               </span>
               <span className="small muted">{new Date(h.at).toLocaleString()}</span>
               <button className="btn secondary small" onClick={() => setOpen(open === h.id ? null : h.id)}>
@@ -84,13 +85,13 @@ export function HistoryScreen({ nav }: { nav: Nav }) {
                   <td className="num">{r.rounds}</td>
                   <td>
                     <button className="btn primary small" onClick={() => nav({ name: 'replay', match: r.id })}>
-                      ▶ Replay
+                      <Icon name="ui/play" size={16} /> Replay
                     </button>{' '}
                     <button
                       className="btn secondary small"
                       onClick={async () => {
                         const v = await getApi().get<{ ok: boolean; rounds: number }>(`/api/matches/${r.id}/verify`);
-                        setVerify((x) => ({ ...x, [r.id]: v.ok ? `✔ verified (${v.rounds} rounds)` : '✖ mismatch' }));
+                        setVerify((x) => ({ ...x, [r.id]: v.ok ? `verified (${v.rounds} rounds)` : 'mismatch' }));
                       }}
                     >
                       Verify

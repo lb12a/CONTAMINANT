@@ -1,6 +1,7 @@
 import { dailyMissions } from '@contaminant/engine';
 import { useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 export function MissionsScreen() {
   const p = useProfile();
@@ -28,8 +29,13 @@ export function MissionsScreen() {
               <div className="fill" style={{ width: `${Math.min(100, (v / ms.target) * 100)}%`, background: 'linear-gradient(180deg,#c8ffad,#4fa830)' }} />
             </div>
             <div className="small" style={{ marginTop: 4 }}>
-              Reward: 🪙 {ms.reward.gold}
-              {ms.reward.chest ? ` + ${ms.reward.chest} chest` : ''} {done ? '· ✔ done' : ''}
+              Reward: <Icon name="ui/gold" size={16} /> {ms.reward.gold}
+              {ms.reward.chest ? ` + ${ms.reward.chest} chest` : ''} {done ? (
+              <>
+                {' · '}
+                <Icon name="ui/check" size={16} /> done
+              </>
+            ) : null}
             </div>
           </div>
         );

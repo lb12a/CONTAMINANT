@@ -16,10 +16,11 @@ import {
 } from '@contaminant/engine';
 import type { Nav } from '../App.tsx';
 import { CharacterCard, HexIcon, ItemCard, Modal, Tabs } from '../ui/components.tsx';
-import { charRing, TAG_GLYPH } from '../ui/glyphs.ts';
+import { charRing } from '../ui/glyphs.ts';
 import { getApi, setProfile, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { sfx } from '../audio.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 export function CollectionScreen({ nav }: { nav: Nav }) {
   const p = useProfile();
@@ -136,7 +137,12 @@ export function CharacterDetail({ def, onClose, nav }: { def: CharacterDef; onCl
       {def.attacks.map((a) => (
         <div key={a.id} className="paper small" style={{ padding: 8, marginBottom: 6 }}>
           <b>{a.name}</b> — {a.category}
-          {a.tag ? ` / ${TAG_GLYPH[a.tag]} ${a.tag}` : ''} · Power {a.power ?? '—'} · Range {a.range} · {a.ap} AP · Acc {a.acc ?? '—'} · Crit {a.crit}% · max {a.maxUses}
+          {a.tag ? (
+            <>
+              {' / '}
+              <Icon name={`tag/${a.tag}`} size={14} /> {a.tag}
+            </>
+          ) : null} · Power {a.power ?? '—'} · Range {a.range} · {a.ap} AP · Acc {a.acc ?? '—'} · Crit {a.crit}% · max {a.maxUses}
           {a.priority ? ` · Priority ${a.priority}` : ''}
           {a.power && a.ap ? ` · ${expectedDamagePerAp(a.power, a.acc, a.crit, a.ap).toFixed(1)} dmg/AP` : ''}
           <div>{a.text}</div>
@@ -167,14 +173,14 @@ export function CharacterDetail({ def, onClose, nav }: { def: CharacterDef; onCl
                 Next level: {o.dups}/{duplicatesForLevel(next)} duplicates · {goldForLevel(next)} gold (+10% HP and Power)
               </span>
               <button className="btn buy" disabled={!chk.ok} onClick={doLevel} title={chk.reason}>
-                {t('Level up')} · 🪙 {goldForLevel(next)}
+                {t('Level up')} · <Icon name="ui/gold" size={16} /> {goldForLevel(next)}
               </button>
             </>
           ) : (
             <span className="rar-text rarity-legendary">Maximum level</span>
           )}
           <button className="btn tutorial" onClick={() => nav({ name: 'match', tutorial: def.id })}>
-            {p.settings.lang === 'de' ? 'Prüfstand' : 'Test chamber'} {o.tutorialDone ? '✔' : ''}
+            {p.settings.lang === 'de' ? 'Prüfstand' : 'Test chamber'} {o.tutorialDone ? <Icon name="ui/check" size={16} /> : null}
           </button>
         </div>
       )}

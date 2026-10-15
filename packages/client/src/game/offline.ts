@@ -6,6 +6,7 @@ import {
   makeRng,
   matchReward,
   randomDeck,
+  recordPlayed,
   type Difficulty,
   type ModeId,
 } from '@contaminant/engine';
@@ -45,12 +46,19 @@ export function finishOfflineMatch(snap: MatchSnapshot, log: string[], kind = 'b
     const r = matchReward(won, margin, { draw });
     const unlocked = applyMatchReward(col, r);
     if (unlocked.length) setTimeout(() => toast(`New area unlocked: ${unlocked.join(', ')}`, 'good'), 300);
+    // rewards for matches played today
+    const played = recordPlayed(p.daily ?? {}, Date.now(), new Date().getTimezoneOffset());
+    for (const t of played.rewards) {
+      col.gold += t.gold;
+      if (t.chest) col.chests.push(t.chest);
+      setTimeout(() => toast(`${t.games} ${t.games === 1 ? 'match' : 'matches'} today: +${t.gold} gold${t.chest ? ' and a chest' : ''}`, 'good'), 900);
+    }
     const history = [
       { id: snap.info.match, at: Date.now(), kind, mode: snap.view.settings.mode, opponent: snap.info.names[me === 0 ? 1 : 0], won: draw ? null : won, vp: [snap.view.players[me].vp, snap.view.players[me === 0 ? 1 : 0].vp] as [number, number], rounds: snap.view.round, log: log.slice(-300) },
       ...p.history,
     ].slice(0, 50);
     (col as typeof col & { missions?: unknown }).missions = updateLocalMissions(p, snap, won);
-    return { ...p, collection: col, history };
+    return { ...p, collection: col, history, daily: played.state };
   });
 }
 

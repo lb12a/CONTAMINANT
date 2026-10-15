@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 interface ProfileData {
   player: { id: string; name: string; mmr: number; peak: number; division: string; games: number; wins: number; losses: number; draws: number; titles: string[]; isBot: boolean };
@@ -11,7 +12,7 @@ interface ProfileData {
   honours: { kind: string; title: string; created: number }[];
 }
 
-const HONOUR_ICON: Record<string, string> = { world_champion: '👑', world_podium: '🏅', season_champion: '🎖', trophy: '🏆' };
+const HONOUR_ICON: Record<string, string> = { world_champion: 'ui/crown', world_podium: 'ui/medal', season_champion: 'ui/medal', trophy: 'ui/trophy' };
 
 /** Public player profile: rating, record, team, Circuit results, honours and recent matches (with replays). */
 export function ProfileScreen({ nav, id }: { nav: Nav; id?: string }) {
@@ -80,7 +81,7 @@ export function ProfileScreen({ nav, id }: { nav: Nav; id?: string }) {
           )}
           {data.honours.map((h, i) => (
             <div key={i} className="small">
-              {HONOUR_ICON[h.kind] ?? '🏅'} {h.title} <span className="muted">· {new Date(h.created).toLocaleDateString()}</span>
+              <Icon name={HONOUR_ICON[h.kind] ?? 'ui/medal'} size={18} /> {h.title} <span className="muted">· {new Date(h.created).toLocaleDateString()}</span>
             </div>
           ))}
           {data.circuit?.majors.length ? (
@@ -107,7 +108,7 @@ export function ProfileScreen({ nav, id }: { nav: Nav; id?: string }) {
                   <span className={`chip ${res === 'win' ? 'buff' : res === 'loss' ? 'debuff' : 'neutral'}`}>{res}</span> vs {opp} · {side === 0 ? m.vp0 : m.vp1}:{side === 0 ? m.vp1 : m.vp0} · {m.kind}
                 </span>
                 <button className="btn secondary small" onClick={() => nav({ name: 'replay', match: m.id })}>
-                  ▶ Replay
+                  <Icon name="ui/play" size={16} /> Replay
                 </button>
               </div>
             );

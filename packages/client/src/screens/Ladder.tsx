@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 interface Row {
   rank: number;
@@ -57,7 +58,7 @@ export function LadderScreen({ nav }: { nav: Nav }) {
             <b style={{ color: d.color }}>{d.name}</b>
             <div className="muted">from {d.min} MMR</div>
             <div>
-              🪙 {d.reward.gold} · 🏆 {d.reward.trophies}
+              <Icon name="ui/gold" size={16} /> {d.reward.gold} · <Icon name="ui/trophy" size={16} /> {d.reward.trophies}
             </div>
             {d.reward.cardBack && <div>Card back: {d.reward.cardBack.replace(/_/g, ' ')}</div>}
             {d.reward.skin && <div>Skin: {d.reward.skin.replace(/_/g, ' ')}</div>}

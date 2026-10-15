@@ -5,6 +5,8 @@ import { activeDeck, setProfile, useProfile } from '../store.ts';
 import { startBotMatch } from '../game/offline.ts';
 import { t } from '../i18n.ts';
 import { assetUrl } from '../render/assets.ts';
+import { Icon } from '../ui/Icon.tsx';
+import { DailyCard } from '../ui/DailyCard.tsx';
 
 /** Creatures standing in the menu hero (back row first). */
 const CAST = [
@@ -16,12 +18,12 @@ const CAST = [
 ];
 
 const MODES: [ModeId, string, string][] = [
-  ['contamination', '☣ Contamination', 'First to 100 VP, or wipe the enemy out'],
-  ['elimination', '☠ Elimination', "All 10 enemy characters KO'd"],
-  ['domination', '⚑ Domination', 'First to 75 VP, 3 Control Fields'],
-  ['research', '⚗ Research', 'First to 90 VP, 3 Research Terminals'],
-  ['escape', '🚪 Escape', 'Reach the far zone with 1 AP left'],
-  ['anomaly', '👁 Anomaly', 'Defeat a buffed Boss, 150 VP cap'],
+  ['contamination', 'Contamination', 'First to 100 VP, or wipe the enemy out'],
+  ['elimination', 'Elimination', "All 10 enemy characters KO'd"],
+  ['domination', 'Domination', 'First to 75 VP, 3 Control Fields'],
+  ['research', 'Research', 'First to 90 VP, 3 Research Terminals'],
+  ['escape', 'Escape', 'Reach the far zone with 1 AP left'],
+  ['anomaly', 'Anomaly', 'Defeat a buffed Boss, 150 VP cap'],
 ];
 
 export function MenuScreen({ nav }: { nav: Nav }) {
@@ -74,6 +76,8 @@ export function MenuScreen({ nav }: { nav: Nav }) {
         </div>
       </section>
 
+      <DailyCard />
+
       <section className="panel rivets">
         <div className="row wrap" style={{ justifyContent: 'space-between' }}>
           <h2 style={{ margin: 0 }}>{t('Game modes')}</h2>
@@ -93,11 +97,12 @@ export function MenuScreen({ nav }: { nav: Nav }) {
         </div>
         <div className="grid-cards" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', marginTop: 10 }}>
           {MODES.map(([id, name, desc]) => (
-            <button key={id} className={`btn ${id === 'contamination' ? 'primary' : 'secondary'}`} style={{ textAlign: 'left', minHeight: 72 }} onClick={() => play(id)}>
-              <div>{name}</div>
-              <div className="small" style={{ fontFamily: 'var(--font-body)', opacity: 0.8 }}>
-                {desc}
-              </div>
+            <button key={id} className={`btn mode-btn ${id === 'contamination' ? 'primary' : 'secondary'}`} onClick={() => play(id)}>
+              <Icon name={`mode/${id}`} size={40} />
+              <span className="col" style={{ gap: 2 }}>
+                <span>{t(name)}</span>
+                <span className="small mode-desc">{t(desc)}</span>
+              </span>
             </button>
           ))}
         </div>
@@ -124,7 +129,7 @@ export function MenuScreen({ nav }: { nav: Nav }) {
                   {t('Tournaments')}
                 </button>
                 <button className="btn buy" onClick={() => nav({ name: 'worldcup' })}>
-                  🏆 {t('World Cup')}
+                  <Icon name="ui/trophy" size={20} /> {t('World Cup')}
                 </button>
               </div>
             </div>

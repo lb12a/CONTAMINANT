@@ -7,6 +7,7 @@ import { CharacterCard, HexIcon, Modal } from '../ui/components.tsx';
 import { charRing } from '../ui/glyphs.ts';
 import { getApi, getProfile, setProfile, toast } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
   const ctrl = useMemo(() => new TutorialController(defId), [defId]);
@@ -58,8 +59,8 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
         ))}
       </div>
       <div className="warden">
-        <div style={{ fontSize: 34 }} aria-hidden>
-          🧟
+        <div aria-hidden>
+          <Icon name="ui/skull" size={40} />
         </div>
         <div className="note">
           {probe ? (
@@ -97,7 +98,7 @@ export function TutorialMatch({ defId, nav }: { defId: string; nav: Nav }) {
       {ctrl.last && !ctrl.last.passed && !sess.passed && <div className="small" style={{ color: '#ff9da2' }}>{de ? 'Aufgabe nicht erfüllt.' : 'Task not completed.'}</div>}
       {sess.showSolution && (
         <div className="paper small" style={{ padding: 8 }}>
-          👻 {de ? 'Geister-Vorschau' : 'Ghost preview'}: {plan.probe.solution}
+          <Icon name="tag/soul" size={18} /> {de ? 'Geister-Vorschau' : 'Ghost preview'}: {plan.probe.solution}
         </div>
       )}
       <div className="row wrap">

@@ -26,6 +26,7 @@ async function open(acc: Awaited<ReturnType<typeof account>>): Promise<Page> {
   await page.goto(client, { waitUntil: 'networkidle' });
   await page.locator('.groups').getByRole('button', { name: 'Compete' }).click();
   await page.waitForTimeout(800);
+  await page.locator('details.more-ways > summary').click();
   return page;
 }
 

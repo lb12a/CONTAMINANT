@@ -5,6 +5,7 @@ import { BoardCanvas } from '../render/BoardCanvas.tsx';
 import { getApi, getSocket, useProfile } from '../store.ts';
 import { VpRace } from '../ui/components.tsx';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 interface Live {
   id: string;
@@ -58,7 +59,7 @@ export function SpectateScreen({ match }: { nav: Nav; match?: string }) {
         {list.length === 0 && <span className="muted">No live matches right now.</span>}
         {list.map((m) => (
           <button key={m.id} className={`btn ${m.id === sel ? 'primary' : 'secondary'} small`} onClick={() => setSel(m.id)}>
-            {m.featured ? '★ ' : ''}
+            {m.featured ? <Icon name="ui/featured" size={16} label="Featured" /> : null}
             {m.names[0]} {m.vp[0]}:{m.vp[1]} {m.names[1]} · R{m.round} · {m.kind}
           </button>
         ))}

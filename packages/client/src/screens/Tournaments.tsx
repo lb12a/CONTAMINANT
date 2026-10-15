@@ -3,6 +3,7 @@ import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { Countdown } from '../ui/components.tsx';
+import { Icon } from '../ui/Icon.tsx';
 
 export interface BMatch {
   id: string;
@@ -154,13 +155,13 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
             </div>
           )}
           <p className="small muted">
-            {detail.tournament.format} · {detail.tournament.status} · prizes: {detail.tournament.prizes.map((pz) => `#${pz.place <= 4 ? pz.place : `≤${pz.place}`} 🪙${pz.gold}`).join(' · ')}
+            {detail.tournament.format} · {detail.tournament.status} · prizes: {detail.tournament.prizes.map((pz) => `#${pz.place <= 4 ? pz.place : `≤${pz.place}`}: ${pz.gold} gold`).join(' · ')}
           </p>
           {detail.tournament.placements && (
             <div className="row wrap">
               {detail.tournament.placements.slice(0, 4).map((pl) => (
                 <span key={pl.playerId} className="chip" style={{ borderColor: pl.place === 1 ? 'var(--gold)' : undefined }}>
-                  {pl.place === 1 ? '👑' : pl.place === 2 ? '🥈' : pl.place === 3 ? '🥉' : `#${pl.place}`} {pl.name}
+                  {pl.place <= 3 ? <Icon name={pl.place === 1 ? 'ui/crown' : pl.place === 2 ? 'ui/podium_2' : 'ui/podium_3'} size={18} /> : `#${pl.place}`} {pl.name}
                 </span>
               ))}
             </div>
@@ -173,7 +174,7 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
         {hall.length === 0 && <span className="muted small">No champions yet.</span>}
         {hall.slice(0, 30).map((h, i) => (
           <div key={i} className="small">
-            🏆 <b>{h.player_name}</b> — {h.title} <span className="muted">({new Date(h.created).toLocaleDateString()})</span>
+            <Icon name="ui/trophy" size={16} /> <b>{h.player_name}</b> — {h.title} <span className="muted">({new Date(h.created).toLocaleDateString()})</span>
           </div>
         ))}
       </div>
@@ -204,7 +205,7 @@ export function SwissView({ standings, matches, names, nav }: { standings: Swiss
         <div className="row wrap">
           {live.map((m) => (
             <button key={m.id} className="btn secondary small" onClick={() => nav({ name: 'spectate', match: m.roomId })}>
-              👁 {names[m.a!]} vs {names[m.b!]}
+              <Icon name="ui/eye" size={16} /> {names[m.a!]} vs {names[m.b!]}
             </button>
           ))}
         </div>
@@ -273,7 +274,7 @@ export function BracketView({ matches, names, nav }: { matches: BMatch[]; names:
                           </div>
                           {m.status === 'live' && m.roomId && (
                             <button className="btn secondary small" style={{ minHeight: 24, padding: '0 6px' }} onClick={() => nav({ name: 'spectate', match: m.roomId })}>
-                              👁 live
+                              <Icon name="ui/eye" size={16} /> live
                             </button>
                           )}
                         </div>

@@ -8,6 +8,7 @@ import { getApi, toast, useProfile } from '../store.ts';
 import { portraitUrl } from '../render/art.ts';
 import { Tabs } from '../ui/components.tsx';
 import { t } from '../i18n.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 interface CardStat {
   id: string;
@@ -49,9 +50,9 @@ const DOWN = '#d0353d';
 const PICK = '#6b86d0';
 const TIER_COL: Record<string, string> = { S: '#D9A93A', A: '#8CFF5A', B: '#9FB7FF', C: '#B5562B', D: '#8B1A1F' };
 const SEVERITY: Record<Anomaly['severity'], { icon: string; label: string; color: string }> = {
-  watch: { icon: '👁', label: 'Watch', color: '#9FB7FF' },
-  warning: { icon: '⚠', label: 'Warning', color: '#FF9A1F' },
-  critical: { icon: '⛔', label: 'Critical', color: '#c22b33' },
+  watch: { icon: 'ui/eye', label: 'Watch', color: '#9FB7FF' },
+  warning: { icon: 'ui/warning', label: 'Warning', color: '#FF9A1F' },
+  critical: { icon: 'ui/close', label: 'Critical', color: '#c22b33' },
 };
 
 export function MetaScreen() {
@@ -215,7 +216,7 @@ export function MetaScreen() {
               return (
                 <div key={i} className="paper" style={{ padding: 10, borderLeft: `6px solid ${sev.color}` }}>
                   <b>
-                    {sev.icon} {sev.label}
+                    <Icon name={sev.icon} size={16} /> {sev.label}
                   </b>{' '}
                   · {a.kind} · <b>{a.names.join(' + ')}</b>
                   <div className="small num">

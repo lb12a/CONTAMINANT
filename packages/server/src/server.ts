@@ -545,7 +545,13 @@ export class GameServer {
       const p = need();
       if (!p) return;
       const r = this.social.claimDaily(p, this.clock.now());
-      return json(res, r.ok ? 200 : 400, r);
+      return json(res, r.ok ? 200 : 400, { ...r, collection: this.players.collection(p.id) });
+    }
+    if (path === '/api/daily/free-chest' && req.method === 'POST') {
+      const p = need();
+      if (!p) return;
+      const r = this.social.freeChest(p, this.clock.now());
+      return json(res, r.ok ? 200 : 400, { ...r, collection: this.players.collection(p.id) });
     }
     if ((m = path.match(/^\/api\/players\/([\w-]+)$/))) {
       const p = this.players.byId(m[1]!);

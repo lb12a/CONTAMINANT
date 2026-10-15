@@ -9,7 +9,8 @@ import { GodrayFilter } from 'pixi-filters';
 import { FIELDS, fromPixel, key, toPixel, type GameState, type Hex, type PlayerId, type Unit, type Zone } from '@contaminant/engine';
 import { assetImage, assetUrl, assetList } from './assets.ts';
 import { figureCanvas, lookKey } from './art.ts';
-import { STATUS_GLYPH, statusKind } from '../ui/glyphs.ts';
+import { statusKind } from '../ui/glyphs.ts';
+import { iconUrl } from '../ui/Icon.tsx';
 import type { Camera, Floater, HighlightKind, Insets, Overlay, Pulse } from './types.ts';
 
 /** world hex radius */
@@ -222,6 +223,29 @@ class TexCache {
 
   private images = new Map<string, HTMLImageElement>();
 
+  /** drawn interface icons (status marks, objective and trap fallbacks), rasterised once */
+  iconVersion = 0;
+  private icons = new Map<string, Texture | 'loading'>();
+  icon(name: string): Texture | null {
+    const hit = this.icons.get(name);
+    if (hit && hit !== 'loading') return hit;
+    if (!hit) {
+      const url = iconUrl(name);
+      if (!url) return null;
+      this.icons.set(name, 'loading');
+      const im = new Image();
+      im.onload = () => {
+        const c = document.createElement('canvas');
+        c.width = c.height = 96;
+        c.getContext('2d')!.drawImage(im, 0, 0, 96, 96);
+        this.icons.set(name, Texture.from(c));
+        this.iconVersion++;
+      };
+      im.src = url;
+    }
+    return null;
+  }
+
   /** The decoded generated image itself (for textures that are composed per board size). */
   image(path: string): HTMLImageElement | null {
     const hit = this.images.get(path);
@@ -317,7 +341,7 @@ interface UnitView {
   root: Container;
   shadow: Graphics;
   spr: Sprite;
-  label: Text | null;
+  label: Container | null;
   labelText: string;
   look: string;
   x: number;
@@ -350,6 +374,7 @@ export class DioramaRenderer {
   private ov: Overlay = { highlights: new Map(), paths: [], targets: [], ghosts: [] };
   private tex = new TexCache();
   private texVersion = -1;
+  private iconSeen = 0;
   private reduce = reducedMotion();
 
   private world = new Container();
@@ -770,22 +795,38 @@ export class DioramaRenderer {
         v.move = { fx: v.x, fy: v.y, tx: w.x, ty: w.y, t0: now, dur: this.reduce ? 1 : Math.min(700, 220 + dist * 150) };
         v.target = k;
       }
-      // status / counter label above the HP bar
-      const glyphs = u.statuses.filter((st) => STATUS_GLYPH[st.id] && st.id !== 'hidden').slice(0, 5).map((st) => STATUS_GLYPH[st.id]!).join('');
+      // status icons and counters above the HP bar
+      const icons = u.statuses.filter((st) => st.id !== 'hidden').slice(0, 5).map((st) => `status/${st.id}`);
       const counters = Object.entries(u.counters).filter(([, n]) => n > 0).map(([c, n]) => `${c[0]!.toUpperCase()}${n}`).join(' ');
-      const labelText = [glyphs, counters].filter(Boolean).join(' ');
+      const textures = icons.map((n) => this.tex.icon(n));
+      const labelText = `${icons.join(',')}|${counters}|${textures.filter(Boolean).length}`;
       if (labelText !== v.labelText) {
         v.labelText = labelText;
-        if (!labelText) {
-          v.label?.destroy();
-          v.label = null;
-        } else {
-          if (!v.label) {
-            v.label = new Text({ text: '', style: { fontFamily: '"Barlow Semi Condensed", "Segoe UI Emoji", sans-serif', fontSize: 22, fill: 0xf2e6c8, fontWeight: '700', stroke: { color: 0x0e0a12, width: 5 } }, resolution: 2 });
-            v.label.anchor.set(0.5, 1);
-            this.textLayer.addChild(v.label);
+        v.label?.destroy({ children: true });
+        v.label = null;
+        if (icons.length || counters) {
+          const box = new Container();
+          const sz = 30;
+          let x = 0;
+          for (const tx of textures) {
+            if (!tx) continue;
+            const sp = new Sprite(tx);
+            sp.width = sz;
+            sp.height = sz;
+            sp.position.set(x, -sz);
+            box.addChild(sp);
+            x += sz + 1;
           }
-          v.label.text = labelText;
+          if (counters) {
+            const tt = new Text({ text: counters, style: { fontFamily: '"Barlow Semi Condensed", sans-serif', fontSize: 22, fill: 0xf2e6c8, fontWeight: '700', stroke: { color: 0x0e0a12, width: 5 } }, resolution: 2 });
+            tt.anchor.set(0, 1);
+            tt.position.set(x + 2, -3);
+            box.addChild(tt);
+            x += tt.width + 4;
+          }
+          box.pivot.set(x / 2, 0);
+          v.label = box;
+          this.textLayer.addChild(box);
         }
       }
     }
@@ -808,14 +849,20 @@ export class DioramaRenderer {
       if (this.objSprites.has(k)) continue;
       const { x, y } = worldCenter(t);
       const tx = this.tex.get(`objectives/${t.objective}`, () => null);
-      let d: Sprite | Text;
+      let d: Sprite;
       if (tx) {
         d = new Sprite(tx);
         d.anchor.set(0.5, 0.9);
         d.scale.set((S * 1.15) / tx.height);
       } else {
-        d = new Text({ text: t.objective === 'control' ? '⚑' : t.objective === 'terminal' ? '🖥' : '⚗', style: { fontSize: 46, fill: 0xffffff }, resolution: 2 });
+        const ic = this.tex.icon(t.objective === 'control' ? 'ui/flag' : t.objective === 'terminal' ? 'ui/terminal' : 'ui/flask');
+        if (!ic) {
+          seen.delete(k);
+          continue;
+        }
+        d = new Sprite(ic);
         d.anchor.set(0.5, 0.85);
+        d.scale.set((S * 0.9) / ic.height);
       }
       d.position.set(x, y);
       d.zIndex = y - 1;
@@ -838,8 +885,14 @@ export class DioramaRenderer {
           d.anchor.set(0.5, 0.6);
           d.scale.set((S * 0.62) / Math.max(tx.width, tx.height), (S * 0.62 * 0.8) / Math.max(tx.width, tx.height));
         } else {
-          d = new Text({ text: '🪤', style: { fontSize: 34 }, resolution: 2 });
+          const ic = this.tex.icon('ui/trap');
+          if (!ic) {
+            seen.delete(tr.uid);
+            continue;
+          }
+          d = new Sprite(ic);
           d.anchor.set(0.5);
+          d.scale.set((S * 0.6) / ic.height);
         }
         this.entities.addChild(d);
         this.trapSprites.set(tr.uid, d);
@@ -864,8 +917,11 @@ export class DioramaRenderer {
           d.anchor.set(0.5, 0.9);
           d.scale.set((S * 0.8) / tx.height);
         } else {
-          d = new Text({ text: '🪦', style: { fontSize: 40 }, resolution: 2 });
+          const ic = this.tex.icon('ui/tombstone');
+          if (!ic) return;
+          d = new Sprite(ic);
           d.anchor.set(0.5, 0.8);
+          d.scale.set((S * 0.7) / ic.height);
         }
         this.entities.addChild(d);
         this.tombSprites[i] = d;
@@ -882,6 +938,13 @@ export class DioramaRenderer {
   private frame(now: number): void {
     if (!this.state || this.destroyed) return;
     if (this.tex.version !== this.texVersion) this.sync();
+    else if (this.tex.iconVersion !== this.iconSeen) {
+      this.iconSeen = this.tex.iconVersion;
+      this.syncUnits();
+      this.syncObjectives();
+      this.syncTraps();
+      this.syncTombs();
+    }
     this.layout();
     const t = now / 1000;
     if (this.godray) this.godray.time = t * 0.12;

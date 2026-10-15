@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
+import { Icon } from '../ui/Icon.tsx';
 
 interface TeamRow {
   id: string;
@@ -104,7 +105,7 @@ export function TeamsScreen({ nav, id }: { nav: Nav; id?: string }) {
             <tbody>
               {team.roster.map((r) => (
                 <tr key={r.playerId} className={r.playerId === me ? 'me' : ''}>
-                  <td>{r.role === 'captain' ? '★' : ''}</td>
+                  <td>{r.role === 'captain' ? <Icon name="ui/crown" size={16} label="Captain" /> : null}</td>
                   <td>
                     <button className="link-name" onClick={() => nav({ name: 'profile', id: r.playerId })}>
                       {r.name}
@@ -144,7 +145,7 @@ export function TeamsScreen({ nav, id }: { nav: Nav; id?: string }) {
                   </td>
                   <td className="num">{t.rating}</td>
                   <td className="small muted">{t.division}</td>
-                  <td className="num muted">{t.roster.length} 👤</td>
+                  <td className="num muted">{t.roster.length} <Icon name="ui/person" size={14} /></td>
                 </tr>
               ))}
             </tbody>
