@@ -2090,3 +2090,19 @@ input[type='number'] {
   font-weight: 600;
   opacity: 0.8;
 }
+
+.countdown {
+  font-weight: 700;
+  color: var(--bone);
+}
+.countdown.soon {
+  color: var(--foe);
+}
+.countdown.done {
+  color: var(--spore);
+}
+.countdown-row {
+  gap: 10px;
+  align-items: baseline;
+  font-size: 18px;
+}

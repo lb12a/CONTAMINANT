@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T08:57:33.172Z",
+ "generated": "2026-10-15T08:58:36.062Z",
  "files": {
   "backdrops/loading.webp": {
    "w": 1344,
@@ -36,6 +36,10 @@
   "ground/toyroom.webp": {
    "w": 1344,
    "h": 576
+  },
+  "icons/status/bleeding.webp": {
+   "w": 135,
+   "h": 160
   },
   "icons/status/poison.webp": {
    "w": 141,

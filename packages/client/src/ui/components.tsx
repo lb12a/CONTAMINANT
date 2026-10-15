@@ -188,6 +188,28 @@ export function Fuse({ deadline, total }: { deadline: number; total: number }) {
   );
 }
 
+/** Live countdown ("2d 04h", "13:07", "now") that re-renders every second while it is close. */
+export function Countdown({ to, prefix, done = 'now' }: { to: number; prefix?: string; done?: string }) {
+  const [now, setNow] = useState(Date.now());
+  const left = to - now;
+  useEffect(() => {
+    const i = setInterval(() => setNow(Date.now()), left < 3600_000 ? 1000 : 30_000);
+    return () => clearInterval(i);
+  }, [left < 3600_000]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (left <= 0) return <span className="countdown done">{done}</span>;
+  const d = Math.floor(left / 86400_000);
+  const h = Math.floor((left % 86400_000) / 3600_000);
+  const m = Math.floor((left % 3600_000) / 60_000);
+  const sec = Math.floor((left % 60_000) / 1000);
+  const text = d > 0 ? `${d}d ${String(h).padStart(2, '0')}h` : h > 0 ? `${h}h ${String(m).padStart(2, '0')}m` : `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+  return (
+    <span className={`countdown num${left < 600_000 ? ' soon' : ''}`} title={new Date(to).toLocaleString()}>
+      {prefix ? `${prefix} ` : ''}
+      {text}
+    </span>
+  );
+}
+
 export function secondsLeft(deadline: number): number {
   return deadline ? Math.max(0, Math.ceil((deadline - Date.now()) / 1000)) : 0;
 }

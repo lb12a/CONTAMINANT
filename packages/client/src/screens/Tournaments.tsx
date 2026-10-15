@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
+import { Countdown } from '../ui/components.tsx';
 
 export interface BMatch {
   id: string;
@@ -116,7 +117,11 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
                   </td>
                   <td>{tr.format}</td>
                   <td>{tr.status}</td>
-                  <td className="small">{new Date(tr.startsAt).toLocaleString()}</td>
+                  <td className="small">
+                    {tr.status === 'scheduled' && <Countdown to={tr.checkinOpensAt} prefix="check-in in" />}
+                    {tr.status === 'checkin' && <Countdown to={tr.startsAt} prefix="starts in" />}
+                    {tr.status !== 'scheduled' && tr.status !== 'checkin' && new Date(tr.startsAt).toLocaleString()}
+                  </td>
                   <td className="num">{tr.players ?? tr.registrations?.length ?? 0}</td>
                   <td className="row">
                     {(tr.status === 'scheduled' || tr.status === 'checkin') && !reg && (
@@ -140,6 +145,14 @@ export function TournamentsScreen({ nav, id }: { nav: Nav; id?: string }) {
       {detail && (
         <div className="panel">
           <h2>{detail.tournament.name}</h2>
+          {(detail.tournament.status === 'scheduled' || detail.tournament.status === 'checkin') && (
+            <div className="row wrap countdown-row">
+              <span className="muted small">Check-in</span>
+              <Countdown to={detail.tournament.checkinOpensAt} done="open" />
+              <span className="muted small">Start</span>
+              <Countdown to={detail.tournament.startsAt} done="running" />
+            </div>
+          )}
           <p className="small muted">
             {detail.tournament.format} · {detail.tournament.status} · prizes: {detail.tournament.prizes.map((pz) => `#${pz.place <= 4 ? pz.place : `≤${pz.place}`} 🪙${pz.gold}`).join(' · ')}
           </p>
