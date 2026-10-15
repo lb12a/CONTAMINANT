@@ -25,7 +25,7 @@ const flag = (n: string) => args.includes(`--${n}`);
 const only = args.find((a) => a.startsWith('--only='))?.slice(7).split(',');
 const force = flag('force');
 
-const BOX: Record<AssetSpec['kind'], number> = { token: 512, prop: 384, item: 256, objective: 256, ground: 1536, backdrop: 1536 };
+const BOX: Record<AssetSpec['kind'], number> = { token: 512, prop: 384, item: 256, objective: 256, ground: 1536, backdrop: 1536, icon: 160, appicon: 1024 };
 
 function hash(s: string): number {
   let h = 2166136261;
@@ -128,7 +128,7 @@ async function render(spec: AssetSpec): Promise<void> {
   console.log(`  ${spec.path}: ${bufs.length} image(s) in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 }
 
-const CUTOUT_KINDS = new Set<AssetSpec['kind']>(['token', 'prop', 'item', 'objective']);
+const CUTOUT_KINDS = new Set<AssetSpec['kind']>(['token', 'prop', 'item', 'objective', 'icon']);
 
 async function waitFor(promptId: string): Promise<HistoryImage[]> {
   for (;;) {

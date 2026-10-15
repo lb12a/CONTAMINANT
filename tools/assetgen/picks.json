@@ -29,5 +29,6 @@
  "tokens/cooking_pot": 0,
  "tokens/training_dummy": 1,
  "tokens/training_walker": 1,
- "tokens/swamp_siren": 0
+ "tokens/swamp_siren": 0,
+ "tokens/werewolf_wolf": 1
 }

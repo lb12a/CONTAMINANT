@@ -10,7 +10,7 @@ import sys
 
 from PIL import Image, ImageDraw, ImageFilter
 
-CUTOUT = {"token", "prop", "item", "objective"}
+CUTOUT = {"token", "prop", "item", "objective", "icon"}
 
 
 def background_holes(img):

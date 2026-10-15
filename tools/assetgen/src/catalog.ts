@@ -1,8 +1,10 @@
+import { ICON_GROUPS } from './icons.ts';
+
 // Asset catalog: every generated image with its ComfyUI prompt.
 // Style: hand-drawn 2D cartoon with thick dark outlines and flat colours (the *drawing style* of
 // Among Us), but creepy horror creatures that look like their descriptions in the game plan.
 
-export type Kind = 'token' | 'prop' | 'ground' | 'backdrop' | 'item' | 'objective';
+export type Kind = 'token' | 'prop' | 'ground' | 'backdrop' | 'item' | 'objective' | 'icon' | 'appicon';
 
 export interface AssetSpec {
   /** output path below packages/client/public/assets/gen (without extension) */
@@ -26,7 +28,8 @@ export const NEGATIVE =
   'multiple characters, duplicate, collage, cropped, cut off, out of frame, scenery, landscape, room, ground plane, cast shadow, gradient background, ' +
   'astronaut, spacesuit, crewmate, visor, cute chibi, anime girl, low quality, worst quality, jpeg artifacts, deformed, extra limbs, sketch lines, ' +
   'nude, naked, nudity, nsfw, nipples, breasts, cleavage, bikini, lingerie, sexy, revealing clothes, photo of a figurine, glossy 3d porcelain render, ' +
-  'character sheet, turnaround, multiple views, reference sheet, several figures, background figures';
+  'character sheet, turnaround, multiple views, reference sheet, several figures, background figures, ' +
+  'bare chest, shirtless, open shirt, open coat, exposed chest, abs, pecs, sheer fabric, see-through, low neckline, bare shoulders';
 
 const ISOLATED = 'centered, full body visible with margin, isolated on a plain flat light grey background';
 
@@ -52,7 +55,7 @@ const CHARACTERS: Record<string, string> = {
   scarecrow:
     'a menacing scarecrow of wood and straw, burlap sack head with a stitched grin, wide tattered straw hat, holding a harvest hook sickle, black ravens perched on its shoulders',
   frankenstein:
-    'a hulking semi-mechanical frankenstein monster, green stitched skin, riveted metal plates, electrodes and copper coils on his neck and back, crackling blue electricity',
+    'a hulking semi-mechanical frankenstein monster in a thick dark wool greatcoat buttoned all the way up to the neck with a scarf, gloves on his hands, green stitched face, flat head, riveted metal plates on his arms, electrodes and copper coils on his neck, crackling blue electricity',
   ghost_train:
     'a creepy ghost of a train conductor, translucent pale blue spectral body fading into mist below the waist, skeletal gaunt face with hollow glowing eyes, tattered navy conductor uniform and peaked cap, raising both hands with a wide open eyeball in each palm',
   pokerface:
@@ -60,7 +63,7 @@ const CHARACTERS: Record<string, string> = {
   shrink_heads:
     'a tribal witch doctor wearing a headdress of shrunken heads, four small stitched shrunken heads floating around him, bone necklace, glowing eyes',
   swamp_siren:
-    'an eerie swamp siren creature fully clothed in a long tattered dress of rotting seaweed and moss, mossy green scaly skin, long hair full of reeds, singing with a wide open mouth, webbed hands, pale glowing eyes, rising from a murky puddle',
+    'a hunched eerie swamp hag siren wrapped from head to toe in a heavy hooded cloak of moss, reeds and rotting cloth, only her pale long-fingered webbed hands and a gaunt glowing-eyed face with a wide singing mouth visible under the hood, standing in a murky puddle',
   wisp: 'a will-o-wisp spirit made of candle smoke and pale flame, its body a cracked glass gas bottle, curling wisps of yellow gas',
   crystal_eye:
     'a floating crystal ball with a single giant bloodshot eye inside, two disembodied pale floating hands beside it, violet magical glow',
@@ -73,7 +76,7 @@ const CHARACTERS: Record<string, string> = {
   calaca:
     'a flaming skeleton woman in a red ruffled flamenco dress, wreath of orange marigold flowers on her skull, fire flickering from her bones, dia de los muertos',
   werewolf:
-    'a muscular man in a torn white shirt mid transformation into a werewolf, wild grey hair, glowing yellow eyes, claws growing from his fingers',
+    'a gaunt man wearing a buttoned flannel shirt and a long tattered coat, torso fully covered, mid transformation into a werewolf, wild grey hair, wolfish snout forming, glowing yellow eyes, claws growing from his fingers',
   midas_mummy:
     'a golden mummy wrapped in old bandages, glowing golden fingers, gold coins stuck in the bandages, one glowing eye peeking out',
   cog_cuckoo:
@@ -88,7 +91,7 @@ const CHARACTERS: Record<string, string> = {
   // forms and summons
   werewolf_wolf: 'a huge snarling grey werewolf, bristling fur, glowing yellow eyes, long claws, scraps of a torn shirt, drooling fangs',
   zombie_patchwork: 'a small patchwork zombie made of a hand, a foot and a head stitched together, rotting green skin, crude stitches',
-  zombie_brute: 'a huge hulking zombie brute stitched from many body parts, metal staples and bolts, rotting green skin, tiny head',
+  zombie_brute: 'a huge hulking zombie brute stitched from many body parts wearing a closed grey prisoner boiler suit zipped up to the neck, rotting green skin on face and hands, metal staples and bolts, tiny head',
   pokerface_happy:
     'a sinister music box clown springing out of a jack-in-the-box, wearing a grinning happy porcelain mask, golden yellow harlequin costume',
   pokerface_sad:
@@ -104,8 +107,8 @@ const CHARACTERS: Record<string, string> = {
   training_walker: 'a walking burlap straw training dummy on stick legs with a painted target on its chest and a stitched face',
 };
 
-/** The swamp siren keeps coming out as a character sheet: only the central figure is used. */
-const CROP_X: Record<string, [number, number]> = { swamp_siren: [0.2, 0.8] };
+/** Per-creature horizontal crop for renders with stray side figures (none needed at the moment). */
+const CROP_X: Record<string, [number, number]> = {};
 
 const PROPS: Record<string, string[]> = {
   laboratory: [
@@ -134,6 +137,8 @@ const BACKDROPS: Record<string, string> = {
     'wide establishing shot of an abandoned horror laboratory at night, rows of glowing green specimen vats with silhouettes of monsters, hanging cables, broken lamps, green mist on the floor, warm spotlight from above',
   worldcup:
     'wide shot of a creepy carnival arena at night on halloween, jack-o-lanterns, bunting, a spotlight on an empty stage, purple fog',
+  loading:
+    'a long dark laboratory corridor with flickering green lamps, dripping pipes and a tall monster silhouette at the far end in green fog',
 };
 
 const ITEMS: Record<string, string> = {
@@ -266,6 +271,19 @@ export function catalog(): AssetSpec[] {
   for (const [id, d] of Object.entries(CHESTS)) {
     out.push({ path: `ui/chest_${id}`, kind: 'objective', prompt: `a single game loot chest, ${d}, three-quarter view, ${STYLE}, ${ISOLATED}`, width: 832, height: 832, candidates: 1 });
   }
+  for (const [group, list] of Object.entries(ICON_GROUPS)) {
+    for (const [id, d] of Object.entries(list)) {
+      out.push({ path: `icons/${group}/${id}`, kind: 'icon', prompt: `a single game interface icon of ${d}, bold simple readable silhouette, ${STYLE}, ${ISOLATED}`, width: 768, height: 768, candidates: 1 });
+    }
+  }
+  out.push({
+    path: 'app/icon',
+    kind: 'appicon',
+    prompt: `square mobile game app icon, a grinning green slime skull with a glowing biohazard symbol on its forehead and dripping goo, centered, filling the frame, dark purple background with green glow, ${STYLE}`,
+    width: 1024,
+    height: 1024,
+    candidates: 2,
+  });
   for (const [id, d] of Object.entries(ITEMS)) {
     // icons end up at 256 px, so they render at 832 px (about half the time of a 1024 px image)
     out.push({ path: `items/${id}`, kind: 'item', prompt: `game inventory item icon of ${d}, single object, ${STYLE}, ${ISOLATED}`, width: 832, height: 832, candidates: 1 });
