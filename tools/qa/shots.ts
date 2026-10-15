@@ -16,18 +16,46 @@ const sizes = [
   { name: 'phone', width: 390, height: 844, mobile: true },
 ];
 
+/** Opens a page through the section navigation (group tab, then the page's sub-tab). */
+const SECTION: Record<string, string> = {
+  'Testing Chambers': 'Play',
+  Missions: 'Play',
+  Collection: 'Collection',
+  'Deck Builder': 'Collection',
+  Shop: 'Collection',
+  Online: 'Compete',
+  Tournaments: 'Compete',
+  'World Cup': 'Compete',
+  Ladder: 'Compete',
+  Teams: 'Compete',
+  Replays: 'Watch',
+  Spectate: 'Watch',
+  Meta: 'Watch',
+  History: 'Watch',
+};
 async function navTo(page: Page, label: string) {
-  const burger = page.locator('.menu-burger').first();
-  if (await burger.isVisible().catch(() => false)) await burger.click();
-  await page.getByRole('button', { name: label, exact: false }).first().click();
+  if (label === 'Settings') {
+    await page.locator('.settings-btn').click();
+    await page.waitForTimeout(500);
+    return;
+  }
+  const group = SECTION[label];
+  if (group) {
+    const tabbar = page.locator('.tabbar');
+    const bar = (await tabbar.isVisible().catch(() => false)) ? tabbar : page.locator('.groups');
+    await bar.getByRole('button', { name: group }).click();
+    await page.waitForTimeout(300);
+  }
+  const sub = page.locator('.subnav').getByRole('button', { name: label, exact: true });
+  if (await sub.isVisible().catch(() => false)) await sub.click();
   await page.waitForTimeout(500);
 }
 
 const screens: { id: string; run: (p: Page) => Promise<void> }[] = [
   { id: 'menu', run: async () => undefined },
   { id: 'collection', run: (p) => navTo(p, 'Collection') },
-  { id: 'deck', run: (p) => navTo(p, 'Deck') },
-  { id: 'chambers', run: (p) => navTo(p, 'Chambers') },
+  { id: 'deck', run: (p) => navTo(p, 'Deck Builder') },
+  { id: 'chambers', run: (p) => navTo(p, 'Testing Chambers') },
   { id: 'shop', run: (p) => navTo(p, 'Shop') },
   { id: 'missions', run: (p) => navTo(p, 'Missions') },
   { id: 'online', run: (p) => navTo(p, 'Online') },
@@ -52,7 +80,7 @@ const screens: { id: string; run: (p: Page) => Promise<void> }[] = [
   {
     id: 'chamber',
     run: async (p) => {
-      await navTo(p, 'Chambers');
+      await navTo(p, 'Testing Chambers');
       await p.locator('button.btn.tutorial:not([disabled])').first().click();
       await p.waitForTimeout(1500);
     },

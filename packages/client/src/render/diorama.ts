@@ -335,7 +335,7 @@ interface UnitView {
 }
 
 interface WallView {
-  spr: Sprite | Graphics;
+  spr: Sprite | Graphics | Container;
   look: string;
 }
 
@@ -616,15 +616,19 @@ export class DioramaRenderer {
         const path = props[Math.floor(hash(i * 13 + 1) * props.length)]!.replace(/\.(webp|png)$/, '');
         const tx = this.tex.get(path, () => null);
         if (!tx) continue;
+        const holder = new Container();
         const sp = new Sprite(tx);
-        sp.anchor.set(0.5, 0.92);
+        sp.anchor.set(0.5, 0.97);
         const hgt = S * (1.2 + hash(i * 17) * 0.8);
-        sp.scale.set(hgt / tx.height);
-        if (hash(i * 3) > 0.5) sp.scale.x *= -1;
-        sp.position.set(x, y);
+        const sc = Math.min(hgt / tx.height, (S * 1.8) / tx.width);
+        sp.scale.set(hash(i * 3) > 0.5 ? -sc : sc, sc);
         sp.tint = y < bh / 2 ? 0x6a6470 : 0x857d88;
-        sp.alpha = 0.92;
-        this.decor.addChild(sp);
+        const shadow = new Graphics().ellipse(0, -2, Math.min(S, (tx.width * sc) / 2 + S * 0.1), S * 0.32).fill({ color: 0x050307, alpha: 0.4 });
+        shadow.scale.y = TILT;
+        holder.addChild(shadow, sp);
+        holder.position.set(x, y);
+        holder.alpha = 0.92;
+        this.decor.addChild(holder);
       }
       this.decor.children.sort((a, c) => a.y - c.y);
     }
@@ -665,26 +669,35 @@ export class DioramaRenderer {
       if (!w || w.look !== look) {
         w?.spr.destroy();
         const { x, y } = worldCenter(t);
-        let spr: Sprite | Graphics;
+        let spr: Sprite | Graphics | Container;
         if (tx) {
+          // the prop stands on the tile: its base sits just in front of the hex centre, it fits the hex
+          // footprint, and a soft contact shadow grounds it
+          const holder = new Container();
+          const sc = Math.min((S * 1.8) / tx.height, (S * 1.62) / tx.width);
+          const shadow = new Graphics().ellipse(0, 0, Math.min(S * 0.85, (tx.width * sc) / 2 + S * 0.12), S * 0.36).fill({ color: 0x050307, alpha: 0.45 });
+          shadow.scale.y = TILT;
           const sp = new Sprite(tx);
-          sp.anchor.set(0.5, 0.86);
-          const hgt = S * 1.75;
-          const sc = Math.min(hgt / tx.height, (S * 2.0) / tx.width);
+          sp.anchor.set(0.5, 0.97);
           sp.scale.set(hash(t.c + t.r * 7) > 0.5 ? -sc : sc, sc);
-          spr = sp;
+          sp.y = S * 0.32 * TILT;
+          holder.addChild(shadow, sp);
+          spr = holder;
         } else {
           spr = this.fallbackWall(zone);
         }
         spr.position.set(x, y);
-        spr.zIndex = y;
+        spr.zIndex = y + S * 0.32 * TILT;
         this.entities.addChild(spr);
         w = { spr, look };
         this.walls.set(k, w);
       }
       const pct = t.wall.hp / t.wall.maxHp;
-      if (w.spr instanceof Sprite) w.spr.tint = pct > 0.66 ? 0xffffff : pct > 0.33 ? 0xc8bcb4 : 0x958780;
-      w.spr.rotation = pct > 0.33 ? 0 : 0.06;
+      const body = w.spr instanceof Container && !(w.spr instanceof Graphics) ? (w.spr.children[1] as Sprite | undefined) : undefined;
+      if (body) {
+        body.tint = pct > 0.66 ? 0xffffff : pct > 0.33 ? 0xc8bcb4 : 0x958780;
+        body.rotation = pct > 0.33 ? 0 : 0.06;
+      }
     }
     for (const [k, w] of this.walls) {
       if (!seen.has(k)) {

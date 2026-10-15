@@ -24,7 +24,7 @@ async function open(acc: Awaited<ReturnType<typeof account>>): Promise<Page> {
     localStorage.setItem('contaminant.server', a.server);
   }, acc);
   await page.goto(client, { waitUntil: 'networkidle' });
-  await page.locator('.navlink', { hasText: 'Online' }).click();
+  await page.locator('.groups').getByRole('button', { name: 'Compete' }).click();
   await page.waitForTimeout(800);
   return page;
 }

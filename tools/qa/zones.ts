@@ -21,7 +21,7 @@ for (const name of names) {
     localStorage.setItem('contaminant.profile.v1', JSON.stringify(p));
   });
   await page.goto(base, { waitUntil: 'networkidle' });
-  await page.locator('.navlink', { hasText: 'Testing Chambers' }).click();
+  await page.locator('.subnav').getByRole('button', { name: 'Testing Chambers' }).click();
   await page.waitForTimeout(500);
   const cell = page.locator('.grid-cards > div').filter({ has: page.locator(`.card[title^="${name}"]`) });
   await cell.locator('button.btn.tutorial').click();

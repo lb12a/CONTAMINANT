@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T09:08:17.079Z",
+ "generated": "2026-10-15T09:11:45.878Z",
  "files": {
   "backdrops/loading.webp": {
    "w": 1344,
@@ -57,6 +57,18 @@
    "w": 117,
    "h": 160
   },
+  "icons/status/depressed.webp": {
+   "w": 160,
+   "h": 160
+  },
+  "icons/status/echo.webp": {
+   "w": 139,
+   "h": 160
+  },
+  "icons/status/egg.webp": {
+   "w": 121,
+   "h": 160
+  },
   "icons/status/fear.webp": {
    "w": 135,
    "h": 160
@@ -67,6 +79,10 @@
   },
   "icons/status/infection.webp": {
    "w": 159,
+   "h": 160
+  },
+  "icons/status/leeched.webp": {
+   "w": 160,
    "h": 160
   },
   "icons/status/marked.webp": {
@@ -88,6 +104,10 @@
   "icons/status/slow.webp": {
    "w": 160,
    "h": 95
+  },
+  "icons/status/spotlight.webp": {
+   "w": 124,
+   "h": 160
   },
   "icons/status/vulnerable.webp": {
    "w": 160,
