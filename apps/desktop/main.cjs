@@ -158,7 +158,8 @@ app.whenReady().then(() => {
   listenLan();
   buildMenu();
   createWindow();
-  if (process.argv.includes('--host-server') || process.env.CONTAMINANT_HOST === '1') startServer();
+  // the desktop app hosts by default, so phones and other PCs on the same Wi-Fi find a game with one tap
+  if (!process.argv.includes('--no-server') && process.env.CONTAMINANT_HOST !== '0') startServer();
   app.on('activate', () => BrowserWindow.getAllWindows().length === 0 && createWindow());
 });
 

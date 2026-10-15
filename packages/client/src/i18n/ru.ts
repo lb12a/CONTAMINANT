@@ -1,5 +1,11 @@
 // Русский: interface strings (English text → Русский). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "You are online": "Ты в сети",
+  "Nobody is hosting a game right now.": "Сейчас никто не размещает игру.",
+  "This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.": "Этот ПК не смог запустить сервер. Разреши Contaminant в окне брандмауэра Windows и снова нажми «Играть онлайн».",
+  "Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.": "Открой Contaminant на ПК в той же сети Wi-Fi — это устройство подключится само. А пока можно играть с ботами.",
+  "Advanced: server connection": "Дополнительно: подключение к серверу",
+  "Normally not needed: Play online finds the server by itself.": "Обычно не нужно: «Играть онлайн» находит сервер сама.",
   "Show hint": "Показать подсказку",
   "Hide hint": "Скрыть подсказку",
   "Stop server": "Остановить сервер",

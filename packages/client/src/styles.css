@@ -3271,3 +3271,8 @@ a.btn {
     display: none;
   }
 }
+
+.online-hint {
+  padding: 10px 12px;
+  line-height: 1.4;
+}

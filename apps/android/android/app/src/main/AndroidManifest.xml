@@ -42,4 +42,8 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- challenges, friend requests and the daily reminder -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- hearing game servers on the same Wi-Fi (UDP broadcast) -->
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 </manifest>

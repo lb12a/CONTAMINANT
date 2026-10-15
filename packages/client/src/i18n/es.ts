@@ -1,5 +1,11 @@
 // Español: interface strings (English text → Español). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "You are online": "Estás en línea",
+  "Nobody is hosting a game right now.": "Ahora mismo nadie aloja una partida.",
+  "This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.": "Este PC no pudo iniciar su servidor. Permite Contaminant en el aviso del firewall de Windows y pulsa de nuevo Jugar en línea.",
+  "Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.": "Abre Contaminant en un PC de la misma Wi-Fi: este dispositivo se unirá solo. Mientras tanto puedes jugar contra bots.",
+  "Advanced: server connection": "Avanzado: conexión al servidor",
+  "Normally not needed: Play online finds the server by itself.": "Normalmente no hace falta: Jugar en línea encuentra el servidor solo.",
   "Show hint": "Mostrar pista",
   "Hide hint": "Ocultar pista",
   "Stop server": "Detener servidor",

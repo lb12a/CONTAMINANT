@@ -70,6 +70,8 @@ export interface Profile {
   /** the real collection, kept while the profile is in developer mode */
   normalCollection?: Collection;
   look?: Look;
+  /** the player pressed Disconnect: no automatic sign-in until Play online */
+  manualOffline?: boolean;
   /** daily login streak, free chest and play rewards (offline profile) */
   daily?: DailyState;
 }
@@ -204,7 +206,7 @@ export async function connectOnline(server: string, name: string, serverName?: s
   api = new Api(url, acc.token);
   localStorage.setItem('contaminant.server', url);
   const done = acc;
-  setProfile((p) => ({ ...p, online: done }));
+  setProfile((p) => ({ ...p, online: done, manualOffline: false }));
   socket?.close();
   socket = null;
   return done;
@@ -216,7 +218,7 @@ export async function connectOnline(server: string, name: string, serverName?: s
  */
 export async function connectAuto(name: string, onStatus: (s: string) => void): Promise<{ ok: true; server: FoundServer } | { ok: false; found: FoundServer[] }> {
   onStatus('Looking for servers…');
-  const found = await findServers();
+  const found = await findServers({ waitWifi: 2500 });
   let best: FoundServer | null = found[0] ?? null;
   if (!best && desktop) best = await hostOwnServer(onStatus);
   if (!best) return { ok: false, found };
@@ -225,11 +227,38 @@ export async function connectAuto(name: string, onStatus: (s: string) => void): 
   return { ok: true, server: best };
 }
 
+let autoBusy = false;
+
+/**
+ * Goes online without asking: keeps the account on a server that still answers, otherwise signs in on the
+ * best server it can find (deployed server, same Wi-Fi …). Never shows errors; returns whether it is online.
+ */
+export async function autoConnect(): Promise<boolean> {
+  if (autoBusy || getProfile().manualOffline) return !!getProfile().online;
+  autoBusy = true;
+  try {
+    const p = getProfile();
+    if (p.online && (await new Api(p.online.server, null).health())) return true;
+    const found = await findServers({ waitWifi: 2500 });
+    const best = found[0];
+    if (!best) return !!getProfile().online;
+    if (p.online && cleanUrl(p.online.server) === best.url) return true;
+    await connectOnline(best.url, p.online?.name ?? p.name, best.name);
+    return true;
+  } catch (e) {
+    console.warn('automatic sign-in failed', e);
+    return !!getProfile().online;
+  } finally {
+    autoBusy = false;
+  }
+}
+
 export function disconnectOnline(): void {
   socket?.close();
   socket = null;
   api = null;
-  setProfile((p) => ({ ...p, online: null }));
+  // stay offline until the player presses Play online again
+  setProfile((p) => ({ ...p, online: null, manualOffline: true }));
 }
 
 // ---------------------------------------------------------------- toasts

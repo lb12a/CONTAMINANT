@@ -1,5 +1,11 @@
 // Türkçe: interface strings (English text → Türkçe). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "You are online": "Çevrimiçisin",
+  "Nobody is hosting a game right now.": "Şu anda kimse oyun barındırmıyor.",
+  "This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.": "Bu bilgisayar oyun sunucusunu başlatamadı. Windows güvenlik duvarı uyarısında Contaminant’a izin ver ve tekrar Çevrimiçi oyna’ya bas.",
+  "Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.": "Aynı Wi-Fi’deki bir bilgisayarda Contaminant’ı aç: bu cihaz kendiliğinden katılır. Bu arada botlara karşı oynayabilirsin.",
+  "Advanced: server connection": "Gelişmiş: sunucu bağlantısı",
+  "Normally not needed: Play online finds the server by itself.": "Normalde gerekmez: Çevrimiçi oyna sunucuyu kendisi bulur.",
   "Show hint": "İpucunu göster",
   "Hide hint": "İpucunu gizle",
   "Stop server": "Sunucuyu durdur",

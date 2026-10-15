@@ -10,21 +10,31 @@ this order and signs in by itself:
 5. a server on this computer (`localhost:8787`)
 
 If nothing answers, the **desktop app starts its own server** and announces it to the network. Friends on the
-same Wi-Fi then press *Play online* too and land on the same server; phones and browsers that cannot hear
-the announcement get a **Search my Wi-Fi** button (and *Enter a server address* as a last resort).
+same Wi-Fi land on the same server by themselves; the Android app hears the announcement too. Browsers that
+cannot hear it find a **Search my Wi-Fi** button and an address field under Settings → Advanced.
 
 Once online, **Players nearby** lists everyone connected from the same network and **Challenge** sends them
 a friendly invitation. Friends are added with a 6-letter friend code (Compete → Friends).
 
 ## 1. Same Wi-Fi / LAN party (no setup)
 
-Install the desktop app on one PC and press *Play online*. Windows asks once whether the app may use the
+Install the desktop app on one PC and start it: it hosts a game server in the background and announces it
+on the Wi-Fi. Phones (Android app) and other PCs on the same network go online by themselves or with one
+tap on *Play online*. Windows asks once whether the app may use the
 network: allow it for private networks. That PC now hosts ladder, tournaments and the World Cup for
 everybody on the network. The data lives in `%APPDATA%/Contaminant/server`.
 
 Without the desktop app: `npm run start:server -- --lan` on any computer with Node 24.
 
-## 2. A public server (Docker)
+## 2. A public server in two clicks (Render)
+
+`render.yaml` describes the server for [Render](https://render.com): create a free account, choose
+**New → Blueprint**, pick this repository and confirm. After a few minutes Render shows the address
+(for example `https://contaminant.onrender.com`). Put it into `packages/client/public/server.json` and
+rebuild the apps: from then on **Play online** connects everyone from anywhere with one tap. The free plan
+sleeps after 15 idle minutes and forgets accounts on restarts; a paid plan with a disk keeps them.
+
+## 3. A public server on your own machine (Docker)
 
 On any Linux server or VPS with Docker:
 
@@ -53,7 +63,7 @@ with `docker compose cp contaminant:/data/contaminant.sqlite ./backup.sqlite`. U
 
 Without Docker: `npm ci && npm run build && node packages/server/dist/server.mjs --port 8787 --data ./data/contaminant.sqlite --static packages/client/dist`.
 
-## 3. The one config line: point every client at your server
+## 4. The one config line: point every client at your server
 
 The desktop installer, the Android app and copies of the web client hosted elsewhere read
 `packages/client/public/server.json`:

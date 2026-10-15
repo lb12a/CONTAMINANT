@@ -1,5 +1,11 @@
 // Deutsch: interface strings (English text → Deutsch). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "You are online": "Du bist online",
+  "Nobody is hosting a game right now.": "Gerade hostet niemand ein Spiel.",
+  "This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.": "Dieser PC konnte seinen Spielserver nicht starten. Erlaube Contaminant in der Windows-Firewall-Abfrage und drücke erneut auf Online spielen.",
+  "Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.": "Öffne Contaminant auf einem PC im selben WLAN: Dieses Gerät verbindet sich dann von selbst. Bis dahin kannst du gegen Bots spielen.",
+  "Advanced: server connection": "Erweitert: Serververbindung",
+  "Normally not needed: Play online finds the server by itself.": "Normalerweise nicht nötig: Online spielen findet den Server von selbst.",
   "Show hint": "Hinweis zeigen",
   "Hide hint": "Hinweis einklappen",
   "Tap a highlighted tile to move there.": "Tippe auf ein markiertes Feld, um dorthin zu gehen.",

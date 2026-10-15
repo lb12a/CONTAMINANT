@@ -1,0 +1,17 @@
+# One-click public Contaminant server on Render (https://render.com): New → Blueprint → pick this repository.
+# The free plan sleeps after 15 idle minutes (the first player then waits ~30 s) and keeps no data across
+# restarts; add a disk on a paid plan for permanent accounts and ladder. The server URL then goes into
+# packages/client/public/server.json so every app and the web version connect to it with one tap.
+services:
+  - type: web
+    name: contaminant
+    runtime: docker
+    plan: free
+    healthCheckPath: /api/health
+    envVars:
+      - key: NAME
+        value: Contaminant
+      - key: TRUST_PROXY
+        value: "1"
+      - key: ADMIN_TOKEN
+        generateValue: true

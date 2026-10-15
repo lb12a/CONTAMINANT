@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Toasts } from './ui/components.tsx';
 import { Icon } from './ui/Icon.tsx';
-import { useProfile, getSocket, toast } from './store.ts';
+import { autoConnect, useProfile, getSocket, toast } from './store.ts';
+import { canHearWifi } from './net/discovery.ts';
 import { OnlineMatch } from './game/controller.ts';
 import { t } from './i18n.ts';
 import { MenuScreen } from './screens/Menu.tsx';
@@ -67,6 +68,19 @@ export function App() {
   useEffect(() => {
     document.documentElement.lang = profile.settings.lang;
   }, [profile.settings.lang]);
+  // online in the background: at start, when the app comes back to the front and, while offline, now and then
+  useEffect(() => {
+    void autoConnect();
+    const onVisible = () => document.visibilityState === 'visible' && void autoConnect();
+    document.addEventListener('visibilitychange', onVisible);
+    const i = window.setInterval(() => {
+      if (canHearWifi() || localStorage.getItem('contaminant.server')) void autoConnect();
+    }, 30_000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.clearInterval(i);
+    };
+  }, []);
   // keep the socket alive while online: matches found by the queue, friend lobbies and tournament
   // calls all arrive here and open the match screen
   useEffect(() => {

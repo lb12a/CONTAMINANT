@@ -23,6 +23,38 @@ export interface DesktopBridge {
 
 export const desktop = (window as unknown as { contaminantDesktop?: DesktopBridge }).contaminantDesktop;
 
+interface NativeLan {
+  servers(): Promise<{ servers: { url: string; name: string; players: number }[] }>;
+}
+
+/** Android app: the native listener for servers announcing themselves on the Wi-Fi (LanDiscoveryPlugin). */
+function nativeLan(): NativeLan | null {
+  const cap = (window as unknown as { Capacitor?: { Plugins?: { LanDiscovery?: NativeLan } } }).Capacitor;
+  return cap?.Plugins?.LanDiscovery ?? null;
+}
+
+/** True when this device can hear servers on the Wi-Fi by itself (desktop app or Android app). */
+export function canHearWifi(): boolean {
+  return !!desktop?.lan || !!nativeLan();
+}
+
+/** Servers heard on the Wi-Fi; waits up to `waitMs` for the first beacon (they come every two seconds). */
+export async function heardOnWifi(waitMs = 0): Promise<{ url: string; name: string; players: number }[]> {
+  const get = async () => {
+    if (desktop?.lan) return desktop.lan().catch(() => []);
+    const n = nativeLan();
+    if (n) return (await n.servers().catch(() => ({ servers: [] }))).servers;
+    return [];
+  };
+  let list = await get();
+  const t0 = Date.now();
+  while (!list.length && Date.now() - t0 < waitMs) {
+    await new Promise((r) => setTimeout(r, 400));
+    list = await get();
+  }
+  return list;
+}
+
 const RANK: Record<FoundServer['source'], number> = { config: 0, page: 1, saved: 2, lan: 3, own: 4, local: 5, scan: 6 };
 
 /** "192.168.1.20" → "http://192.168.1.20:8787"; full addresses stay as they are. */
@@ -66,18 +98,16 @@ function pageOrigin(): string | null {
   return location.origin;
 }
 
-export async function findServers(): Promise<FoundServer[]> {
+export async function findServers(opts: { waitWifi?: number } = {}): Promise<FoundServer[]> {
   const tasks: Promise<FoundServer | null>[] = [];
   for (const u of await configured()) tasks.push(probe(u, 'config', 4000));
   const page = pageOrigin();
   if (page) tasks.push(probe(page, 'page'));
   const saved = localStorage.getItem('contaminant.server');
   if (saved) tasks.push(probe(saved, 'saved'));
-  if (desktop?.lan) {
-    const heard = await desktop.lan().catch(() => []);
-    for (const s of heard) tasks.push(probe(s.url, 'lan'));
-  }
-  tasks.push(probe('http://localhost:8787', 'local', 1200));
+  for (const s of await heardOnWifi(opts.waitWifi ?? 0)) tasks.push(probe(s.url, 'lan'));
+  // only computers can run a server themselves
+  if (!nativeLan()) tasks.push(probe('http://localhost:8787', 'local', 1200));
   const found = (await Promise.all(tasks)).filter((x): x is FoundServer => !!x);
   const byUrl = new Map<string, FoundServer>();
   for (const f of found.sort((a, b) => RANK[a.source] - RANK[b.source])) {

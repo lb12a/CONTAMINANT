@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import type { QueueKind, ServerMsg } from '@contaminant/engine';
 import type { Nav } from '../App.tsx';
-import { activeDeck, connectAuto, connectOnline, disconnectOnline, getApi, getSocket, toast, useProfile } from '../store.ts';
-import { cleanUrl, desktop, probe, scanWifi, type FoundServer } from '../net/discovery.ts';
+import { activeDeck, connectAuto, disconnectOnline, getApi, getSocket, setProfile, toast, useProfile } from '../store.ts';
+import { desktop } from '../net/discovery.ts';
 import { t } from '../i18n.ts';
 import { Icon } from '../ui/Icon.tsx';
 import { PeerLink, startP2P, type P2PMatch, type PeerInfo } from '../game/p2p.ts';
@@ -15,68 +15,31 @@ interface Me {
   queue: QueueKind | null;
 }
 
-const SOURCE_LABEL: Record<FoundServer['source'], string> = {
-  config: 'Official server',
-  page: 'This website',
-  saved: 'Last played',
-  lan: 'Same Wi-Fi',
-  local: 'This PC',
-  own: 'This PC',
-  scan: 'Same Wi-Fi',
-};
 
-/** One button to go online; everything else (finding or hosting a server, signing in) happens by itself. */
+/**
+ * One button to go online. Finding a server, signing in or (desktop app) hosting one all happen by
+ * themselves; there are no addresses or server lists here (those live in Settings → Advanced).
+ */
 export function OnlineConnect() {
   const p = useProfile();
   const [name, setName] = useState(p.name === 'Subject' ? '' : p.name);
   const [busy, setBusy] = useState(false);
   const [status, setStatus] = useState('');
-  const [found, setFound] = useState<FoundServer[] | null>(null);
-  const [scan, setScan] = useState<{ done: number; total: number } | null>(null);
-  const [addr, setAddr] = useState('');
-
-  const join = async (s: FoundServer) => {
-    setBusy(true);
-    setStatus(`${t('Connecting to')} ${s.name}…`);
-    try {
-      await connectOnline(s.url, name || p.name, s.name);
-      toast(`${t('Online')}: ${s.name}`, 'good');
-    } catch (e) {
-      toast((e as Error).message, 'bad');
-      setStatus('');
-    }
-    setBusy(false);
-  };
+  const [failed, setFailed] = useState(false);
 
   const go = async () => {
     setBusy(true);
-    setFound(null);
+    setFailed(false);
     try {
-      const r = await connectAuto(name || p.name, (m) => setStatus(t(m)));
-      if (r.ok) toast(`${t('Online')}: ${r.server.name}`, 'good');
-      else {
-        setFound(r.found);
-        setStatus(t('No server found yet.'));
-      }
-    } catch (e) {
-      toast((e as Error).message, 'bad');
-      setStatus('');
+      if (name.trim() && name.trim() !== p.name) setProfile((x) => ({ ...x, name: name.trim().slice(0, 20) }));
+      const r = await connectAuto(name.trim() || p.name, (m) => setStatus(t(m)));
+      if (r.ok) toast(t('You are online'), 'good');
+      else setFailed(true);
+    } catch {
+      setFailed(true);
     }
+    setStatus('');
     setBusy(false);
-  };
-
-  const wifi = async () => {
-    setScan({ done: 0, total: 1 });
-    const list = await scanWifi((done, total) => setScan({ done, total }));
-    setScan(null);
-    setFound((f) => [...(f ?? []), ...list.filter((x) => !(f ?? []).some((y) => y.url === x.url))]);
-    if (!list.length) toast(t('No game found on this Wi-Fi'), 'bad');
-  };
-
-  const manual = async () => {
-    const s = await probe(cleanUrl(addr), 'saved', 4000);
-    if (!s) return toast(t('No Contaminant server answers at that address'), 'bad');
-    await join(s);
   };
 
   return (
@@ -88,37 +51,14 @@ export function OnlineConnect() {
       <button className="btn primary big" disabled={busy} onClick={() => void go()}>
         <Icon name="ui/online" size={24} /> {busy ? status || t('Connecting…') : t('Play online')}
       </button>
-      {!busy && status && (
-        <span className="small muted" aria-live="polite">
-          {status}
-        </span>
-      )}
-      {found && (
-        <div className="col" style={{ gap: 6 }}>
-          {found.map((s) => (
-            <button key={s.url} className="server-row" onClick={() => void join(s)}>
-              <b>{s.name}</b>
-              <span className="small muted">
-                {t(SOURCE_LABEL[s.source])} · {s.players} {t('online')} · {s.ping} ms
-              </span>
-            </button>
-          ))}
-          {location.protocol !== 'https:' && (
-            <button className="btn secondary small" disabled={!!scan} onClick={() => void wifi()}>
-              {scan ? `${t('Searching the Wi-Fi…')} ${Math.round((scan.done / scan.total) * 100)}%` : t('Search my Wi-Fi')}
-            </button>
-          )}
+      {failed && (
+        <div className="paper small online-hint" role="status">
+          <b>{t('Nobody is hosting a game right now.')}</b>{' '}
+          {desktop
+            ? t('This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.')
+            : t('Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.')}
         </div>
       )}
-      <details className="small">
-        <summary>{t('Enter a server address')}</summary>
-        <div className="row wrap" style={{ marginTop: 6 }}>
-          <input type="text" value={addr} onChange={(e) => setAddr(e.target.value)} placeholder={t('192.168.1.20 / https://…')} style={{ flex: '1 1 200px' }} />
-          <button className="btn secondary small" disabled={!addr.trim() || busy} onClick={() => void manual()}>
-            {t('Connect')}
-          </button>
-        </div>
-      </details>
     </div>
   );
 }

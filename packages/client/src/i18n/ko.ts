@@ -1,5 +1,11 @@
 // 한국어: interface strings (English text → 한국어). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "You are online": "온라인입니다",
+  "Nobody is hosting a game right now.": "지금은 게임을 호스팅하는 사람이 없습니다.",
+  "This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.": "이 PC에서 게임 서버를 시작하지 못했습니다. Windows 방화벽 창에서 Contaminant를 허용하고 다시 온라인으로 플레이를 누르세요.",
+  "Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.": "같은 Wi-Fi의 PC에서 Contaminant를 여세요. 이 기기가 알아서 참가합니다. 그동안 봇과 플레이할 수 있습니다.",
+  "Advanced: server connection": "고급: 서버 연결",
+  "Normally not needed: Play online finds the server by itself.": "보통은 필요 없습니다. 온라인으로 플레이가 서버를 알아서 찾습니다.",
   "Show hint": "힌트 보기",
   "Hide hint": "힌트 숨기기",
   "Stop server": "서버 중지",

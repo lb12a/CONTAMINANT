@@ -1,5 +1,11 @@
 // 简体中文: interface strings (English text → 简体中文). Missing entries fall back to English.
 const dict: Record<string, string> = {
+  "You are online": "你已上线",
+  "Nobody is hosting a game right now.": "现在没有人在主持游戏。",
+  "This PC could not start its game server. Allow Contaminant in the Windows firewall prompt and press Play online again.": "这台电脑未能启动游戏服务器。请在 Windows 防火墙提示中允许 Contaminant，然后再次点击“在线游玩”。",
+  "Open Contaminant on a PC in the same Wi-Fi: this device joins it by itself. You can keep playing against bots meanwhile.": "在同一 Wi-Fi 的电脑上打开 Contaminant，本设备会自动加入。在此期间你可以和机器人对战。",
+  "Advanced: server connection": "高级：服务器连接",
+  "Normally not needed: Play online finds the server by itself.": "通常不需要：“在线游玩”会自动找到服务器。",
   "Show hint": "显示提示",
   "Hide hint": "隐藏提示",
   "Stop server": "停止服务器",
