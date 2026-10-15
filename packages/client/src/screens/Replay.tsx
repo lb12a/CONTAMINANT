@@ -105,7 +105,7 @@ export function ReplayScreen({ nav, match }: { nav: Nav; match?: string }) {
         <h1>{t('Replays')}</h1>
         {!list.length && <span className="muted">{t('No recorded matches yet.')}</span>}
         {list.map((m) => (
-          <button key={m.id} className="btn secondary small" style={{ justifyContent: 'flex-start' }} onClick={() => nav({ name: 'replay', match: m.id })}>
+          <button key={m.id} className="btn secondary small replay-item" style={{ justifyContent: 'flex-start' }} onClick={() => nav({ name: 'replay', match: m.id })}>
             <Icon name="ui/play" size={16} /> {m.p0_name} {m.vp0}:{m.vp1} {m.p1_name} · {m.kind} {m.ended ? `· ${new Date(m.ended).toLocaleDateString()}` : ''}
           </button>
         ))}

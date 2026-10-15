@@ -70,7 +70,7 @@ const screens: { id: string; run: (p: Page) => Promise<void> }[] = [
     id: 'replay',
     run: async (p) => {
       await navTo(p, 'Replays');
-      await p.getByRole('button', { name: /▶/ }).first().click();
+      await p.locator('button.replay-item').first().click();
       await p.waitForTimeout(2500);
       await p.getByRole('button', { name: 'Next round' }).click();
       await p.getByRole('button', { name: 'Next round' }).click();
