@@ -98,7 +98,7 @@ function defaultProfile(): Profile {
     decks: EXAMPLE_DECKS.map((d) => ({ id: d.id, name: d.name, characters: d.characters.map((defId) => ({ defId, level: 1 })), items: d.items })),
     activeDeck: deck.id,
     history: [],
-    settings: { lang: detectLanguage(), planningSeconds: 30, animSpeed: 1, volume: 0.6, showCoords: false, difficulty: 'normal', mode: 'contamination' },
+    settings: { lang: detectLanguage(), planningSeconds: 45, animSpeed: 1, volume: 0.6, showCoords: false, difficulty: 'normal', mode: 'contamination' },
     online: null,
     onboarded: false,
   };

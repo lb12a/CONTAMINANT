@@ -255,3 +255,33 @@ test('team management: invite-only with code, officers, kick, captaincy hand-ove
   assert.equal(handed.team.captain, a.player.id);
   s.close();
 });
+
+test('the planning clock starts only after both players have watched the round', async () => {
+  const { s, reg, open } = await setup();
+  const A = await reg('Watcher A');
+  const B = await reg('Watcher B');
+  const wa = await open(A.token);
+  const wb = await open(B.token);
+  wa.send({ t: 'invite', to: B.player.id });
+  const inv = (await wb.wait('invite')) as Extract<ServerMsg, { t: 'invite' }>;
+  wb.send({ t: 'friend_join', code: inv.code });
+  const start = (await wa.wait('match_start')) as Extract<ServerMsg, { t: 'match_start' }>;
+  await wb.wait('match_start');
+  assert.ok(start.deadline > 0, 'the first round has nothing to watch: the clock runs at once');
+  const match = start.info.match;
+  const empty = (p: number) => ({ player: p, commands: [], rest: [] });
+  wa.send({ t: 'plan', match, plan: empty(0), final: true, round: 1 });
+  wb.send({ t: 'plan', match, plan: empty(1), final: true, round: 1 });
+  const ra = (await wa.wait('round')) as Extract<ServerMsg, { t: 'round' }>;
+  await wb.wait('round');
+  assert.equal(ra.deadline, 0, 'no countdown while the round animation plays');
+  wa.send({ t: 'played', match, round: ra.view.round });
+  wb.send({ t: 'played', match, round: ra.view.round });
+  const d = (await wa.wait('deadline')) as Extract<ServerMsg, { t: 'deadline' }>;
+  assert.ok(d.deadline - Date.now() > 40_000, 'the full 45 s start after watching');
+  wa.send({ t: 'surrender', match });
+  await wa.wait('match_end');
+  wa.ws.close();
+  wb.ws.close();
+  s.close();
+});

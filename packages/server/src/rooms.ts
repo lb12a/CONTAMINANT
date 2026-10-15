@@ -70,6 +70,8 @@ export interface RoomOptions {
   tournamentMatchId?: string;
   featured?: boolean;
   spectatorDelayRounds?: number;
+  /** longest wait for the players to finish watching a round before the planning clock starts anyway */
+  playbackCapMs?: number;
   /** grace period after the deadline for network latency */
   graceMs?: number;
   maxMissedRounds?: number;
@@ -135,7 +137,7 @@ export class MatchRoom {
     this.host = host;
     this.id = `r${Date.now().toString(36)}${(++roomCounter).toString(36)}`;
     this.kind = opts.kind;
-    this.opts = { planningSeconds: 30, spectatorDelayRounds: opts.featured ? 2 : 1, graceMs: 1500, maxMissedRounds: 3, ...opts };
+    this.opts = { planningSeconds: 45, playbackCapMs: 60_000, spectatorDelayRounds: opts.featured ? 2 : 1, graceMs: 1500, maxMissedRounds: 3, ...opts };
     this.createdAt = host.clock.now();
     const seed = opts.seed ?? (Math.floor(Math.random() * 2 ** 31) ^ host.clock.now());
     const friendly = opts.friendly ?? opts.kind === 'friendly';
@@ -183,9 +185,12 @@ export class MatchRoom {
     }
   }
 
-  private beginPlanning(first = false): void {
-    const now = this.host.clock.now();
-    this.deadline = now + this.opts.planningSeconds! * 1000;
+  /** seats still watching the last round's animation (the planning clock waits for them) */
+  private watching = new Set<number>();
+  private playbackTimer: unknown = null;
+
+  private beginPlanning(first = false, afterRound = false): void {
+    this.deadline = 0;
     for (const s of this.seats) {
       s.plan = null;
       s.ready = false;
@@ -195,17 +200,34 @@ export class MatchRoom {
         s.ready = true;
       }
     }
-    for (const s of this.seats) {
-      const view = viewFor(this.state, s.index);
-      if (first) this.send(s, { t: 'match_start', info: this.info(s.index), view, deadline: this.deadline });
-    }
     this.host.clock.clearTimeout(this.timer);
-    this.timer = this.host.clock.setTimeout(() => this.resolve(), this.opts.planningSeconds! * 1000 + this.opts.graceMs!);
     this.host.clock.clearTimeout(this.watchTimer);
-    if (this.opts.planningSeconds! > 10) {
-      this.watchTimer = this.host.clock.setTimeout(() => this.revealWatches(), (this.opts.planningSeconds! - 10) * 1000);
-    }
+    this.host.clock.clearTimeout(this.playbackTimer);
+    // after a round the clock waits until every connected human has watched it (capped)
+    this.watching = new Set(afterRound ? this.seats.filter((s) => !s.bot && this.host.connsOf(s.playerId).length > 0).map((s) => s.index) : []);
+    if (this.watching.size) this.playbackTimer = this.host.clock.setTimeout(() => this.startClock(true), this.opts.playbackCapMs!);
+    else this.startClock(false);
+    if (first) for (const s of this.seats) this.send(s, { t: 'match_start', info: this.info(s.index), view: viewFor(this.state, s.index), deadline: this.deadline });
     this.maybeResolveEarly();
+  }
+
+  /** Starts the planning clock (now everybody plans with the full time). */
+  private startClock(broadcast: boolean): void {
+    if (this.deadline || this.ended) return;
+    this.host.clock.clearTimeout(this.playbackTimer);
+    this.watching.clear();
+    this.deadline = this.host.clock.now() + this.opts.planningSeconds! * 1000;
+    this.timer = this.host.clock.setTimeout(() => this.resolve(), this.opts.planningSeconds! * 1000 + this.opts.graceMs!);
+    if (this.opts.planningSeconds! > 10) this.watchTimer = this.host.clock.setTimeout(() => this.revealWatches(), (this.opts.planningSeconds! - 10) * 1000);
+    if (broadcast) for (const s of this.seats) this.send(s, { t: 'deadline', match: this.id, deadline: this.deadline });
+  }
+
+  /** A client finished watching the round's animation. */
+  playbackDone(playerId: string, round: number): void {
+    const seat = this.seats.find((s) => s.playerId === playerId);
+    if (!seat || round !== this.state.round || !this.watching.has(seat.index)) return;
+    this.watching.delete(seat.index);
+    if (!this.watching.size) this.startClock(true);
   }
 
   /** Scarecrow – Watchful Eye: in the last 10 s the watcher sees the watched unit's full plan (Lab Assistant immune). */
@@ -227,7 +249,7 @@ export class MatchRoom {
     if (!seat) return { ok: false, error: 'not a player in this match' };
     if (this.ended || this.state.phase !== 'planning') return { ok: false, error: 'not in planning phase' };
     if (opts.round !== undefined && opts.round !== this.state.round) return { ok: false, error: 'stale plan for an old round' };
-    if (this.host.clock.now() > this.deadline + this.opts.graceMs!) return { ok: false, error: 'planning time is over' };
+    if (this.deadline && this.host.clock.now() > this.deadline + this.opts.graceMs!) return { ok: false, error: 'planning time is over' };
     if (JSON.stringify(plan).length > 64_000) return { ok: false, error: 'plan too large' };
     const normalized: Plan = { player: seat.index, commands: Array.isArray(plan.commands) ? plan.commands.slice(0, 40) : [], rest: Array.isArray(plan.rest) ? plan.rest.slice(0, 10) : [], speedShift: plan.speedShift, watch: plan.watch };
     const check = validatePlan(this.state, normalized);
@@ -241,7 +263,7 @@ export class MatchRoom {
     const other = this.seats[seat.index === 0 ? 1 : 0];
     if (seat.ready) this.send(other, { t: 'opponent_ready', match: this.id });
     // a late plan after the reveal: update the watcher immediately
-    if (this.host.clock.now() >= this.deadline - 10_000) this.revealWatches();
+    if (this.deadline && this.host.clock.now() >= this.deadline - 10_000) this.revealWatches();
     this.maybeResolveEarly();
     return { ok: true };
   }
@@ -324,7 +346,7 @@ export class MatchRoom {
       return;
     }
     if (this.allBots) return;
-    this.beginPlanning();
+    this.beginPlanning(false, true);
     for (const s of this.seats) this.send(s, { t: 'round', match: this.id, view: viewFor(this.state, s.index), events: eventsFor(roundEvents, s.index), deadline: this.deadline });
   }
 

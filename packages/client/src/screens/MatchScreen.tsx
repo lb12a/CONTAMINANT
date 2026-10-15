@@ -258,6 +258,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       setPlay({});
       setDisplay(snap.view);
       setPlaying(false);
+      // the planning clock starts only now, so watching the round costs no planning time
+      ctrl.played?.();
       setBanner(snap.ended ? null : `${t('Round')} ${snap.view.round} — ${t('Planning')}`);
       if (snap.view.round % 5 === 0 && !snap.ended) setTimeout(() => setBanner(t('Full Moon')), 1700);
     })();
@@ -469,7 +471,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
               {view.settings.mode[0]!.toUpperCase() + view.settings.mode.slice(1)} · first to {target === Infinity ? '∞' : target}
             </span>
             <div className="grow">
-              <Fuse deadline={playing ? 0 : snap.deadline} total={snap.info.planningSeconds || 30} />
+              <Fuse deadline={playing ? 0 : snap.deadline} total={snap.info.planningSeconds || 45} />
             </div>
             <span className="num">{snap.deadline && !playing ? `${tsecs}s` : playing ? '…' : '∞'}</span>
             {snap.opponentReady && !playing && <span className="chip buff" title={t('Your opponent has sealed their plan')}>{t('rival sealed')}</span>}

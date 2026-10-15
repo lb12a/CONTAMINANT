@@ -251,7 +251,7 @@ export interface CreateMatchOptions {
 
 export const DEFAULT_SETTINGS: MatchSettings = {
   mode: 'contamination',
-  planningSeconds: 30,
+  planningSeconds: 45,
   friendly: false,
   zone: 'laboratory',
   maxRounds: 40,

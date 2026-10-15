@@ -57,6 +57,8 @@ export interface MatchController {
   op(op: PlanningOp): { ok: boolean; error?: string } | Promise<{ ok: boolean; error?: string }>;
   surrender(): void;
   dispose(): void;
+  /** the round's animation has finished: start the planning clock */
+  played?(): void;
   readonly kind: 'local' | 'online' | 'tutorial' | 'p2p';
 }
 
@@ -151,12 +153,21 @@ export class LocalMatch extends Base {
       view: viewFor(this.state, 0),
       prevView: prev,
       roundEvents: events,
-      deadline: over ? 0 : this.deadline(),
+      deadline: 0,
       ack: null,
       roundSerial: this.serial,
       ended: over ? { winner: this.state.winner, reason: this.state.winReason } : null,
     });
-    if (!over) this.arm();
+    this.waitingForPlayback = !over;
+  }
+
+  private waitingForPlayback = false;
+
+  played(): void {
+    if (!this.waitingForPlayback || this.state.phase !== 'planning') return;
+    this.waitingForPlayback = false;
+    this.emit({ deadline: this.deadline() });
+    this.arm();
   }
 
   override dispose(): void {
@@ -227,6 +238,9 @@ export class OnlineMatch extends Base {
       case 'plan_ack':
         this.emit({ ack: { issues: m.issues, cost: m.cost } });
         break;
+      case 'deadline':
+        this.emit({ deadline: this.socket.localTime(m.deadline) });
+        break;
       case 'opponent_ready':
         this.emit({ opponentReady: true });
         break;
@@ -243,6 +257,10 @@ export class OnlineMatch extends Base {
 
   submit(plan: Plan, final: boolean): void {
     this.socket.send({ t: 'plan', match: this.snap.info.match, plan, final, round: this.snap.view.round });
+  }
+
+  played(): void {
+    this.socket.send({ t: 'played', match: this.snap.info.match, round: this.snap.view.round });
   }
 
   op(op: PlanningOp): Promise<{ ok: boolean; error?: string }> {

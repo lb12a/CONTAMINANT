@@ -22,7 +22,7 @@ const server = new GameServer({
   dataFile: arg('data', resolve(here, '../data/contaminant.sqlite'))!,
   staticDir: arg('static', resolve(here, '../../client/dist')),
   adminToken: arg('admin-token', 'dev-admin')!,
-  planningSeconds: Number(arg('planning-seconds', '30')),
+  planningSeconds: Number(arg('planning-seconds', '45')),
   name,
   trustProxy: flag('trust-proxy'),
   log: (m) => console.log(new Date().toISOString(), m),

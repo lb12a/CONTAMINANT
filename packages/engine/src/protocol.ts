@@ -34,6 +34,8 @@ export type ClientMsg =
   | { t: 'party_join'; code: string }
   | { t: 'rtc_signal'; to: string; data: unknown }
   | { t: 'resume'; match: string }
+  /** the round's animation has finished on this client: its planning clock may start */
+  | { t: 'played'; match: string; round: number }
   /** challenge a friend or a player nearby to a friendly */
   | { t: 'invite'; to: string; mode?: string; planningSeconds?: number }
   | { t: 'invite_decline'; code: string };
@@ -66,6 +68,8 @@ export type ServerMsg =
   | { t: 'party'; code: string; members: string[] }
   | { t: 'tournament'; id: string; event: string; data?: unknown }
   | { t: 'rtc_signal'; from: string; data: unknown }
+  /** the planning clock started (everyone has watched the round) */
+  | { t: 'deadline'; match: string; deadline: number }
   | { t: 'invite'; from: string; name: string; code: string; mode: string }
   | { t: 'invite_sent'; to: string; name: string; code: string }
   | { t: 'invite_declined'; name: string; code: string }

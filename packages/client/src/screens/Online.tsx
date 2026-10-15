@@ -85,7 +85,7 @@ export function OnlineScreen({ nav }: { nav: Nav }) {
   const [code, setCode] = useState('');
   const [lobby, setLobby] = useState<string | null>(null);
   const [party, setParty] = useState<{ code: string; members: string[] } | null>(null);
-  const [planSecs, setPlanSecs] = useState(30);
+  const [planSecs, setPlanSecs] = useState(45);
 
   const refresh = () => {
     if (!p.online) return;

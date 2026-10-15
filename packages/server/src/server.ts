@@ -68,7 +68,7 @@ export const DEFAULT_CONFIG: ServerConfig = {
   dataFile: './data/contaminant.sqlite',
   port: 8787,
   adminToken: process.env.ADMIN_TOKEN ?? 'dev-admin',
-  planningSeconds: 30,
+  planningSeconds: 45,
   botFillSeconds: 20,
   rankedBotFill: false,
   fillTournamentsWithBots: true,
@@ -283,7 +283,7 @@ export class GameServer {
           { playerId: A.id, name: A.name, deck: deckFor(A), bot: { difficulty: 'normal' }, mmr: A.mmr },
           { playerId: B.id === A.id ? bots[(i + 1) % bots.length]!.id : B.id, name: B.name, deck: deckFor(B), bot: { difficulty: 'normal' }, mmr: B.mmr },
         ],
-        { kind: 'bot', mode: (opts.mode as never) ?? 'contamination', planningSeconds: 30 },
+        { kind: 'bot', mode: (opts.mode as never) ?? 'contamination', planningSeconds: 45 },
       );
       room.start();
       this.rooms.rooms.delete(room.id);
@@ -795,9 +795,11 @@ export class GameServer {
         return this.rooms.get(msg.match)?.surrender(p.id);
       case 'resume':
         return this.rooms.get(msg.match)?.resume(p.id);
+      case 'played':
+        return this.rooms.get(msg.match)?.playbackDone(p.id, Number(msg.round));
       case 'friend_create': {
         const code = randomBytes(3).toString('hex').toUpperCase();
-        this.lobbies.set(code, { code, host: p.id, deckId: msg.deckId, planningSeconds: Math.max(15, Math.min(90, Math.round(msg.planningSeconds ?? 30))), mode: msg.mode ?? 'contamination', created: this.clock.now() });
+        this.lobbies.set(code, { code, host: p.id, deckId: msg.deckId, planningSeconds: Math.max(15, Math.min(90, Math.round(msg.planningSeconds ?? 45))), mode: msg.mode ?? 'contamination', created: this.clock.now() });
         return conn.send({ t: 'friend_code', code });
       }
       case 'friend_join': {
@@ -840,7 +842,7 @@ export class GameServer {
         for (const [k, l] of this.lobbies) if (l.host === p.id && l.invited) this.lobbies.delete(k);
         const code = randomBytes(3).toString('hex').toUpperCase();
         const mode = msg.mode ?? 'contamination';
-        this.lobbies.set(code, { code, host: p.id, planningSeconds: Math.max(15, Math.min(90, Math.round(msg.planningSeconds ?? 30))), mode, created: this.clock.now(), invited: other.id });
+        this.lobbies.set(code, { code, host: p.id, planningSeconds: Math.max(15, Math.min(90, Math.round(msg.planningSeconds ?? 45))), mode, created: this.clock.now(), invited: other.id });
         this.notify(other.id, { t: 'invite', from: p.id, name: p.name, code, mode });
         return conn.send({ t: 'invite_sent', to: other.id, name: other.name, code });
       }

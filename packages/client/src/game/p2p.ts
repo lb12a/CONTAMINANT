@@ -293,13 +293,22 @@ export class P2PMatch implements MatchController {
       view: viewFor(s, this.me),
       prevView: prev,
       roundEvents: eventsFor(s.events.slice(before), this.me),
-      deadline: over ? 0 : this.deadline(),
+      deadline: 0,
       opponentReady: false,
       ack: null,
       roundSerial: this.serial,
       ended: over ? { winner: s.winner, reason: s.winReason } : null,
     });
-    if (!over) this.arm();
+    this.waitingForPlayback = !over;
+  }
+
+  private waitingForPlayback = false;
+
+  played(): void {
+    if (!this.waitingForPlayback) return;
+    this.waitingForPlayback = false;
+    this.emit({ deadline: this.deadline() });
+    this.arm();
   }
 
   /** Debug/QA: the latest shared state hash. */
