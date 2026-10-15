@@ -497,13 +497,38 @@ export class DioramaRenderer {
   private orient(aw: number, ah: number): boolean {
     const s = this.state!;
     const b = s.settings.bounds;
-    const portrait = aw < ah * 0.92;
+    // the orientation follows the screen, not the free area, so opening a sheet never flips the board
+    const W = this.app.screen.width;
+    const H = this.app.screen.height;
+    const portrait = W < H * 0.85 || aw < ah * 0.92;
     const mirror = s.players[this.me]?.side === 'right';
     const BW = SQ3 * S * (b.cols + 0.5);
     const BH = S * (1.5 * b.rows + 0.5);
     const changed = portrait !== VT.portrait || mirror !== VT.mirror || BW !== VT.BW || BH !== VT.BH;
     Object.assign(VT, { portrait, mirror, BW, BH });
     return changed;
+  }
+
+  /** last layout numbers, for zooming around a point */
+  private lay = { left: 0, top: 0, aw: 1, ah: 1, bw: 1, bh: 1, padTop: 0, padBottom: 0, fit: 1 };
+
+  /** Zooms so the board point under (px, py) stays under the finger / cursor. */
+  zoomAt(px: number, py: number, zoom: number): void {
+    const z = Math.max(1, Math.min(3.2, zoom));
+    const { left, top, aw, ah, bw, bh, padTop, padBottom, fit } = this.lay;
+    const s0 = this.scale || fit * this.cam.zoom;
+    const wx = (px - this.world.x) / s0;
+    const wy = (py - this.world.y) / s0;
+    const s1 = fit * z;
+    const x1 = left + (aw - bw * s1) / 2;
+    const y1 = top + (ah - (bh + padTop + padBottom) * s1) / 2 + padTop * s1;
+    this.cam.zoom = z;
+    this.cam.panX = px - wx * s1 - x1;
+    this.cam.panY = py - wy * s1 - y1;
+    if (z === 1) {
+      this.cam.panX = 0;
+      this.cam.panY = 0;
+    }
   }
 
   private layout(): void {
@@ -518,7 +543,13 @@ export class DioramaRenderer {
     const padBottom = S * 0.35;
     // small boards (testing chambers) are not blown up beyond a comfortable tile size
     const fit = Math.min(aw / (bw + S * 0.6), ah / (bh + padTop + padBottom), 1.05);
+    this.lay = { left, top, aw, ah, bw, bh, padTop, padBottom, fit };
     this.scale = fit * this.cam.zoom;
+    // keep the board in view: it may be dragged until its edge reaches the middle of the free area
+    const spanX = Math.max(0, (bw * this.scale - aw) / 2) + aw * 0.25 * (this.cam.zoom > 1 ? 1 : 0);
+    const spanY = Math.max(0, ((bh + padTop + padBottom) * this.scale - ah) / 2) + ah * 0.25 * (this.cam.zoom > 1 ? 1 : 0);
+    this.cam.panX = Math.max(-spanX, Math.min(spanX, this.cam.panX));
+    this.cam.panY = Math.max(-spanY, Math.min(spanY, this.cam.panY));
     this.world.scale.set(this.scale);
     this.world.x = left + (aw - bw * this.scale) / 2 + this.cam.panX;
     this.world.y = top + (ah - (bh + padTop + padBottom) * this.scale) / 2 + padTop * this.scale + this.cam.panY;

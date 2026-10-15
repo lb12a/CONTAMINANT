@@ -2899,3 +2899,375 @@ a.btn {
     scrollbar-width: none;
   }
 }
+
+/* ================================================================== system bars (Android edge-to-edge, notches)
+   Capacitor injects --safe-area-inset-*; browsers provide env(). Everything that touches a screen edge
+   keeps clear of the status bar and the navigation buttons. */
+:root {
+  --sat: max(var(--safe-area-inset-top, 0px), env(safe-area-inset-top, 0px));
+  --sab: max(var(--safe-area-inset-bottom, 0px), env(safe-area-inset-bottom, 0px));
+  --sal: max(var(--safe-area-inset-left, 0px), env(safe-area-inset-left, 0px));
+  --sar: max(var(--safe-area-inset-right, 0px), env(safe-area-inset-right, 0px));
+}
+.topbar {
+  padding-top: calc(6px + var(--sat));
+  padding-left: calc(var(--gutter) + var(--sal));
+  padding-right: calc(var(--gutter) + var(--sar));
+}
+.modal-back {
+  padding: calc(var(--gutter) + var(--sat)) calc(var(--gutter) + var(--sar)) calc(var(--gutter) + var(--sab)) calc(var(--gutter) + var(--sal));
+}
+.modal {
+  max-height: calc(100dvh - 2 * var(--gutter) - var(--sat) - var(--sab));
+}
+.toast-host {
+  bottom: calc(12px + var(--sab));
+}
+.match .hud {
+  top: calc(10px + var(--sat));
+  left: calc(10px + var(--sal));
+  right: calc(10px + var(--sar));
+}
+.match .bottom {
+  bottom: calc(10px + var(--sab));
+  left: calc(10px + var(--sal));
+  right: calc(10px + var(--sar));
+}
+.match .left,
+.match .right {
+  top: var(--board-top, 112px);
+}
+.plan-issue {
+  position: absolute;
+  top: var(--board-top, 112px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 13;
+  color: #ffb0b4;
+  padding: 4px 12px;
+  max-width: calc(100% - 24px);
+}
+.watch-note {
+  position: absolute;
+  right: 10px;
+  bottom: calc(var(--board-bottom, 200px) + 8px);
+  max-width: 260px;
+  z-index: 12;
+}
+.beat-caption {
+  top: calc(var(--board-top, 112px) + 4px);
+}
+.mode-hint {
+  bottom: calc(var(--board-bottom, 200px) + 6px);
+}
+.dock-plan,
+.up-info {
+  display: none;
+}
+.up-portrait {
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  border: 2px solid #0b080e;
+  object-fit: cover;
+}
+.up-close {
+  width: 30px;
+  height: 30px;
+}
+@media (max-width: 900px) {
+  .tabbar {
+    padding-bottom: calc(4px + var(--sab));
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+  }
+  .shell .page {
+    padding-bottom: calc(90px + var(--sab));
+  }
+}
+
+/* ================================================================== phone match layout
+   top: one compact bar (score + timer, then units · log · AP · seal)
+   middle: the board, fitted exactly into the free space (measured, see useBoardInsets)
+   bottom: the dock (creatures / cards / plan) or, with a creature selected, its command bar */
+@media (max-width: 760px) {
+  .match .hud {
+    top: calc(4px + var(--sat));
+    left: calc(4px + var(--sal));
+    right: calc(4px + var(--sar));
+    grid-template-columns: auto auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'score score score score'
+      'units log ap seal';
+    gap: 4px;
+    align-items: stretch;
+  }
+  .match .hud .hud-actions {
+    display: contents;
+  }
+  .match .hud .hud-units {
+    grid-area: units;
+  }
+  .match .hud .hud-log {
+    grid-area: log;
+  }
+  .match .hud .hud-actions > .btn {
+    grid-area: seal;
+    min-height: 44px;
+    font-size: 17px;
+    padding: 2px 12px;
+  }
+  .match .hud .hud-score {
+    padding: 4px 10px 5px;
+    gap: 3px;
+  }
+  .match .hud .hud-ap {
+    padding: 4px 8px;
+    gap: 2px;
+    align-content: center;
+    min-width: 0;
+  }
+  .match .hud .hud-ap .ap-top > .row {
+    display: none;
+  }
+  .hud-ap .ap-num b {
+    font-size: 22px;
+  }
+  .hud-ap .ap-num span {
+    font-size: 15px;
+  }
+  .score-row .vp {
+    font-size: 20px;
+  }
+  .score-row .nm {
+    font-size: 13px;
+  }
+  .score-row .round {
+    font-size: 15px;
+  }
+  .hud-score .vp-race {
+    display: none;
+  }
+  .score-meta {
+    font-size: 12px;
+  }
+  .score-meta .chip {
+    padding: 0 6px;
+    font-size: 11px;
+  }
+  .icon-btn.glass {
+    width: 44px;
+    height: 44px;
+  }
+  .icon-btn.glass.on {
+    outline: 2px solid var(--spore);
+  }
+  .menu-burger {
+    display: grid !important;
+  }
+
+  /* bottom bar */
+  .match .bottom {
+    left: calc(4px + var(--sal));
+    right: calc(4px + var(--sar));
+    bottom: calc(4px + var(--sab));
+  }
+  .match.show-left .bottom {
+    display: none;
+  }
+  .dock {
+    padding-top: 6px;
+  }
+  .dock-plan {
+    display: block;
+    width: 100%;
+    max-height: 30vh;
+    overflow: auto;
+    background: rgba(20, 15, 24, 0.94);
+    border: 2px solid var(--ink);
+    border-radius: 0 0 12px 12px;
+    padding: 4px 8px 8px;
+  }
+  .dock.show-plan .dock-chars,
+  .dock.show-plan .dock-hand {
+    display: none;
+  }
+  .dock-plan .plan-list {
+    margin-top: 0 !important;
+  }
+
+  /* the unit sheet replaces the dock instead of covering the board */
+  .match .left {
+    display: none;
+  }
+  .match.show-left .left {
+    display: block;
+    top: auto !important;
+    left: calc(4px + var(--sal));
+    right: calc(4px + var(--sar));
+    bottom: calc(4px + var(--sab));
+    width: auto;
+    max-height: 46dvh;
+    overflow: auto;
+    z-index: 20;
+    padding: 8px 10px;
+  }
+  .match.show-left.has-unit .left .plan-section {
+    display: none;
+  }
+  .up-portrait {
+    width: 40px;
+    height: 40px;
+  }
+  .up-info {
+    display: grid;
+    width: 34px;
+    height: 34px;
+  }
+  .up-info.on {
+    outline: 2px solid var(--spore);
+  }
+  .up-close {
+    width: 34px;
+    height: 34px;
+  }
+  .up-details {
+    display: none;
+  }
+  .up-details.open {
+    display: grid;
+    gap: 4px;
+  }
+  .unit-panel {
+    gap: 6px;
+  }
+  .unit-panel .up-head .hp-bar,
+  .unit-panel .up-head .bar {
+    max-width: 180px;
+  }
+  .up-cmds {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .up-cmds .cmd {
+    flex: none;
+    width: 62px;
+    height: 68px;
+  }
+
+  /* log and action order as a sheet over the bottom bar, only when asked for */
+  .match .right {
+    display: none;
+  }
+  .match.show-right .right {
+    display: flex;
+    top: auto !important;
+    left: calc(4px + var(--sal));
+    right: calc(4px + var(--sar));
+    bottom: calc(4px + var(--sab));
+    width: auto;
+    height: 50dvh;
+    max-height: 50dvh;
+    z-index: 22;
+  }
+
+  /* overlays live inside the board area */
+  .plan-issue {
+    font-size: 12px;
+  }
+  .beat-caption {
+    width: calc(100% - 12px);
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .beat-title {
+    font-size: 14px;
+  }
+  .beat-detail {
+    font-size: 12px;
+  }
+  .mode-hint {
+    left: 50%;
+    width: calc(100% - 12px);
+    padding: 6px 8px 6px 12px;
+    font-size: 13px;
+    z-index: 21;
+  }
+  .popup-enemy {
+    top: calc(var(--board-top, 120px) + 4px);
+    right: 8px;
+    font-size: 14px;
+  }
+  .watch-note {
+    left: 6px;
+    right: 6px;
+    max-width: none;
+  }
+  .coach {
+    bottom: calc(var(--board-bottom, 170px) + 6px);
+    max-height: 38dvh;
+    overflow: auto;
+  }
+  .aim-chooser {
+    min-width: 0;
+    width: min(260px, calc(100vw - 24px));
+  }
+  .hover-info {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  /* the aim chooser docks above the bottom bar instead of floating off-screen next to the tile */
+  .aim-chooser {
+    left: 50% !important;
+    top: auto !important;
+    bottom: calc(var(--board-bottom, 170px) + 6px);
+    transform: translateX(-50%);
+    z-index: 30;
+  }
+}
+
+@media (max-width: 760px) {
+  .unit-panel:not(.info-open) .up-extra {
+    display: none;
+  }
+  .unit-panel .up-head .col {
+    gap: 1px !important;
+  }
+}
+.log-surrender {
+  min-height: 30px;
+  padding: 2px 10px;
+}
+
+.coach-fold {
+  display: none;
+}
+@media (max-width: 760px) {
+  /* the coach sits at the top of the board area (your side is at the bottom in portrait) */
+  .coach {
+    top: calc(var(--board-top, 150px) + 4px);
+    bottom: auto;
+    max-height: 34dvh;
+    overflow: auto;
+    z-index: 25;
+  }
+  .coach-fold {
+    display: grid;
+    place-items: center;
+    margin-left: auto;
+    width: 32px;
+    height: 32px;
+    flex: none;
+    border-radius: 8px;
+    border: 2px solid #2a2410;
+    background: rgba(255, 255, 255, 0.35);
+    font-size: 16px;
+    color: #2a2410;
+  }
+  .coach.folded > :not(.coach-head) {
+    display: none;
+  }
+}

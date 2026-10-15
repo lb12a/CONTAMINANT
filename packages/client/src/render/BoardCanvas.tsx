@@ -61,7 +61,8 @@ export function BoardCanvas({ state, me, overlay, insets, onTile, onHover, onCon
     let downAt: { x: number; y: number } | null = null;
     let moved = false;
     let pinch0 = 0;
-    let zoom0 = 1;
+    let lastTap = { t: 0, x: 0, y: 0 };
+    let touch = false;
     const local = (e: PointerEvent | WheelEvent | MouseEvent) => {
       const rect = el.getBoundingClientRect();
       return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -72,6 +73,8 @@ export function BoardCanvas({ state, me, overlay, insets, onTile, onHover, onCon
       } catch {
         /* synthetic or already released pointers */
       }
+      touch = e.pointerType === 'touch';
+      if (touch) onHover?.(null);
       pointers.set(e.pointerId, local(e));
       if (pointers.size === 1) {
         downAt = local(e);
@@ -80,7 +83,7 @@ export function BoardCanvas({ state, me, overlay, insets, onTile, onHover, onCon
       if (pointers.size === 2) {
         const [a, b] = [...pointers.values()];
         pinch0 = Math.hypot(a!.x - b!.x, a!.y - b!.y);
-        zoom0 = rendererRef.current?.cam.zoom ?? 1;
+        moved = true;
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -88,34 +91,47 @@ export function BoardCanvas({ state, me, overlay, insets, onTile, onHover, onCon
       if (!r) return;
       const p = local(e);
       if (!pointers.has(e.pointerId)) {
-        onHover?.(r.hexAt(p.x, p.y));
+        if (e.pointerType === 'mouse') onHover?.(r.hexAt(p.x, p.y));
         return;
       }
       const prev = pointers.get(e.pointerId)!;
       pointers.set(e.pointerId, p);
       if (pointers.size === 2) {
+        // pinch: zoom around the fingers' midpoint and follow it
         const [a, b] = [...pointers.values()];
         const d = Math.hypot(a!.x - b!.x, a!.y - b!.y);
-        r.cam.zoom = Math.max(1, Math.min(3, zoom0 * (d / Math.max(1, pinch0))));
-        moved = true;
+        const mx = (a!.x + b!.x) / 2;
+        const my = (a!.y + b!.y) / 2;
+        r.zoomAt(mx, my, r.cam.zoom * (d / Math.max(1, pinch0)));
+        pinch0 = d;
+        r.cam.panX += (p.x - prev.x) / 2;
+        r.cam.panY += (p.y - prev.y) / 2;
         return;
       }
-      if (downAt && Math.hypot(p.x - downAt.x, p.y - downAt.y) > 8) moved = true;
+      if (downAt && Math.hypot(p.x - downAt.x, p.y - downAt.y) > (touch ? 12 : 8)) moved = true;
       if (moved && r.cam.zoom > 1) {
         r.cam.panX += p.x - prev.x;
         r.cam.panY += p.y - prev.y;
       }
-      onHover?.(r.hexAt(p.x, p.y));
+      if (!touch) onHover?.(r.hexAt(p.x, p.y));
     };
     const onUp = (e: PointerEvent) => {
       const r = rendererRef.current;
       const p = local(e);
       pointers.delete(e.pointerId);
       if (r && !moved && downAt && pointers.size === 0) {
-        const h = r.hexAt(p.x, p.y);
-        if (h) {
-          if (e.button === 2) onContext?.(h);
-          else onTile?.(h);
+        const now = performance.now();
+        // double tap on a touch screen: zoom in on that spot, or back out
+        if (touch && now - lastTap.t < 320 && Math.hypot(p.x - lastTap.x, p.y - lastTap.y) < 40) {
+          r.zoomAt(p.x, p.y, r.cam.zoom > 1.2 ? 1 : 2);
+          lastTap = { t: 0, x: 0, y: 0 };
+        } else {
+          lastTap = { t: now, x: p.x, y: p.y };
+          const h = r.hexAt(p.x, p.y);
+          if (h) {
+            if (e.button === 2) onContext?.(h);
+            else onTile?.(h);
+          }
         }
       }
       if (pointers.size === 0) downAt = null;
@@ -124,11 +140,8 @@ export function BoardCanvas({ state, me, overlay, insets, onTile, onHover, onCon
       e.preventDefault();
       const r = rendererRef.current;
       if (!r) return;
-      r.cam.zoom = Math.max(1, Math.min(3, r.cam.zoom * (e.deltaY < 0 ? 1.12 : 0.89)));
-      if (r.cam.zoom === 1) {
-        r.cam.panX = 0;
-        r.cam.panY = 0;
-      }
+      const p = local(e);
+      r.zoomAt(p.x, p.y, r.cam.zoom * (e.deltaY < 0 ? 1.12 : 0.89));
     };
     const onLeave = () => onHover?.(null);
     const onCtx = (e: MouseEvent) => e.preventDefault();

@@ -36,11 +36,13 @@ interface Props {
   /** Basic Training: the coach follows the planner and marks tiles */
   onPlanner?: (ps: PlannerState, snap: MatchSnapshot, playing: boolean) => void;
   coachTiles?: Map<string, HighlightKind>;
+  /** Basic Training: which part of the bottom bar the current step needs (phones show one at a time) */
+  dockFocus?: 'chars' | 'hand' | 'unit';
 }
 
 const EVENT_DELAY = 280;
 
-export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, coachTiles }: Props) {
+export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, coachTiles, dockFocus }: Props) {
   const [snap, setSnap] = useState<MatchSnapshot>(ctrl.snapshot());
   const [ps, setPs] = useState<PlannerState>(emptyPlanner());
   const [hover, setHover] = useState<Hex | null>(null);
@@ -53,7 +55,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   const [popups, setPopups] = useState<number>(0);
   const [showLeft, setShowLeft] = useState(false);
   /** phones show one dock row at a time: the offered creatures or the hand */
-  const [dockTab, setDockTab] = useState<'chars' | 'hand'>('chars');
+  const [dockTab, setDockTab] = useState<'chars' | 'hand' | 'plan'>('chars');
   const [showRight, setShowRight] = useState(false);
   const [ready, setReady] = useState(false);
   const [moodFor, setMoodFor] = useState<string | null>(null);
@@ -266,6 +268,10 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   }, [snap.roundSerial]);
 
   const boardRef = useRef<HTMLDivElement>(null);
+  const matchRef = useRef<HTMLDivElement>(null);
+  const hudRef = useRef<HTMLDivElement>(null);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const leftRef = useRef<HTMLDivElement>(null);
   // creatures deployed this round appear on the board when their deployment beat plays
   const boardState = useMemo(
     () => (play.arrived?.length ? { ...display, units: [...display.units, ...play.arrived.filter((a) => !display.units.some((u) => u.uid === a.uid))] } : display),
@@ -273,7 +279,17 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   );
   const vpOf = (p: PlayerId) => (playing && play.vpLive ? play.vpLive[p] : display.players[p].vp);
   const [renderer, setRenderer] = useState<DioramaRenderer | null>(null);
-  const insets = useBoardInsets();
+  const insets = useBoardInsets(matchRef, hudRef, bottomRef, leftRef, `${showLeft}|${showRight}|${dockTab}|${playing}`);
+  useEffect(() => {
+    if (dockFocus === 'chars' || dockFocus === 'hand') {
+      setDockTab(dockFocus);
+      if (window.innerWidth <= 760) setShowLeft(false);
+    }
+  }, [dockFocus]);
+  // phones: closing the selection also closes the unit sheet
+  useEffect(() => {
+    if (!ps.selected && window.innerWidth <= 760) setShowLeft(false);
+  }, [ps.selected]);
 
   useEffect(() => {
     if (snap.ended) sfx(snap.ended.winner === me ? 'win' : 'lose');
@@ -380,11 +396,45 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   const attachedCards = new Set(ps.commands.flatMap((c) => (c.kind === 'item' ? [c.card] : (c.kind === 'attack' || c.kind === 'ability') && c.item ? [c.item] : [])));
   const deployingCards = new Set(ps.commands.flatMap((c) => (c.kind === 'deploy' ? [c.card] : [])));
 
+  const planList = (
+    <div className="col plan-list" style={{ marginTop: 10 }}>
+          <h3>Plan · {pv.cost} AP</h3>
+          {ps.commands.length === 0 && <span className="muted small">{t('Nothing planned. Spending less than 50% of your AP builds the Idle Bonus.')}</span>}
+          {ps.commands.map((c, i) => (
+            <div key={i} className="row small" style={{ justifyContent: 'space-between', background: '#ffffff08', borderRadius: 6, padding: '3px 6px' }}>
+              <span>
+                {'unit' in c ? `${view.units.find((u) => u.uid === c.unit)?.name ?? ''}: ` : ''}
+                {commandLabel(view, c)}
+                {(c.kind === 'attack' || c.kind === 'ability') && c.item ? ` + ${ITEMS[handCards.find((h) => h.uid === c.item)?.itemId ?? '']?.name ?? 'card'}` : ''}
+              </span>
+              {c.kind === 'deploy' && pl.cards.find((x) => x.uid === c.card)?.defId === 'nexus' && (
+                <button
+                  className="btn secondary small"
+                  disabled={(ps.deployChoices[c.card]?.rerolls ?? 0) >= 3}
+                  title={t('Corrupt: the three magenta tiles are corrupted when Nexus arrives (hidden from the enemy). Re-roll them up to 3 times this round.')}
+                  onClick={() => setPs((p) => ({ ...p, deployChoices: { ...p.deployChoices, [c.card]: { ...p.deployChoices[c.card], rerolls: Math.min(3, (p.deployChoices[c.card]?.rerolls ?? 0) + 1) } } }))}
+                >
+                  Re-roll tiles {3 - (ps.deployChoices[c.card]?.rerolls ?? 0)}/3
+                </button>
+              )}
+              <button className="icon-btn" style={{ width: 26, height: 26, fontSize: 12 }} onClick={() => removeCmd(i)} aria-label={t('remove')}>
+                ✕
+              </button>
+            </div>
+          ))}
+          {ps.commands.length > 0 && (
+            <button className="btn secondary small" onClick={() => setPs(emptyPlanner())}>
+              {t('Clear plan')}
+            </button>
+          )}
+    </div>
+  );
+
   // ---------------------------------------------------------------- render
   return (
-    <div className={`match${showLeft ? ' show-left' : ''}${showRight ? ' show-right' : ''}`}>
+    <div ref={matchRef} className={`match${showLeft ? ' show-left' : ''}${showRight ? ' show-right' : ''}${selected ? ' has-unit' : ''}`}>
       {/* HUD: AP · scoreboard · actions */}
-      <div className="hud">
+      <div className="hud" ref={hudRef}>
         <div className="hud-ap panel" title={`${pv.apLeft} AP left of ${pl.ap} · planned ${pv.cost}`}>
           <div className="ap-top">
             <div className="ap-num">
@@ -426,10 +476,10 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           </div>
         </div>
         <div className="hud-actions">
-          <button className="icon-btn glass menu-burger" onClick={() => setShowLeft((v) => !v)} title={t('Units and plan')} aria-label={t('Units and plan')}>
+          <button className={`icon-btn glass menu-burger hud-units${showLeft ? ' on' : ''}`} onClick={() => setShowLeft((v) => !v)} title={t('Units and plan')} aria-label={t('Units and plan')}>
             <Icon name="ui/pawn" size={24} />
           </button>
-          <button className="icon-btn glass" onClick={() => setShowRight((v) => !v)} title={t('Combat log')} aria-label={t('Combat log')}>
+          <button className={`icon-btn glass hud-log${showRight ? ' on' : ''}`} onClick={() => setShowRight((v) => !v)} title={t('Combat log')} aria-label={t('Combat log')}>
             <Icon name="ui/journal" size={24} />
           </button>
           {playing ? (
@@ -445,13 +495,13 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       </div>
       {caption && playing && <BeatCaption {...caption} me={me} />}
       {pv.issues.length > 0 && !playing && (
-        <div className="panel small" style={{ position: 'absolute', top: 112, left: '50%', transform: 'translateX(-50%)', zIndex: 13, color: '#ffb0b4', padding: '4px 12px' }}>
+        <div className="panel small plan-issue">
           <Icon name="ui/warning" size={16} /> {pv.issues[0]}
         </div>
       )}
 
       {/* LEFT: unit panel */}
-      <div className={`left panel${!tutorialPanel && !selected && myUnits.length === 0 && ps.commands.length === 0 ? ' empty' : ''}`}>
+      <div ref={leftRef} className={`left panel${!tutorialPanel && !selected && myUnits.length === 0 && ps.commands.length === 0 ? ' empty' : ''}`}>
         {tutorialPanel}
         {selected ? (
           <UnitPanel view={view} me={me} u={selected} ps={ps} setPs={setPs} setMode={setMode} toggleRest={toggleRest} removeCmd={removeCmd} handCards={handCards} />
@@ -466,37 +516,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             ))}
           </div>
         )}
-        <div className="col" style={{ marginTop: 10 }}>
-          <h3>Plan · {pv.cost} AP</h3>
-          {ps.commands.length === 0 && <span className="muted small">{t('Nothing planned. Spending less than 50% of your AP builds the Idle Bonus.')}</span>}
-          {ps.commands.map((c, i) => (
-            <div key={i} className="row small" style={{ justifyContent: 'space-between', background: '#ffffff08', borderRadius: 6, padding: '3px 6px' }}>
-              <span>
-                {'unit' in c ? `${view.units.find((u) => u.uid === c.unit)?.name ?? ''}: ` : ''}
-                {commandLabel(view, c)}
-                {(c.kind === 'attack' || c.kind === 'ability') && c.item ? ` + ${ITEMS[handCards.find((h) => h.uid === c.item)?.itemId ?? '']?.name ?? 'card'}` : ''}
-              </span>
-              {c.kind === 'deploy' && pl.cards.find((x) => x.uid === c.card)?.defId === 'nexus' && (
-                <button
-                  className="btn secondary small"
-                  disabled={(ps.deployChoices[c.card]?.rerolls ?? 0) >= 3}
-                  title={t('Corrupt: the three magenta tiles are corrupted when Nexus arrives (hidden from the enemy). Re-roll them up to 3 times this round.')}
-                  onClick={() => setPs((p) => ({ ...p, deployChoices: { ...p.deployChoices, [c.card]: { ...p.deployChoices[c.card], rerolls: Math.min(3, (p.deployChoices[c.card]?.rerolls ?? 0) + 1) } } }))}
-                >
-                  Re-roll tiles {3 - (ps.deployChoices[c.card]?.rerolls ?? 0)}/3
-                </button>
-              )}
-              <button className="icon-btn" style={{ width: 26, height: 26, fontSize: 12 }} onClick={() => removeCmd(i)} aria-label={t('remove')}>
-                ✕
-              </button>
-            </div>
-          ))}
-          {ps.commands.length > 0 && (
-            <button className="btn secondary small" onClick={() => setPs(emptyPlanner())}>
-              {t('Clear plan')}
-            </button>
-          )}
-        </div>
+        <div className="plan-section">{planList}</div>
       </div>
 
       {/* BOARD */}
@@ -509,12 +529,12 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         )}
         {popups > 0 && (
           <div key={popups} className="popup-enemy" onAnimationEnd={() => setPopups(0)}>
-            <Icon name="ui/question" size={20} /> {popups > 1 ? `${popups}× ` : ''}Enemy deploys a character!
+            <Icon name="ui/question" size={20} /> {popups > 1 ? `${popups}× ` : ''}{t('Enemy deploys a character!')}
           </div>
         )}
         {hover && !playing && <HoverInfo view={view} h={hover} me={me} at={renderer?.screenOf(hover)} />}
         {snap.watch && (
-          <div className="panel small" style={{ position: 'absolute', right: 10, bottom: 200, maxWidth: 260, zIndex: 12 }}>
+          <div className="panel small watch-note">
             <Icon name="ui/eye" size={16} /> Watchful Eye: {view.units.find((u) => u.uid === snap.watch!.unit)?.name} plans {snap.watch.commands.length} command(s):{' '}
             {(snap.watch.commands as { kind: string }[]).map((c) => c.kind).join(', ') || 'nothing'}
           </div>
@@ -562,6 +582,12 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           <div className="panel notebook" style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
             <div className="row" style={{ justifyContent: 'space-between' }}>
               <h3 style={{ margin: 0 }}>{t('Combat log')}</h3>
+              <span className="spacer" />
+              {!snap.ended && (
+                <button className="btn danger small log-surrender" onClick={() => confirm(t('Surrender this match?')) && ctrl.surrender()}>
+                  {t('Surrender')}
+                </button>
+              )}
               <button className="icon-btn" style={{ width: 30, height: 30, fontSize: 13 }} onClick={() => setShowRight(false)} aria-label={t('Close log')}>
                 ✕
               </button>
@@ -572,7 +598,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       </div>
 
       {/* DOCK: offered characters + hand */}
-      <div className="bottom">
+      <div className="bottom" ref={bottomRef}>
         {!hideHand && (
           <div className="dock-switch" role="tablist" aria-label={t('Dock')}>
             <button role="tab" aria-selected={dockTab === 'chars'} className={dockTab === 'chars' ? 'on' : ''} onClick={() => setDockTab('chars')}>
@@ -581,9 +607,13 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             <button role="tab" aria-selected={dockTab === 'hand'} className={dockTab === 'hand' ? 'on' : ''} onClick={() => setDockTab('hand')}>
               <Icon name="ui/cards" size={18} /> {t('Cards')} <b className="num">{handCards.length}</b>
             </button>
+            <button role="tab" aria-selected={dockTab === 'plan'} className={dockTab === 'plan' ? 'on' : ''} onClick={() => setDockTab('plan')}>
+              <Icon name="ui/journal" size={18} /> {t('Plan')} <b className="num">{ps.commands.length}</b>
+            </button>
           </div>
         )}
         <div className={`dock show-${hideHand ? 'chars' : dockTab}`}>
+          {dockTab === 'plan' && !hideHand && <div className="dock-group dock-plan">{planList}</div>}
           <div className="dock-group dock-chars">
             <div className="dock-label">
               <span>{t('Offered characters')}</span>
@@ -640,11 +670,6 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       )}
 
       {snap.ended && !playing && <EndSeal snap={snap} me={me} onExit={() => onExit({ won: snap.ended!.winner === 'draw' || snap.ended!.winner === null ? null : snap.ended!.winner === me, snap, log: log.map((l) => l.text) })} onSurrenderless />}
-      {!snap.ended && (
-        <button className="btn danger small surrender" onClick={() => confirm('Surrender this match?') && ctrl.surrender()}>
-          {t('Surrender')}
-        </button>
-      )}
     </div>
   );
 }
@@ -657,24 +682,24 @@ function modeHint(view: GameState, ps: PlannerState): string {
   const m = ps.mode;
   switch (m.kind) {
     case 'move':
-      return 'Tap a highlighted tile to move there.';
+      return t('Tap a highlighted tile to move there.');
     case 'attack': {
       const u = view.units.find((x) => x.uid === m.unit);
       const a = u ? attackDefFor(view, u, m.attack) : undefined;
       if (!a) return '';
-      if (a.targeting === 'multi-field') return `${a.name}: choose ${a.custom === 'candy_rain' ? '3 tiles' : a.custom === 'prismatic_beam' ? '1–2 tiles' : '2 tiles'}.`;
-      if (a.targeting === 'field') return `${a.name}: choose a target tile${a.shape === 'cone3' ? ' (cone direction)' : ''}.`;
-      if (a.targeting === 'self') return `${a.name}: tap anywhere to confirm.`;
-      return `${a.name}: choose a target (a tile also works: it hits whoever stands there).`;
+      if (a.targeting === 'multi-field') return `${a.name}: ${t(a.custom === 'candy_rain' ? 'choose 3 tiles.' : a.custom === 'prismatic_beam' ? 'choose 1–2 tiles.' : 'choose 2 tiles.')}`;
+      if (a.targeting === 'field') return `${a.name}: ${t(a.shape === 'cone3' ? 'choose a target tile (cone direction).' : 'choose a target tile.')}`;
+      if (a.targeting === 'self') return `${a.name}: ${t('tap anywhere to confirm.')}`;
+      return `${a.name}: ${t('choose a target (a tile also works: it hits whoever stands there).')}`;
     }
     case 'vector':
-      return 'Trainticket: choose a unit, then its destination (1–3 tiles in a line).';
+      return t('Trainticket: choose a unit, then its destination (1–3 tiles in a line).');
     case 'ability':
-      return 'Choose the ability target.';
+      return t('Choose the ability target.');
     case 'deploy':
-      return 'Tap a free tile in your zone to deploy.';
+      return t('Tap a free tile in your zone to deploy.');
     case 'item':
-      return 'Choose the card target.';
+      return t('Choose the card target.');
     default:
       return '';
   }
@@ -687,11 +712,12 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
   const fresh = u.deployedRound === view.round;
   const entranced = hasStatus(u, 'entranced');
   const unitCmds = ps.commands.map((c, i) => ({ c, i })).filter(({ c }) => 'unit' in c && c.unit === u.uid);
+  const [info, setInfo] = useState(false);
   void handCards;
   return (
-    <div className="col">
-      <div className="row">
-        <img src={portraitUrl(u.defId, u.form, { size: 120 })} alt="" style={{ width: 64, height: 64, borderRadius: 8, border: '2px solid #0b080e' }} />
+    <div className={`col unit-panel${info ? ' info-open' : ''}`}>
+      <div className="row up-head">
+        <img className="up-portrait" src={portraitUrl(u.defId, u.form, { size: 120 })} alt="" />
         <div className="col grow" style={{ gap: 2 }}>
           <b>{u.name}</b>
           <span className="small muted">
@@ -702,10 +728,14 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
             {u.hp}/{u.maxHp} HP
           </span>
         </div>
-        <button className="icon-btn" style={{ width: 28, height: 28, fontSize: 12 }} onClick={() => setPs((p) => ({ ...p, selected: undefined, mode: { kind: 'idle' } }))} aria-label={t('close')}>
-          ✕
+        <button className={`icon-btn up-info${info ? ' on' : ''}`} onClick={() => setInfo((v) => !v)} aria-label={t('Details')} aria-pressed={info}>
+          <Icon name="ui/eye" size={20} />
+        </button>
+        <button className="icon-btn up-close" onClick={() => setPs((p) => ({ ...p, selected: undefined, mode: { kind: 'idle' } }))} aria-label={t('close')}>
+          <Icon name="ui/close" size={18} />
         </button>
       </div>
+      <div className={`up-details${info ? ' open' : ''}`}>
       <div className="small num muted">
         PAtk {u.stats.patk} · PDef {u.stats.pdef} · SAtk {u.stats.satk} · SDef {u.stats.sdef} · Spd {u.stats.speed} · Move {u.move}
       </div>
@@ -723,10 +753,11 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
         </div>
       )}
       {u.gear && <span className="chip">Gear: {ITEMS[u.gear]?.name}</span>}
+      </div>
       {mine && !u.isObject && (
         <>
           {fresh && <span className="small" style={{ color: 'var(--marigold)' }}>{t('Deployed this round — cannot act yet.')}</span>}
-          <div className="row wrap" style={{ gap: 4 }}>
+          <div className="row wrap up-cmds" style={{ gap: 4 }}>
             <button className={`cmd${ps.mode.kind === 'move' && ps.mode.unit === u.uid ? ' active' : ''}`} style={{ ['--fam' as string]: 'var(--cyan)' }} disabled={fresh || !acts.canMove || entranced} onClick={() => setMode({ kind: 'move', unit: u.uid })}>
               <span className="lens"><Icon name="ui/footprints" size={22} /></span>
               {t('Move')}
@@ -845,11 +876,11 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
               ))}
             </div>
           )}
-          <div className="small muted">Planned position: {(() => { const p = plannedPos(view, ps, u.uid); return p ? `${p.c + 1}/${p.r + 1}` : '?'; })()}</div>
+          <div className="small muted up-extra">Planned position: {(() => { const p = plannedPos(view, ps, u.uid); return p ? `${p.c + 1}/${p.r + 1}` : '?'; })()}</div>
         </>
       )}
       {def && (
-        <details className="small">
+        <details className="small up-extra">
           <summary>Ability: {def.ability.name}</summary>
           {def.ability.text}
         </details>
@@ -858,18 +889,53 @@ function UnitPanel({ view, me, u, ps, setPs, setMode, toggleRest, removeCmd, han
   );
 }
 
-/** Screen area covered by the floating HUD at the current window size (the camera fits the board into the rest). */
-function useBoardInsets(): Insets {
-  const [w, setW] = useState(() => window.innerWidth);
+/**
+ * The free board area between the floating top bar and the bottom bar (dock or, on phones, the unit
+ * sheet), measured from the real elements so system bars, translations and open sheets never cover tiles.
+ * Also publishes --board-top / --board-bottom for overlays (captions, hints, the coach).
+ */
+function useBoardInsets(
+  matchRef: React.RefObject<HTMLDivElement | null>,
+  hudRef: React.RefObject<HTMLDivElement | null>,
+  bottomRef: React.RefObject<HTMLDivElement | null>,
+  leftRef: React.RefObject<HTMLDivElement | null>,
+  key: string,
+): Insets {
+  const [ins, setIns] = useState<Insets>(() => (window.innerWidth <= 760 ? { top: 150, right: 4, bottom: 170, left: 4 } : { top: 108, right: 24, bottom: 176, left: 24 }));
   useEffect(() => {
-    const on = () => setW(window.innerWidth);
-    window.addEventListener('resize', on);
-    return () => window.removeEventListener('resize', on);
-  }, []);
-  return useMemo(() => {
-    if (w <= 760) return { top: 150, right: 4, bottom: 158, left: 4 };
-    return { top: 108, right: 24, bottom: 176, left: 24 };
-  }, [w]);
+    const measure = () => {
+      const m = matchRef.current;
+      const hud = hudRef.current;
+      if (!m || !hud) return;
+      const phone = window.innerWidth <= 760;
+      const mr = m.getBoundingClientRect();
+      const top = Math.round(hud.getBoundingClientRect().bottom - mr.top + (phone ? 4 : 8));
+      let bottomTop = mr.bottom;
+      for (const el of [bottomRef.current, phone ? leftRef.current : null]) {
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        if (r.height > 0 && getComputedStyle(el).display !== 'none') bottomTop = Math.min(bottomTop, r.top);
+      }
+      const bottom = Math.round(mr.bottom - bottomTop + (phone ? 4 : 8));
+      // on the root so overlays outside the match (the training coach) can use them too
+      const root = document.documentElement;
+      root.style.setProperty('--board-top', `${top + mr.top}px`);
+      root.style.setProperty('--board-bottom', `${bottom + (window.innerHeight - mr.bottom)}px`);
+      const side = phone ? 4 : 24;
+      setIns((cur) => (cur.top === top && cur.bottom === bottom && cur.left === side ? cur : { top, bottom, left: side, right: side }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    for (const el of [matchRef.current, hudRef.current, bottomRef.current, leftRef.current]) if (el) ro.observe(el);
+    window.addEventListener('resize', measure);
+    const late = window.setTimeout(measure, 120);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', measure);
+      window.clearTimeout(late);
+    };
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
+  return ins;
 }
 
 /** What is happening right now during the resolution: one line per action, with its outcome. */

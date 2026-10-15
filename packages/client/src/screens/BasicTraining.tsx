@@ -156,6 +156,9 @@ function useRect(selector: string | undefined): DOMRect | null {
 export function BasicTraining({ nav }: { nav: Nav }) {
   const ctrl = useMemo(() => new LocalMatch({ seed: 11, settings: { mode: 'contamination', planningSeconds: 0, friendly: true, zone: 'laboratory', maxRounds: 60 }, players: [] as never, existing: createTraining(), opponent: trainingWardenPlan, planningSeconds: 0 }), []);
   const [step, setStep] = useState(0);
+  /** phones: the coach can be folded to its title so it never hides a control */
+  const [folded, setFolded] = useState(false);
+  useEffect(() => setFolded(false), [step]);
   const [ctx, setCtx] = useState<Ctx | null>(null);
   const serial0 = useRef(0);
   const reduce = useReducedMotion();
@@ -196,13 +199,13 @@ export function BasicTraining({ nav }: { nav: Nav }) {
 
   return (
     <>
-      <MatchScreen ctrl={ctrl} onExit={() => nav({ name: 'menu' })} onPlanner={onPlanner} coachTiles={coachTiles} />
+      <MatchScreen ctrl={ctrl} onExit={() => nav({ name: 'menu' })} onPlanner={onPlanner} coachTiles={coachTiles} dockFocus={s?.target === '.hand' ? 'hand' : s?.target === '.lockers' ? 'chars' : undefined} />
       {s && rect && <div className="coach-spot" style={{ left: rect.left - 6, top: rect.top - 6, width: rect.width + 12, height: rect.height + 12 }} aria-hidden />}
       <AnimatePresence mode="wait">
         {s && !(ctx?.playing ?? false) && (
           <motion.aside
             key={step}
-            className="coach"
+            className={`coach${folded ? ' folded' : ''}`}
             role="dialog"
             aria-live="polite"
             aria-label={`Basic Training, step ${step + 1} of ${STEPS.length}`}
@@ -216,6 +219,9 @@ export function BasicTraining({ nav }: { nav: Nav }) {
                 {step + 1}/{STEPS.length}
               </span>
               <b>{tx(s.title, s.de.title)}</b>
+              <button className="coach-fold" onClick={() => setFolded((v) => !v)} aria-expanded={!folded} aria-label={folded ? t('Show hint') : t('Hide hint')}>
+                {folded ? '▾' : '▴'}
+              </button>
             </div>
             <p>{tx(s.text, s.de.text)}</p>
             {hint && <p className="coach-hint">{tx('For this lesson use a gold tile: remove the deployment in your plan list (✕) and try again.', 'Nimm für diese Lektion ein goldenes Feld: Entferne den Einsatz in deiner Planliste (✕) und versuche es erneut.')}</p>}
