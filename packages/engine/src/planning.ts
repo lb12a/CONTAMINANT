@@ -3,7 +3,7 @@
 
 import { CHARACTERS } from './data/characters.ts';
 import { ITEMS } from './data/items.ts';
-import { distance, eq, neighbors, type Hex } from './hex.ts';
+import { distance, eq, neighbors, step, type Hex } from './hex.ts';
 import { activeAbilities, attackDefFor } from './actions.ts';
 import { bounds, charactersOnBoard, getUnit, inZone, isFree, tileAt } from './state.ts';
 import { effectiveSpeed, hasChar, hasStatus, maxMove } from './stats.ts';
@@ -112,6 +112,65 @@ export function commandCost(s: GameState, p: PlayerId, cmd: Command, ctx: { firs
   }
 }
 
+/**
+ * Where units will stand after one command, assuming it succeeds: moves, attacks and abilities that
+ * relocate their user (Grand Jeté, Order Up, Teleport Trick, Box Leap, Swap Places, Mud Double, Flicker,
+ * Portal) and the Trainticket moving another unit. Planning measures ranges and paths from there.
+ */
+export function relocations(s: GameState, cmd: Command, posOf: (uid: string) => Hex | undefined): { uid: string; to: Hex }[] {
+  if (cmd.kind === 'move') return cmd.path.length ? [{ uid: cmd.unit, to: cmd.path[cmd.path.length - 1]! }] : [];
+  if (cmd.kind !== 'attack' && cmd.kind !== 'ability') return [];
+  const u = getUnit(s, cmd.unit);
+  if (!u) return [];
+  const from = posOf(u.uid) ?? u.pos;
+  const free = (h: Hex) => {
+    const t = tileAt(s, h);
+    return !!t && !t.wall && !s.units.some((x) => x.blocks && x !== u && eq(posOf(x.uid) ?? x.pos, h));
+  };
+  const near = (h: Hex) => neighbors(h, bounds(s)).find(free);
+  if (cmd.kind === 'ability') {
+    if (cmd.ability !== 'common.portal') return [];
+    const eye = s.units.find((x) => x.defId === 'crystal_eye' && x.owner === u.owner);
+    const land = eye ? near(posOf(eye.uid) ?? eye.pos) : undefined;
+    return land ? [{ uid: u.uid, to: land }] : [];
+  }
+  const a = attackDefFor(s, u, cmd.attack);
+  const t = cmd.target;
+  const targetPos = t.unit ? posOf(t.unit) : undefined;
+  switch (a?.custom) {
+    case 'teleport_trick':
+    case 'order_up':
+    case 'mud_double':
+      return t.tile ? [{ uid: u.uid, to: t.tile }] : [];
+    case 'box_leap':
+      return t.tiles?.[1] ? [{ uid: u.uid, to: t.tiles[1] }] : [];
+    case 'swap_places':
+      return targetPos ? [{ uid: u.uid, to: targetPos }, { uid: t.unit!, to: from }] : [];
+    case 'grand_jete': {
+      if (!targetPos || distance(from, targetPos) <= 1) return [];
+      const land = t.tile && distance(t.tile, targetPos) <= 1 && distance(t.tile, from) <= 1 ? t.tile : neighbors(from, bounds(s)).find((h) => distance(h, targetPos) <= 1 && free(h));
+      return land ? [{ uid: u.uid, to: land }] : [];
+    }
+    case 'flicker': {
+      const candle = getUnit(s, u.data.candle as string | undefined);
+      const land = candle ? near(posOf(candle.uid) ?? candle.pos) : undefined;
+      return land ? [{ uid: u.uid, to: land }] : [];
+    }
+    case 'trainticket':
+      return targetPos && t.dir !== undefined ? [{ uid: t.unit!, to: step(targetPos, t.dir, Math.max(1, Math.min(3, t.dist ?? 1))) }] : [];
+    default:
+      return [];
+  }
+}
+
+/** Expected positions after a list of commands (in plan order); units that do not move are not listed. */
+export function plannedPositions(s: GameState, commands: Command[]): Map<string, Hex> {
+  const pos = new Map<string, Hex>();
+  const posOf = (uid: string) => pos.get(uid) ?? getUnit(s, uid)?.pos;
+  for (const c of commands) for (const r of relocations(s, c, posOf)) pos.set(r.uid, { ...r.to });
+  return pos;
+}
+
 export function validatePlan(s: GameState, plan: Plan): PlanCheck {
   const p = plan.player;
   const pl = s.players[p];
@@ -139,6 +198,8 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
   }
   const ctx = { firstAttackSeen: new Set<string>(), pacts, plan, startPos: new Map<string, Hex>() };
   const fail = (i: number, error: string) => issues.push({ index: i, error });
+  /** positions changed by earlier commands (leaps, swaps, the Trainticket …) */
+  const relocated = new Map<string, Hex>();
 
   const useCard = (i: number, cardUid: string, attachedTo?: { u: Unit; cmd: Command }): boolean => {
     const card = pl.hand.find((x) => x.uid === cardUid);
@@ -219,7 +280,7 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
       if (u.deployedRound === s.round) return fail(i, 'cannot act in the round it is deployed');
       let st = perUnit.get(u.uid);
       if (!st) {
-        st = { cmds: 0, moves: 0, moveDist: 0, actions: 0, uses: {}, pos: { ...u.pos }, hold: false, abilityUses: {} };
+        st = { cmds: 0, moves: 0, moveDist: 0, actions: 0, uses: {}, pos: { ...(relocated.get(u.uid) ?? u.pos) }, hold: false, abilityUses: {} };
         perUnit.set(u.uid, st);
       }
       if (st.cmds >= MAX_COMMANDS_PER_UNIT) return fail(i, 'at most 4 commands per character');
@@ -279,6 +340,13 @@ export function validatePlan(s: GameState, plan: Plan): PlanCheck {
         st.hold = true;
       }
       st.cmds++;
+      if (cmd.kind !== 'move') {
+        for (const r of relocations(s, cmd, (uid) => perUnit.get(uid)?.pos ?? relocated.get(uid) ?? getUnit(s, uid)?.pos)) {
+          relocated.set(r.uid, { ...r.to });
+          const o = perUnit.get(r.uid);
+          if (o) o.pos = { ...r.to };
+        }
+      }
     }
     if (total + cost > pl.ap + credit) return fail(i, `not enough AP (${pl.ap + credit - total} left, needs ${cost})`);
     total += cost;

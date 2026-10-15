@@ -2,6 +2,7 @@
 // player's own fog-of-war view (the server re-validates everything).
 
 import {
+  plannedPositions,
   activeAbilities,
   attackDefFor,
   attacksOf,
@@ -93,12 +94,12 @@ export function toPlan(ps: PlannerState, me: PlayerId): Plan {
 }
 
 /** Planned end position of a unit after its queued Move commands. */
+/** Where the unit will stand when its next command runs: after its moves, leaps and swaps, and after
+ * being moved by an ally (Trainticket), so attack ranges and paths start from there. */
 export function plannedPos(view: GameState, ps: PlannerState, uid: string): Hex | undefined {
   const u = view.units.find((x) => x.uid === uid);
   if (!u) return undefined;
-  let pos = u.pos;
-  for (const c of ps.commands) if (c.kind === 'move' && c.unit === uid && c.path.length) pos = c.path[c.path.length - 1]!;
-  return pos;
+  return plannedPositions(view, ps.commands).get(uid) ?? u.pos;
 }
 
 export function movedSoFar(ps: PlannerState, uid: string): number {
