@@ -31,6 +31,16 @@ export interface Pulse {
   t0: number;
 }
 
+/** Attack visuals between two tiles (projectiles, slashes, beams, bursts). */
+export interface Vfx {
+  kind: 'projectile' | 'slash' | 'beam' | 'burst';
+  from: Hex;
+  to: Hex;
+  color: string;
+  t0: number;
+  dur: number;
+}
+
 export interface Overlay {
   highlights: Map<string, HighlightKind>;
   paths: { unit: string; tiles: Hex[]; color: string }[];
@@ -45,6 +55,7 @@ export interface Overlay {
   floaters?: Floater[];
   flashes?: Flash[];
   pulses?: Pulse[];
+  vfx?: Vfx[];
   tombs?: Hex[];
 }
 

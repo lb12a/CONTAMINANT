@@ -3,7 +3,9 @@ import {
   CHARACTERS,
   ITEMS,
   MODE_TARGET,
+  STATUSES,
   attackDefFor,
+  distance,
   hasStatus,
   isImmediateItem,
   type GameEvent,
@@ -14,12 +16,13 @@ import {
 } from '@contaminant/engine';
 import { BoardCanvas } from '../render/BoardCanvas.tsx';
 import type { DioramaRenderer } from '../render/diorama.ts';
-import type { Floater, Flash, HighlightKind, Insets, Overlay, Pulse } from '../render/types.ts';
+import type { Floater, Flash, HighlightKind, Insets, Overlay, Pulse, Vfx } from '../render/types.ts';
+import { toBeats, type Beat } from '../game/beats.ts';
 import { aimAttack, computeOverlay, emptyPlanner, needsAimChoice, plannedPos, tapTile, toPlan, unitActions, commandLabel, type PlannerState } from '../game/planner.ts';
 import type { MatchController, MatchSnapshot } from '../game/controller.ts';
 import { ApBattery, CharTraits, Fuse, HpBar, IdleSteps, ItemCard, Modal, StatusChips, VpRace, secondsLeft } from '../ui/components.tsx';
 import { figureCanvas, lookKey, portraitUrl } from '../render/art.ts';
-import { TAG_GLYPH, STATUS_GLYPH } from '../ui/glyphs.ts';
+import { TAG_GLYPH, TAG_COLOR } from '../ui/glyphs.ts';
 import { t } from '../i18n.ts';
 import { getProfile, toast } from '../store.ts';
 import { sfx } from '../audio.ts';
@@ -41,7 +44,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   const [ps, setPs] = useState<PlannerState>(emptyPlanner());
   const [hover, setHover] = useState<Hex | null>(null);
   const [display, setDisplay] = useState<GameState>(snap.view);
-  const [play, setPlay] = useState<Partial<Overlay>>({});
+  const [play, setPlay] = useState<Partial<Overlay> & { arrived?: Unit[]; vpLive?: [number, number] }>({});
+  const [caption, setCaption] = useState<{ index: number; total: number; beat: Beat } | null>(null);
   const [playing, setPlaying] = useState(false);
   const [log, setLog] = useState<{ text: string; kind: string }[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
@@ -60,6 +64,8 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   useEffect(() => () => ctrl.dispose(), [ctrl]);
 
   // ---------------------------------------------------------------- playback of a resolved round
+  // Every action is its own short scene ("beat"): a caption says what happens, the creature walks
+  // tile by tile or lunges, a projectile or slash flies, then damage, statuses and knock-outs land.
   useEffect(() => {
     if (snap.roundSerial === lastSerial.current) {
       if (!playing) setDisplay(snap.view);
@@ -70,6 +76,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
     setPs(emptyPlanner());
     setReady(false);
     const base = snap.prevView ?? snap.view;
+    const final = snap.view;
     setDisplay(base);
     const pos = new Map<string, Hex>();
     const hp = new Map<string, number>();
@@ -78,100 +85,176 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
     const flashes: Flash[] = [];
     const tombs: Hex[] = [];
     const pulses: Pulse[] = [];
-    const unitPos = (uid?: string) => (uid ? pos.get(uid) ?? base.units.find((u) => u.uid === uid)?.pos : undefined);
+    const vfx: Vfx[] = [];
+    const arrived: Unit[] = [];
+    const vpLive: [number, number] = [base.players[0].vp, base.players[1].vp];
+    const unitOf = (uid?: string) => (uid ? base.units.find((u) => u.uid === uid) ?? arrived.find((u) => u.uid === uid) ?? final.units.find((u) => u.uid === uid) : undefined);
+    const unitPos = (uid?: string) => (uid ? pos.get(uid) ?? unitOf(uid)?.pos : undefined);
     let cancelled = false;
     skipRef.current = false;
     setPlaying(true);
     setBanner(t('Resolution'));
     sfx('resolve');
     const speed = getProfile().settings.animSpeed || 1;
-    const newLog: { text: string; kind: string }[] = [];
+    const wait = (ms: number) => (skipRef.current || cancelled ? Promise.resolve() : sleep(ms / speed));
+    const beats = toBeats(events, base, final);
+    const show = () =>
+      setPlay({
+        pos: new Map(pos),
+        hp: new Map(hp),
+        gone: new Set(gone),
+        floaters: floaters.slice(-30),
+        flashes: flashes.slice(-20),
+        pulses: pulses.slice(-30),
+        vfx: vfx.slice(-12),
+        tombs: [...tombs],
+        arrived: [...arrived],
+        vpLive: [...vpLive] as [number, number],
+      });
+    const consequence = async (e: GameEvent) => {
+      const now = performance.now();
+      const at = unitPos(e.target) ?? e.to ?? unitPos(e.actor);
+      switch (e.kind) {
+        case 'damage':
+          if (e.target && e.amount) {
+            const u = unitOf(e.target);
+            if (u) hp.set(u.uid, Math.max(0, (hp.get(u.uid) ?? u.hp) - e.amount));
+            if (at) floaters.push({ h: at, text: `-${e.amount}`, color: '#ff5a5a', t0: now, big: e.amount >= 60 });
+            pulses.push({ uid: e.target, kind: 'hit', t0: now });
+            sfx('hit');
+            show();
+            await wait(260);
+          }
+          break;
+        case 'heal':
+          if (e.target && e.amount) {
+            const u = unitOf(e.target);
+            if (u) hp.set(u.uid, Math.min(u.maxHp, (hp.get(u.uid) ?? u.hp) + e.amount));
+            if (at) floaters.push({ h: at, text: `+${e.amount}`, color: '#8CFF5A', t0: now });
+            pulses.push({ uid: e.target, kind: 'heal', t0: now });
+            show();
+            await wait(260);
+          }
+          break;
+        case 'miss':
+          if (at) floaters.push({ h: at, text: t('miss'), color: '#e8dfc8', t0: now });
+          sfx('miss');
+          show();
+          await wait(260);
+          break;
+        case 'crit':
+          if (at) flashes.push({ tiles: [at], color: 'rgba(255,207,58,0.8)', t0: now, dur: 450 });
+          if (at) floaters.push({ h: at, text: t('CRIT'), color: '#D9A93A', t0: now, big: true });
+          if (e.target) pulses.push({ uid: e.target, kind: 'crit', t0: now });
+          sfx('crit');
+          show();
+          await wait(200);
+          break;
+        case 'status':
+          if (at && e.status && !e.text.includes('loses') && !e.text.includes('immune')) {
+            floaters.push({ h: at, text: STATUSES[e.status]?.name ?? e.status, color: STATUSES[e.status]?.kind === 'buff' ? '#8CFF5A' : '#e8dfc8', t0: now });
+            show();
+            await wait(200);
+          }
+          break;
+        case 'ko':
+          await wait(250);
+          if (e.target) gone.add(e.target);
+          if (e.to) tombs.push(e.to);
+          if (e.to) floaters.push({ h: e.to, text: t('KO'), color: '#ff2b3a', t0: performance.now(), big: true });
+          sfx('ko');
+          show();
+          await wait(450);
+          break;
+        case 'field':
+          if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,154,31,0.45)', t0: now, dur: 800 });
+          show();
+          await wait(200);
+          break;
+        case 'trap':
+          if (at) flashes.push({ tiles: [at], color: 'rgba(194,43,51,0.8)', t0: now, dur: 600 });
+          show();
+          await wait(250);
+          break;
+        case 'vp':
+          if (e.owner !== undefined && e.amount) {
+            vpLive[e.owner] += e.amount;
+            show();
+            await wait(250);
+          }
+          break;
+        default:
+          break;
+      }
+    };
     (async () => {
-      for (const e of events) {
+      await wait(900);
+      const newLog: { text: string; kind: string }[] = [];
+      for (const [bi, beat] of beats.entries()) {
         if (cancelled) return;
-        newLog.push({ text: e.text, kind: e.kind });
-        if (skipRef.current) continue;
+        for (const e of beat.events) newLog.push({ text: e.text, kind: e.kind });
+        if (!skipRef.current) setCaption({ index: bi + 1, total: beats.length, beat });
+        const e = beat.start;
         const now = performance.now();
-        const at = unitPos(e.target) ?? e.to ?? unitPos(e.actor);
-        const px = at ? { h: at } : null;
-        switch (e.kind) {
-          case 'move':
-            if (e.actor && e.to) pos.set(e.actor, e.to);
-            if (e.target && e.to) pos.set(e.target, e.to);
-            if (e.tiles) flashes.push({ tiles: e.tiles, color: 'rgba(79,227,255,0.5)', t0: now, dur: 500 });
-            sfx('step');
-            break;
-          case 'damage':
-            if (e.target && e.amount) {
-              const u = base.units.find((x) => x.uid === e.target);
-              if (u) hp.set(u.uid, (hp.get(u.uid) ?? u.hp) - e.amount);
-              if (px) floaters.push({ h: px.h, text: `-${e.amount}`, color: '#ff5a5a', t0: now, big: e.amount >= 60 });
-              pulses.push({ uid: e.target, kind: 'hit', t0: now });
-              sfx('hit');
-            }
-            break;
-          case 'heal':
-            if (e.target && e.amount) {
-              const u = base.units.find((x) => x.uid === e.target);
-              if (u) hp.set(u.uid, Math.min(u.maxHp, (hp.get(u.uid) ?? u.hp) + e.amount));
-              if (px) floaters.push({ h: px.h, text: `+${e.amount}`, color: '#8CFF5A', t0: now });
-              pulses.push({ uid: e.target, kind: 'heal', t0: now });
-            }
-            break;
-          case 'miss':
-            if (px) floaters.push({ h: px.h, text: 'miss', color: '#e8dfc8', t0: now });
-            sfx('miss');
-            break;
-          case 'crit':
-            if (px) flashes.push({ tiles: [px.h], color: 'rgba(255,207,58,0.8)', t0: now, dur: 450 });
-            if (px) floaters.push({ h: px.h, text: 'CRIT', color: '#D9A93A', t0: now, big: true });
-            if (e.target) pulses.push({ uid: e.target, kind: 'crit', t0: now });
-            sfx('crit');
-            break;
-          case 'attack': {
-            const to = unitPos(e.target) ?? e.to ?? e.tiles?.[0];
-            if (e.actor && to) pulses.push({ uid: e.actor, kind: 'lunge', to, t0: now });
-            if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,90,90,0.45)', t0: now, dur: 500 });
-            else if (px) flashes.push({ tiles: [px.h], color: 'rgba(255,90,90,0.45)', t0: now, dur: 350 });
+        switch (beat.kind) {
+          case 'deploy': {
+            const u = final.units.find((x) => x.uid === e.actor) ?? unitOf(e.actor);
+            if (u && !arrived.some((x) => x.uid === u.uid) && !base.units.some((x) => x.uid === u.uid)) arrived.push(structuredClone(u));
+            if (e.to) flashes.push({ tiles: [e.to], color: 'rgba(140,255,90,0.6)', t0: now, dur: 800 });
+            if (e.privateTo === me) setPopups((n) => n + 1);
+            sfx('deploy');
+            show();
+            await wait(900);
             break;
           }
-          case 'ko':
-            if (e.target) gone.add(e.target);
-            if (e.to) tombs.push(e.to);
-            sfx('ko');
+          case 'move': {
+            const path = e.tiles ?? (e.to ? [e.to] : []);
+            for (const tile of path.slice(1)) {
+              if (e.actor) pos.set(e.actor, tile);
+              if (e.target && !e.actor) pos.set(e.target, tile);
+              sfx('step');
+              show();
+              await wait(300);
+            }
+            if (e.actor && e.to) pos.set(e.actor, e.to);
+            show();
+            await wait(250);
             break;
-          case 'field':
-            if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,154,31,0.45)', t0: now, dur: 700 });
+          }
+          case 'attack': {
+            const from = unitPos(e.actor);
+            const firstHit = beat.events.find((x) => x.kind === 'damage' || x.kind === 'miss' || x.kind === 'heal');
+            const to = e.to ?? unitPos(firstHit?.target) ?? e.tiles?.[0];
+            const tag = beat.events.find((x) => x.tag)?.tag;
+            if (e.actor && to) pulses.push({ uid: e.actor, kind: 'lunge', to, t0: now });
+            if (from && to) vfx.push({ kind: distance(from, to) > 1 ? (tag === 'electric' ? 'beam' : 'projectile') : 'slash', from, to, color: TAG_COLOR[tag ?? 'slash'] ?? '#ffcf6a', t0: now, dur: distance(from, to) > 1 ? 420 : 320 });
+            if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,90,90,0.45)', t0: now, dur: 600 });
+            show();
+            await wait(distance(from ?? to ?? { c: 0, r: 0 }, to ?? from ?? { c: 0, r: 0 }) > 1 ? 450 : 350);
+            for (const c of beat.events.slice(1)) await consequence(c);
+            await wait(650);
             break;
-          case 'status':
-            if (px && e.status && STATUS_GLYPH[e.status]) floaters.push({ h: px.h, text: STATUS_GLYPH[e.status]!, color: '#e8dfc8', t0: now });
-            break;
-          case 'deploy':
-            if (e.privateTo === me) setPopups((n) => n + 1);
-            if (e.to) flashes.push({ tiles: [e.to], color: 'rgba(140,255,90,0.6)', t0: now, dur: 700 });
-            if (e.actor) pulses.push({ uid: e.actor, kind: 'deploy', t0: now });
-            sfx('deploy');
-            break;
-          case 'trap':
-            if (px) flashes.push({ tiles: [px.h], color: 'rgba(194,43,51,0.8)', t0: now, dur: 600 });
-            break;
-          case 'win':
-            break;
-          default:
-            break;
+          }
+          default: {
+            const at = unitPos(e.target) ?? e.to ?? unitPos(e.actor);
+            if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(180,140,255,0.45)', t0: now, dur: 700 });
+            else if (at && beat.kind !== 'score') vfx.push({ kind: 'burst', from: at, to: at, color: '#b48cff', t0: now, dur: 500 });
+            show();
+            await wait(beat.kind === 'score' ? 200 : 350);
+            for (const c of beat.kind === 'score' ? beat.events : beat.events.slice(1)) await consequence(c);
+            await wait(beat.kind === 'score' ? 500 : 550);
+          }
         }
-        setPlay({ pos: new Map(pos), hp: new Map(hp), gone: new Set(gone), floaters: floaters.slice(-30), flashes: flashes.slice(-20), pulses: pulses.slice(-30), tombs: [...tombs] });
-        const relevant = ['move', 'damage', 'heal', 'miss', 'crit', 'ko', 'field', 'deploy', 'trap', 'attack'].includes(e.kind);
-        if (relevant) await sleep(EVENT_DELAY / speed);
       }
       if (cancelled) return;
-      await sleep(skipRef.current ? 0 : 400 / speed);
+      await wait(400);
+      setCaption(null);
       setLog((l) => [...l, ...newLog].slice(-400));
       setPlay({});
       setDisplay(snap.view);
       setPlaying(false);
       setBanner(snap.ended ? null : `${t('Round')} ${snap.view.round} — ${t('Planning')}`);
-      if (snap.view.round % 5 === 0 && !snap.ended) setTimeout(() => setBanner('Full Moon'), 1700);
+      if (snap.view.round % 5 === 0 && !snap.ended) setTimeout(() => setBanner(t('Full Moon')), 1700);
     })();
     return () => {
       cancelled = true;
@@ -180,6 +263,12 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
   }, [snap.roundSerial]);
 
   const boardRef = useRef<HTMLDivElement>(null);
+  // creatures deployed this round appear on the board when their deployment beat plays
+  const boardState = useMemo(
+    () => (play.arrived?.length ? { ...display, units: [...display.units, ...play.arrived.filter((a) => !display.units.some((u) => u.uid === a.uid))] } : display),
+    [display, play.arrived],
+  );
+  const vpOf = (p: PlayerId) => (playing && play.vpLive ? play.vpLive[p] : display.players[p].vp);
   const [renderer, setRenderer] = useState<DioramaRenderer | null>(null);
   const insets = useBoardInsets();
 
@@ -310,7 +399,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         <div className="hud-score panel">
           <div className="score-row">
             <span className="side me">
-              <b className="vp num">{display.players[me].vp}</b>
+              <b className="vp num">{vpOf(me)}</b>
               <span className="nm">{snap.info.names[me]}</span>
             </span>
             <span className="round">
@@ -318,10 +407,10 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             </span>
             <span className="side foe">
               <span className="nm">{snap.info.names[enemy]}</span>
-              <b className="vp num">{display.players[enemy].vp}</b>
+              <b className="vp num">{vpOf(enemy)}</b>
             </span>
           </div>
-          <VpRace me={display.players[me].vp} them={display.players[enemy].vp} target={target === Infinity ? 100 : target} />
+          <VpRace me={vpOf(me)} them={vpOf(enemy)} target={target === Infinity ? 100 : target} />
           <div className="score-meta">
             <span className="mode">
               {view.settings.mode[0]!.toUpperCase() + view.settings.mode.slice(1)} · first to {target === Infinity ? '∞' : target}
@@ -351,6 +440,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           )}
         </div>
       </div>
+      {caption && playing && <BeatCaption {...caption} me={me} />}
       {pv.issues.length > 0 && !playing && (
         <div className="panel small" style={{ position: 'absolute', top: 112, left: '50%', transform: 'translateX(-50%)', zIndex: 13, color: '#ffb0b4', padding: '4px 12px' }}>
           ⚠ {pv.issues[0]}
@@ -408,7 +498,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
 
       {/* BOARD */}
       <div className="board" ref={boardRef}>
-        <BoardCanvas state={display} me={me} overlay={overlay} insets={insets} onTile={onTile} onHover={setHover} onContext={() => setMode({ kind: 'idle' })} onRenderer={setRenderer} />
+        <BoardCanvas state={boardState} me={me} overlay={overlay} insets={insets} onTile={onTile} onHover={setHover} onContext={() => setMode({ kind: 'idle' })} onRenderer={setRenderer} />
         {banner && (
           <div key={banner + view.round} className="banner" onAnimationEnd={() => setBanner(null)}>
             {banner}
@@ -765,6 +855,22 @@ function useBoardInsets(): Insets {
     if (w <= 760) return { top: 150, right: 4, bottom: 158, left: 4 };
     return { top: 108, right: 24, bottom: 176, left: 24 };
   }, [w]);
+}
+
+/** What is happening right now during the resolution: one line per action, with its outcome. */
+function BeatCaption({ index, total, beat, me }: { index: number; total: number; beat: Beat; me: PlayerId }) {
+  const side = beat.owner === undefined ? 'neutral' : beat.owner === me ? 'mine' : 'theirs';
+  return (
+    <div key={index} className={`panel beat-caption ${side}`} role="status" aria-live="polite">
+      <span className="beat-step num">
+        {index}/{total}
+      </span>
+      <div className="col" style={{ gap: 2, minWidth: 0 }}>
+        <b className="beat-title">{beat.title}</b>
+        {beat.detail && <span className="beat-detail">{beat.detail}</span>}
+      </div>
+    </div>
+  );
 }
 
 /** "Creature or tile?" when a single-target attack is aimed at an occupied tile. */

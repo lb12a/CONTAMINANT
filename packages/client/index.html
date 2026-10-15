@@ -13,6 +13,27 @@
     <title>Contaminant</title>
   </head>
   <body>
+    <!-- loading screen: visible before any script runs, removed by main.tsx once the game is ready -->
+    <div id="boot" role="status" aria-live="polite">
+      <style>
+        #boot { position: fixed; inset: 0; z-index: 100; display: grid; place-items: end center; padding: 0 24px 12vh; color: #f2e8cc;
+          background: radial-gradient(ellipse at 50% 40%, rgba(14,10,18,0.15), rgba(14,10,18,0.9) 75%), url('./assets/gen/backdrops/loading.webp') center / cover, #0e0a12;
+          font-family: Georgia, serif; transition: opacity 0.6s ease; }
+        #boot.gone { opacity: 0; pointer-events: none; }
+        #boot .t { font-size: clamp(44px, 9vw, 96px); font-weight: 800; line-height: 1; letter-spacing: 0.01em; -webkit-text-stroke: 6px #0e0a12; paint-order: stroke fill;
+          text-shadow: 0 6px 0 #000, 0 0 40px rgba(140,255,90,0.45); text-align: center; }
+        #boot .bar { width: min(420px, 80vw); height: 14px; margin: 22px auto 10px; border-radius: 10px; border: 3px solid #0e0a12; background: #1a1420; overflow: hidden; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
+        #boot .fill { height: 100%; width: 6%; background: linear-gradient(90deg, #4fa82a, #b6ff8c); box-shadow: 0 0 14px #8cff5a; transition: width 0.3s ease; }
+        #boot .msg { font-family: system-ui, sans-serif; font-weight: 600; font-size: 15px; opacity: 0.85; text-align: center; min-height: 1.3em; }
+        @media (prefers-reduced-motion: no-preference) { #boot .t { animation: bootPulse 2.4s ease-in-out infinite; } }
+        @keyframes bootPulse { 50% { text-shadow: 0 6px 0 #000, 0 0 70px rgba(140,255,90,0.7); } }
+      </style>
+      <div>
+        <div class="t">Contaminant</div>
+        <div class="bar"><div class="fill" id="boot-fill"></div></div>
+        <div class="msg" id="boot-msg">Waking the specimens…</div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="./src/main.tsx"></script>
   </body>

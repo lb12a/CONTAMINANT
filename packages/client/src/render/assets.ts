@@ -64,7 +64,9 @@ export function assetImage(path: string): HTMLImageElement | null {
 }
 
 /** Decodes all images below the given prefixes (used before the first render so portraits can be composed synchronously). */
-export async function preloadAssets(prefixes: string[], timeoutMs = 6000): Promise<void> {
+export async function preloadAssets(prefixes: string[], timeoutMs = 6000, onProgress?: (done: number, total: number) => void): Promise<void> {
   const urls = prefixes.flatMap((p) => assetList(p)).map((p) => `./assets/gen/${p}`);
-  await Promise.race([Promise.all(urls.map(load)), new Promise((r) => setTimeout(r, timeoutMs))]);
+  let done = 0;
+  const tick = () => onProgress?.(++done, urls.length);
+  await Promise.race([Promise.all(urls.map((u) => load(u).then(tick))), new Promise((r) => setTimeout(r, timeoutMs))]);
 }

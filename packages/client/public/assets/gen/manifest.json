@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T09:01:51.294Z",
+ "generated": "2026-10-15T09:08:17.079Z",
  "files": {
   "backdrops/loading.webp": {
    "w": 1344,
@@ -49,9 +49,29 @@
    "w": 88,
    "h": 160
   },
+  "icons/status/corrosion.webp": {
+   "w": 154,
+   "h": 160
+  },
+  "icons/status/corruption.webp": {
+   "w": 117,
+   "h": 160
+  },
+  "icons/status/fear.webp": {
+   "w": 135,
+   "h": 160
+  },
   "icons/status/haste.webp": {
    "w": 160,
    "h": 148
+  },
+  "icons/status/infection.webp": {
+   "w": 159,
+   "h": 160
+  },
+  "icons/status/marked.webp": {
+   "w": 156,
+   "h": 160
   },
   "icons/status/poison.webp": {
    "w": 141,
@@ -61,9 +81,17 @@
    "w": 104,
    "h": 160
   },
+  "icons/status/silence.webp": {
+   "w": 159,
+   "h": 160
+  },
   "icons/status/slow.webp": {
    "w": 160,
    "h": 95
+  },
+  "icons/status/vulnerable.webp": {
+   "w": 160,
+   "h": 146
   },
   "items/acid_mine.webp": {
    "w": 170,

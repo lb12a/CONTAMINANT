@@ -2296,3 +2296,49 @@ input[type='number'] {
     max-width: 90px;
   }
 }
+
+/* resolution: one caption per action */
+.beat-caption {
+  position: absolute;
+  top: 118px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 14;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: min(620px, calc(100% - 24px));
+  padding: 8px 14px;
+  border-left: 6px solid var(--bone-dim);
+  animation: beatIn 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.2);
+}
+.beat-caption.mine {
+  border-left-color: var(--me);
+}
+.beat-caption.theirs {
+  border-left-color: var(--foe);
+}
+.beat-step {
+  font-family: var(--font-display);
+  font-size: 20px;
+  color: var(--bone-dim);
+}
+.beat-title {
+  font-size: 17px;
+  line-height: 1.2;
+}
+.beat-detail {
+  font-size: 14px;
+  color: #ffd0a0;
+}
+@keyframes beatIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -8px);
+  }
+}
+@media (max-width: 760px) {
+  .beat-caption {
+    top: 156px;
+  }
+}

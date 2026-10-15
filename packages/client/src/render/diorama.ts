@@ -329,6 +329,9 @@ interface UnitView {
   /** set for units that appear after the first sync: they drop in */
   bornAt: number | null;
   height: number;
+  /** HP shown on the bar (drains toward the real value; the gap shows as a pale trail) */
+  hpShown: number | null;
+  hpTrail: number | null;
 }
 
 interface WallView {
@@ -736,7 +739,7 @@ export class DioramaRenderer {
         const spr = new Sprite(tex);
         spr.anchor.set(0.5, 0.94);
         root.addChild(shadow, spr);
-        v = { uid: u.uid, root, shadow, spr, label: null, labelText: '', look: '', x: w.x, y: w.y, target: k, move: null, phase: hash(u.uid.length * 97 + u.pos.c * 13 + u.pos.r) * 6.28, dying: null, bornAt: this.firstSyncDone && !this.reduce ? now : null, height: 0 };
+        v = { uid: u.uid, root, shadow, spr, label: null, labelText: '', look: '', x: w.x, y: w.y, target: k, move: null, phase: hash(u.uid.length * 97 + u.pos.c * 13 + u.pos.r) * 6.28, dying: null, bornAt: this.firstSyncDone && !this.reduce ? now : null, height: 0, hpShown: null, hpTrail: null };
         this.units.set(u.uid, v);
         this.entities.addChild(root);
       }
@@ -1193,8 +1196,13 @@ export class DioramaRenderer {
       if (flash > 0) v.shadow.ellipse(0, 0, S * 0.7 * flash, S * 0.7 * flash * TILT).stroke({ width: 3, color: 0xffffff, alpha: flash * 0.6 });
 
       // HP bar: chunky rounded bar in the team colour
-      const hp = this.ov.hp?.get(uid) ?? u.hp;
+      const hpTarget = this.ov.hp?.get(uid) ?? u.hp;
+      // the bar drains smoothly; a pale trail lingers where the lost HP was
+      v.hpShown = v.hpShown === null || this.reduce ? hpTarget : v.hpShown + (hpTarget - v.hpShown) * 0.2;
+      v.hpTrail = v.hpTrail === null || this.reduce || hpTarget > v.hpTrail ? hpTarget : v.hpTrail + (hpTarget - v.hpTrail) * 0.035;
+      const hp = v.hpShown;
       const pct = clamp01(hp / u.maxHp);
+      const trailPct = clamp01(v.hpTrail / u.maxHp);
       const bw = S * 1.05;
       const bh = 11;
       const visualTop = v.y + oy - v.spr.height * 0.94;
@@ -1203,6 +1211,7 @@ export class DioramaRenderer {
       const col = u.owner === this.me ? TEAM_MINE : TEAM_ENEMY;
       bars.roundRect(bx - 3, by - 3, bw + 6, bh + 6, 7).fill({ color: 0x0e0a12, alpha: 0.92 });
       bars.roundRect(bx, by, bw, bh, 5).fill({ color: 0x2a1d22 });
+      if (trailPct > pct + 0.003) bars.roundRect(bx, by, Math.max(bh, bw * trailPct), bh, 5).fill({ color: 0xffe9c8, alpha: 0.85 });
       if (pct > 0) bars.roundRect(bx, by, Math.max(bh, bw * pct), bh, 5).fill({ color: pct > 0.3 ? col : 0xff4040 });
       bars.roundRect(bx + 2, by + 1.5, Math.max(0, bw * pct - 4), 3, 2).fill({ color: 0xffffff, alpha: 0.28 });
       if (u.shield) bars.roundRect(bx, by - 6, Math.min(bw, bw * (u.shield.amount / u.maxHp)), 5, 2).fill({ color: 0x9fe8ff, alpha: 0.95 });
@@ -1308,6 +1317,38 @@ export class DioramaRenderer {
         const { x, y } = worldCenter(h);
         g.poly(hexPoints(x, y, S * (0.85 + k * 0.25)), true).fill({ color: f.color, alpha: (1 - k) * 0.55 });
         g.poly(hexPoints(x, y, S * (0.9 + k * 0.4)), true).stroke({ width: 4, color: f.color, alpha: (1 - k) * 0.8 });
+      }
+    }
+    // attack visuals: projectiles arc to the target, melee slashes, beams, bursts
+    for (const fx of ov.vfx ?? []) {
+      const k = (now - fx.t0) / fx.dur;
+      if (k < 0 || k > 1.15) continue;
+      const a = worldCenter(fx.from);
+      const b = worldCenter(fx.to);
+      const ay = a.y - S * 0.85;
+      const by2 = b.y - S * 0.6;
+      if (fx.kind === 'projectile') {
+        const kk = Math.min(1, k);
+        for (let i = 0; i < 6; i++) {
+          const t = Math.max(0, kk - i * 0.04);
+          const x = a.x + (b.x - a.x) * t;
+          const y = ay + (by2 - ay) * t - Math.sin(Math.PI * t) * S * 1.1;
+          g.circle(x, y, (9 - i * 1.2) * (i === 0 ? 1.2 : 1)).fill({ color: fx.color, alpha: (1 - i / 6) * (k > 1 ? 1.15 - k : 1) });
+        }
+        if (k >= 0.95) g.circle(b.x, by2, S * 0.45 * (k - 0.95) * 8).stroke({ width: 4, color: fx.color, alpha: Math.max(0, 1.15 - k) });
+      } else if (fx.kind === 'beam') {
+        const w = 10 * (1 - Math.abs(k - 0.5));
+        g.moveTo(a.x, ay).lineTo(b.x, by2).stroke({ width: w + 6, color: fx.color, alpha: 0.35 * (1 - k) });
+        g.moveTo(a.x, ay).lineTo(b.x, by2).stroke({ width: w, color: 0xffffff, alpha: 0.9 * (1 - k) });
+      } else if (fx.kind === 'slash') {
+        const r = S * (0.55 + 0.35 * k);
+        for (let i = -1; i <= 1; i++) {
+          const rot = -0.9 + i * 0.35 + k * 0.6;
+          g.arc(b.x + i * 6, by2 - i * 6, r, rot, rot + 1.7).stroke({ width: 6 - Math.abs(i) * 2, color: i === 0 ? 0xffffff : fx.color, alpha: Math.max(0, 1 - k) });
+        }
+      } else {
+        const r = S * (0.3 + 0.9 * k);
+        g.ellipse(b.x, b.y - S * 0.3, r, r * 0.7).stroke({ width: 5, color: fx.color, alpha: Math.max(0, 1 - k) });
       }
     }
     // particles

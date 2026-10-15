@@ -13,7 +13,23 @@ if ('serviceWorker' in navigator && location.protocol === 'https:') {
   navigator.serviceWorker.register('./sw.js').catch(() => undefined);
 }
 
+// loading screen (markup in index.html): progress follows the asset preload, eerie lines rotate meanwhile
+const LINES = ['Waking the specimens…', 'Sharpening the scalpels…', 'Counting the teeth…', 'Mopping up the green stuff…', 'Unlocking the cages…', 'Lighting the lab lamps…'];
+const fill = document.getElementById('boot-fill');
+const msg = document.getElementById('boot-msg');
+let line = 0;
+const rotate = window.setInterval(() => msg && (msg.textContent = LINES[++line % LINES.length]!), 1400);
+const progress = (f: number) => fill && (fill.style.width = `${Math.round(8 + f * 90)}%`);
+
 // generated sprites are decoded before the first render so card portraits can be composed synchronously
 await loadAssetManifest();
-await preloadAssets(['tokens/', 'items/', 'backdrops/']);
+progress(0.08);
+await preloadAssets(['tokens/', 'items/', 'backdrops/', 'icons/'], 9000, (done, total) => progress(done / Math.max(1, total)));
+progress(1);
 createRoot(document.getElementById('root')!).render(<App />);
+window.setTimeout(() => {
+  window.clearInterval(rotate);
+  const boot = document.getElementById('boot');
+  boot?.classList.add('gone');
+  window.setTimeout(() => boot?.remove(), 700);
+}, 250);
