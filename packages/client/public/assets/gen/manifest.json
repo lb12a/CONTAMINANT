@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-15T08:58:36.062Z",
+ "generated": "2026-10-15T09:01:51.294Z",
  "files": {
   "backdrops/loading.webp": {
    "w": 1344,
@@ -41,9 +41,29 @@
    "w": 135,
    "h": 160
   },
+  "icons/status/blind.webp": {
+   "w": 160,
+   "h": 95
+  },
+  "icons/status/burn.webp": {
+   "w": 88,
+   "h": 160
+  },
+  "icons/status/haste.webp": {
+   "w": 160,
+   "h": 148
+  },
   "icons/status/poison.webp": {
    "w": 141,
    "h": 160
+  },
+  "icons/status/shock.webp": {
+   "w": 104,
+   "h": 160
+  },
+  "icons/status/slow.webp": {
+   "w": 160,
+   "h": 95
   },
   "items/acid_mine.webp": {
    "w": 170,

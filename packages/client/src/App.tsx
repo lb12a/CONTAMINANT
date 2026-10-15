@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Toasts } from './ui/components.tsx';
+import { Icon } from './ui/Icon.tsx';
 import { useProfile, getSocket, toast } from './store.ts';
 import { OnlineMatch } from './game/controller.ts';
 import { t } from './i18n.ts';
@@ -45,12 +46,18 @@ export type Route =
 
 export type Nav = (r: Route) => void;
 
+/** Four sections instead of fourteen buttons: the active section shows its pages in a second row. */
+export const NAV_GROUPS: { id: string; label: string; icon: string; routes: [Route['name'], string][] }[] = [
+  { id: 'play', label: 'Play', icon: 'mode/contamination', routes: [['menu', 'Home'], ['tutorials', 'Testing Chambers'], ['missions', 'Missions']] },
+  { id: 'collection', label: 'Collection', icon: 'ui/cards', routes: [['collection', 'Collection'], ['deck', 'Deck Builder'], ['shop', 'Shop']] },
+  { id: 'compete', label: 'Compete', icon: 'ui/trophy', routes: [['online', 'Online'], ['tournaments', 'Tournaments'], ['worldcup', 'World Cup'], ['ladder', 'Ladder'], ['teams', 'Teams']] },
+  { id: 'watch', label: 'Watch', icon: 'ui/eye', routes: [['replay', 'Replays'], ['spectate', 'Spectate'], ['meta', 'Meta'], ['history', 'History']] },
+];
+
 export function App() {
   const [route, setRoute] = useState<Route>({ name: 'menu' });
-  const [menuOpen, setMenuOpen] = useState(false);
   const profile = useProfile();
   const nav: Nav = (r) => {
-    setMenuOpen(false);
     setRoute(r);
     window.scrollTo(0, 0);
   };
@@ -79,56 +86,55 @@ export function App() {
     );
   }
 
-  const links: [Route['name'], string][] = [
-    ['collection', t('Collection')],
-    ['deck', t('Deck Builder')],
-    ['tutorials', t('Testing Chambers')],
-    ['shop', t('Shop')],
-    ['missions', t('Missions')],
-    ['online', t('Online')],
-    ['tournaments', t('Tournaments')],
-    ['worldcup', t('World Cup')],
-    ['teams', t('Teams')],
-    ['ladder', t('Ladder')],
-    ['replay', t('Replays')],
-    ['meta', t('Meta')],
-    ['history', t('History')],
-    ['settings', t('Settings')],
-  ];
+  const group = NAV_GROUPS.find((g) => g.routes.some(([r]) => r === route.name)) ?? null;
 
   return (
     <div className="shell">
       <div className="backdrop" />
-      <nav className={`topnav${menuOpen ? ' open' : ''}`}>
-        <span className="brand" onClick={() => nav({ name: 'menu' })}>
-          ☣ CONTAMINANT
-        </span>
-        <div className="navlinks row wrap" style={{ gap: 4 }}>
-          {links.map(([n, label]) => (
-            <button key={n} className={`navlink${route.name === n ? ' current' : ''}`} aria-current={route.name === n ? 'page' : undefined} onClick={() => nav({ name: n } as Route)}>
-              {label}
+      <header className="topbar">
+        <button className="brand" onClick={() => nav({ name: 'menu' })} aria-label="Contaminant home">
+          <Icon name="mode/contamination" size={26} />
+          <span>Contaminant</span>
+        </button>
+        <nav className="groups" aria-label="Sections">
+          {NAV_GROUPS.map((g) => (
+            <button key={g.id} className={`group-tab${group?.id === g.id ? ' current' : ''}`} aria-current={group?.id === g.id ? 'page' : undefined} onClick={() => nav({ name: g.routes[0]![0] } as Route)}>
+              <Icon name={g.icon} size={24} />
+              <span>{t(g.label)}</span>
             </button>
           ))}
-        </div>
+        </nav>
         <span className="spacer" />
         {profile.dev && (
           <span className="chip dev-badge" title="Developer profile: everything unlocked, unlimited gold, no ranked, tournaments, ladder or meta">
             DEV
           </span>
         )}
-        <span className="chip num" title="Gold">🪙 {profile.dev ? '∞' : profile.collection.gold}</span>
-        <span className="chip num" title="Trophies">🏆 {profile.collection.trophies}</span>
-        {profile.online ? (
-          <button className="chip buff" style={{ cursor: 'pointer' }} onClick={() => nav({ name: 'profile' })} title="Your public profile">
-            ● {profile.online.name}
-          </button>
-        ) : (
-          <span className="chip neutral">{t('Offline')}</span>
-        )}
-        <button className="icon-btn menu-burger" onClick={() => setMenuOpen((v) => !v)} aria-label="menu">
-          ☰
+        <span className="res" title={t('Gold')}>
+          <Icon name="ui/gold" size={20} />
+          <b className="num">{profile.dev ? '∞' : profile.collection.gold}</b>
+        </span>
+        <span className="res" title={t('Trophies')}>
+          <Icon name="ui/trophy" size={20} />
+          <b className="num">{profile.collection.trophies}</b>
+        </span>
+        <button className={`me-btn${profile.online ? ' online' : ''}`} onClick={() => nav(profile.online ? { name: 'profile' } : { name: 'online' })} title={profile.online ? t('Profile') : t('Go online')}>
+          <span className="me-dot" />
+          <span className="me-name">{profile.online ? profile.online.name : t('Offline')}</span>
         </button>
-      </nav>
+        <button className={`icon-btn settings-btn${route.name === 'settings' ? ' current' : ''}`} onClick={() => nav({ name: 'settings' })} aria-label={t('Settings')} title={t('Settings')}>
+          <Icon name="ui/settings" size={22} />
+        </button>
+      </header>
+      {group && group.routes.length > 1 && (
+        <nav className="subnav" aria-label={t(group.label)}>
+          {group.routes.map(([r, label]) => (
+            <button key={r} className={`sub-tab${route.name === r ? ' current' : ''}`} aria-current={route.name === r ? 'page' : undefined} onClick={() => nav({ name: r } as Route)}>
+              {t(label)}
+            </button>
+          ))}
+        </nav>
+      )}
       <main className="page">
         {route.name === 'menu' && <MenuScreen nav={nav} />}
         {route.name === 'collection' && <CollectionScreen nav={nav} />}
@@ -148,6 +154,14 @@ export function App() {
         {route.name === 'tutorials' && <TutorialsScreen nav={nav} defId={route.defId} />}
         {route.name === 'missions' && <MissionsScreen />}
       </main>
+      <nav className="tabbar" aria-label="Sections">
+        {NAV_GROUPS.map((g) => (
+          <button key={g.id} className={group?.id === g.id ? 'current' : ''} onClick={() => nav({ name: g.routes[0]![0] } as Route)}>
+            <Icon name={g.icon} size={26} />
+            <span>{t(g.label)}</span>
+          </button>
+        ))}
+      </nav>
       <Toasts />
     </div>
   );
