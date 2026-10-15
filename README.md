@@ -98,6 +98,12 @@ All creature, prop, ground, backdrop and item art is generated locally with Comf
    `node tools/assetgen/src/generate.ts --sheet` writes contact sheets to compare candidates,
    `--only=tokens/vile` limits a run, `--force` regenerates.
 
+The generator runs in a gentle mode by default: one image per job, slightly smaller renders, tiled VAE
+decoding and a short pause after every image. On integrated GPUs (tested on an Intel Arc 140T) long GPU
+kernels can trip the driver timeout and freeze the machine; start ComfyUI with
+`--use-split-cross-attention --reserve-vram 3` as well. `COMFY_GENTLE=0` restores full-size batched renders
+on a dedicated GPU, `COMFY_COOLDOWN_MS` sets the pause.
+
 Output goes to `packages/client/public/assets/gen` (WebP + `manifest.json`). The client uses generated art
 wherever it exists and falls back to procedural drawings otherwise, so the game always runs.
 

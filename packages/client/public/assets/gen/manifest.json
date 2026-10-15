@@ -1,5 +1,5 @@
 {
- "generated": "2026-10-14T22:50:44.174Z",
+ "generated": "2026-10-15T06:36:05.033Z",
  "files": {
   "tokens/arachnia.webp": {
    "w": 512,
@@ -15,6 +15,10 @@
   },
   "tokens/calaca.webp": {
    "w": 344,
+   "h": 512
+  },
+  "tokens/candle.webp": {
+   "w": 319,
    "h": 512
   },
   "tokens/cog_cuckoo.webp": {
@@ -53,6 +57,14 @@
    "w": 306,
    "h": 512
   },
+  "tokens/mini_arachnia.webp": {
+   "w": 309,
+   "h": 512
+  },
+  "tokens/mud_decoy.webp": {
+   "w": 497,
+   "h": 512
+  },
   "tokens/mycel.webp": {
    "w": 406,
    "h": 512
@@ -61,8 +73,24 @@
    "w": 385,
    "h": 512
   },
+  "tokens/piggybank.webp": {
+   "w": 418,
+   "h": 512
+  },
   "tokens/pokerface.webp": {
    "w": 392,
+   "h": 512
+  },
+  "tokens/pokerface_angry.webp": {
+   "w": 340,
+   "h": 512
+  },
+  "tokens/pokerface_happy.webp": {
+   "w": 356,
+   "h": 512
+  },
+  "tokens/pokerface_sad.webp": {
+   "w": 328,
    "h": 512
   },
   "tokens/pumpkin.webp": {
@@ -73,8 +101,16 @@
    "w": 371,
    "h": 512
   },
+  "tokens/shrink_head.webp": {
+   "w": 283,
+   "h": 512
+  },
   "tokens/shrink_heads.webp": {
    "w": 308,
+   "h": 512
+  },
+  "tokens/steak.webp": {
+   "w": 455,
    "h": 512
   },
   "tokens/vile.webp": {
@@ -85,12 +121,24 @@
    "w": 311,
    "h": 512
   },
+  "tokens/werewolf_wolf.webp": {
+   "w": 424,
+   "h": 512
+  },
   "tokens/wisp.webp": {
    "w": 404,
    "h": 512
   },
+  "tokens/zombie_brute.webp": {
+   "w": 363,
+   "h": 512
+  },
   "tokens/zombie_limb.webp": {
    "w": 322,
+   "h": 512
+  },
+  "tokens/zombie_patchwork.webp": {
+   "w": 256,
    "h": 512
   }
  }

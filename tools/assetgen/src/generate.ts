@@ -41,12 +41,26 @@ function picks(): Record<string, number> {
   return existsSync(PICKS) ? (JSON.parse(readFileSync(PICKS, 'utf8')) as Record<string, number>) : {};
 }
 
+// Gentle mode (default): the Intel iGPU driver times out on long kernels and can freeze the whole
+// machine (LiveKernelEvent 141). One image per job, smaller renders, tiled VAE decoding and a pause
+// after every image keep each GPU kernel short. COMFY_GENTLE=0 restores full-size batched renders.
+const GENTLE = process.env.COMFY_GENTLE !== '0';
+const COOLDOWN_MS = Number(process.env.COMFY_COOLDOWN_MS ?? 8000);
+const snap64 = (v: number) => Math.max(512, Math.round(v / 64) * 64);
+
+function renderSize(spec: AssetSpec): { width: number; height: number } {
+  if (!GENTLE) return { width: spec.width, height: spec.height };
+  const f = spec.width >= 1024 || spec.height >= 1024 ? 0.875 : 0.92;
+  return { width: snap64(spec.width * f), height: snap64(spec.height * f) };
+}
+
 function workflow(spec: AssetSpec, seed: number) {
+  const { width, height } = renderSize(spec);
   return {
     '4': { class_type: 'CheckpointLoaderSimple', inputs: { ckpt_name: CKPT } },
     '6': { class_type: 'CLIPTextEncode', inputs: { text: spec.prompt, clip: ['4', 1] } },
     '7': { class_type: 'CLIPTextEncode', inputs: { text: NEGATIVE, clip: ['4', 1] } },
-    '5': { class_type: 'EmptyLatentImage', inputs: { width: spec.width, height: spec.height, batch_size: spec.candidates } },
+    '5': { class_type: 'EmptyLatentImage', inputs: { width, height, batch_size: GENTLE ? 1 : spec.candidates } },
     '3': {
       class_type: 'KSampler',
       inputs: {
@@ -62,7 +76,9 @@ function workflow(spec: AssetSpec, seed: number) {
         latent_image: ['5', 0],
       },
     },
-    '8': { class_type: 'VAEDecode', inputs: { samples: ['3', 0], vae: ['4', 2] } },
+    '8': GENTLE
+      ? { class_type: 'VAEDecodeTiled', inputs: { samples: ['3', 0], vae: ['4', 2], tile_size: 384, overlap: 64, temporal_size: 64, temporal_overlap: 8 } }
+      : { class_type: 'VAEDecode', inputs: { samples: ['3', 0], vae: ['4', 2] } },
     '9': { class_type: 'SaveImage', inputs: { filename_prefix: `contaminant/${spec.path.replace('/', '_')}`, images: ['8', 0] } },
   };
 }
@@ -81,31 +97,35 @@ interface HistoryImage {
   type: string;
 }
 
-async function render(spec: AssetSpec): Promise<void> {
-  const seed = hash(spec.path) % 2 ** 31;
-  const t0 = performance.now();
+async function queueAndFetch(spec: AssetSpec, seed: number): Promise<Buffer[]> {
   const r = await fetch(`${COMFY}/prompt`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ prompt: workflow(spec, seed), client_id: 'contaminant-assetgen' }) });
   if (!r.ok) throw new Error(`queue failed: ${r.status} ${await r.text()}`);
   const { prompt_id } = (await r.json()) as { prompt_id: string };
-  for (;;) {
-    await new Promise((res) => setTimeout(res, 1500));
-    const h = (await (await fetch(`${COMFY}/history/${prompt_id}`)).json()) as Record<string, { outputs: Record<string, { images?: HistoryImage[] }>; status?: { status_str: string } }>;
-    const entry = h[prompt_id];
-    if (!entry) continue;
-    if (entry.status?.status_str === 'error') throw new Error(`generation failed for ${spec.path}`);
-    const images = Object.values(entry.outputs).flatMap((o) => o.images ?? []);
-    if (!images.length) continue;
-    for (let k = 0; k < images.length; k++) {
-      const im = images[k]!;
-      const q = new URLSearchParams({ filename: im.filename, subfolder: im.subfolder, type: im.type });
-      const buf = Buffer.from(await (await fetch(`${COMFY}/view?${q}`)).arrayBuffer());
-      const f = rawFile(spec, k);
-      mkdirSync(dirname(f), { recursive: true });
-      writeFileSync(f, buf);
-    }
-    console.log(`  ${spec.path}: ${images.length} image(s) in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
-    return;
+  const images = await waitFor(prompt_id);
+  const out: Buffer[] = [];
+  for (const im of images) {
+    const q = new URLSearchParams({ filename: im.filename, subfolder: im.subfolder, type: im.type });
+    out.push(Buffer.from(await (await fetch(`${COMFY}/view?${q}`)).arrayBuffer()));
   }
+  return out;
+}
+
+async function render(spec: AssetSpec): Promise<void> {
+  const seed = hash(spec.path) % 2 ** 31;
+  const t0 = performance.now();
+  const bufs: Buffer[] = [];
+  if (GENTLE) {
+    for (let k = 0; k < spec.candidates; k++) {
+      bufs.push(...(await queueAndFetch(spec, (seed + k * 7919) % 2 ** 31)));
+      await new Promise((res) => setTimeout(res, COOLDOWN_MS));
+    }
+  } else bufs.push(...(await queueAndFetch(spec, seed)));
+  bufs.forEach((buf, k) => {
+    const f = rawFile(spec, k);
+    mkdirSync(dirname(f), { recursive: true });
+    writeFileSync(f, buf);
+  });
+  console.log(`  ${spec.path}: ${bufs.length} image(s) in ${((performance.now() - t0) / 1000).toFixed(1)}s`);
 }
 
 const CUTOUT_KINDS = new Set<AssetSpec['kind']>(['token', 'prop', 'item', 'objective']);
