@@ -158,7 +158,7 @@ export class CircuitService {
       checkinOpensAt: next.startsAt - CIRCUIT.checkinMinutes * 60_000,
       minPlayers: 4,
       maxPlayers: 128,
-      planningSeconds: 40,
+      planningSeconds: 45,
       prizes: majorPrizes(MONTHS[next.month]!),
       featured: true,
       requirement: { minMmr: CIRCUIT.majorMinMmr },

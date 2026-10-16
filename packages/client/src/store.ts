@@ -141,7 +141,9 @@ function loadData(id: string): Profile {
     if (raw) {
       const p = JSON.parse(raw) as Profile;
       const d = defaultProfile();
-      return applyDev({ ...d, ...p, settings: { ...d.settings, ...p.settings } });
+      // 30 s was the old default planning time; profiles that still have it move to the new 45 s
+      const settings = { ...d.settings, ...p.settings, ...(p.settings?.planningSeconds === 30 ? { planningSeconds: 45 } : {}) };
+      return applyDev({ ...d, ...p, settings });
     }
   } catch {
     /* corrupted storage: start fresh */
