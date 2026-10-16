@@ -451,7 +451,7 @@ export const SUMMONS: Record<string, SummonDef> = {
   mud_decoy: { id: 'mud_decoy', name: 'Mud Decoy', hp: 80, patk: 50, pdef: 40, satk: 0, sdef: 40, speed: 0, move: 0, apPerField: 0, attacks: [], object: true, blocks: true, chars: chars('liquid', 'artificial', 'rooted', 'regenerative', 'emotionless'), text: 'Bursts when destroyed or after 3 rounds (Power 55 Blunt, Ring-1). Spreads Swamp.' },
   cooking_pot: { id: 'cooking_pot', name: 'Cooking Pot', hp: 150, patk: 0, pdef: 60, satk: 0, sdef: 60, speed: 0, move: 0, apPerField: 0, attacks: [], object: true, blocks: true, chars: chars('steel', 'artificial', 'rooted', 'robust', 'emotionless'), text: 'An object, not a unit. Stores Broth.' },
   training_dummy: { id: 'training_dummy', name: 'Test Dummy', hp: 300, patk: 40, pdef: 60, satk: 40, sdef: 60, speed: 60, move: 0, apPerField: 1, attacks: [], object: false, blocks: true, chars: chars('wood', 'artificial', 'grounded', 'robust', 'emotionless'), text: 'Straw dummy (standing).' },
-  training_walker: { id: 'training_walker', name: 'Walking Dummy', hp: 300, patk: 40, pdef: 60, satk: 40, sdef: 60, speed: 80, move: 3, apPerField: 1, attacks: [], object: false, blocks: true, chars: chars('wood', 'artificial', 'grounded', 'robust', 'emotionless'), text: 'Straw dummy (walking).' },
+  training_walker: { id: 'training_walker', name: 'Walking Dummy', hp: 300, patk: 40, pdef: 60, satk: 40, sdef: 60, speed: 60, move: 3, apPerField: 1, attacks: [], object: false, blocks: true, chars: chars('wood', 'artificial', 'grounded', 'robust', 'emotionless'), text: 'Straw dummy (walking).' },
 };
 
 export const PAIN_LINK: AttackDef = atk('voodoo_copy', {

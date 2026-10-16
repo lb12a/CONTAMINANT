@@ -46,6 +46,9 @@ export interface TutorialAct {
   enemy?: EnemyScript;
   /** rounds fast-forwarded after this act (time-lapse) */
   timelapse?: number;
+  /** the Warden prepares the act when it begins: tops up the subject's counters (souls, broth …) and, for knock-out
+   * lessons, leaves the enemies at a share of their HP, so the lesson is possible in one round */
+  setup?: { counters?: Record<string, number>; enemyHp?: number; allyHp?: number; fieldUnderEnemies?: FieldId };
 }
 
 export interface TutorialPlan {
@@ -70,7 +73,7 @@ export interface TutorialPlan {
   acts: TutorialAct[];
   synergies: string;
   weakness: string;
-  probe: { mark: string; de: string; en: string; check: Check; solution: string };
+  probe: { mark: string; de: string; en: string; check: Check; solution: string; setup?: { counters?: Record<string, number>; enemyHp?: number; allyHp?: number; fieldUnderEnemies?: FieldId } };
 }
 
 // chamber walls sit at the edges so they shape paths without blocking the main lines
@@ -116,7 +119,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Rot Siphon und Schwäche', de: 'Im Toxic Field heilt Vile 5% pro Tick. Der Gegner antwortet mit Sterile.', en: 'In a Toxic Field Vile heals 5% per tick. The enemy answers with Sterile.', hints: ['Stand in your own Toxic Field.', 'Sterile Fields stop the healing.'], tasks: [t('Spiele Contamination Burst', 'Play Contamination Burst', { kind: 'field', field: 'toxic' })], enemy: { mode: 'bot', items: ['emergency_sterilization'] } },
     ],
     synergies: 'Arachnia, Mycel, Leech Cook. Contamination Burst.', weakness: 'Sterile Fields, Radiant ×1.25, Healing −30% (außer Gift). Snare und Trainticket bremsen ihn.',
-    probe: { mark: '3:30', de: 'Töte einen Gegner mit Miasma Rot und triff mit der Explosion einen zweiten.', en: 'KO an enemy with Miasma Rot and hit a second one with the eruption.', check: { kind: 'all', of: [{ kind: 'ko', count: 1 }, { kind: 'event', text: 'Miasma eruption' }] }, solution: 'Miasma Rot the weakened enemy standing next to another.' },
+    probe: { mark: '3:30', de: 'Töte einen Gegner mit Miasma Rot und triff mit der Explosion einen zweiten.', en: 'KO an enemy with Miasma Rot and hit a second one with the eruption.', check: { kind: 'all', of: [{ kind: 'ko', count: 1 }, { kind: 'event', text: 'Miasma eruption' }] }, solution: 'Miasma Rot the weakened enemy standing next to another.', setup: { enemyHp: 0.3 } },
   },
   {
     id: 'cruorina', title: 'Line, burst and blood', titleDe: 'Linie, Burst und Blut', complexity: 'elite', rounds: 4, duration: '4:50', zone: 'bog', walls: W2,
@@ -152,7 +155,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Item und Schwäche', de: 'Silencer lässt ihn verborgen. Das Crystal Eye sieht ihn in 3 Feldern.', en: 'Silencer keeps him hidden. The Crystal Eye sees him within 3 tiles.', hints: ['Perceptive units see Hidden ones.'], tasks: [t('Greife erneut an', 'Attack again', { kind: 'damaged', count: 1 })], enemy: { mode: 'bot' } },
     ],
     synergies: 'Scarecrow (zieht Gegner heran), Ghost Train, Swap Places.', weakness: 'Perceptive-Gegner sehen ihn bei 3 Feldern. Feld-Angriffe treffen sein Feld. Nur 250 HP.',
-    probe: { mark: '3:30', de: 'Besiege einen Gegner mit dem ersten Angriff aus dem Versteck.', en: 'KO an enemy with the first attack from hiding.', check: { kind: 'ko', count: 1 }, solution: 'Sneak next to the Piggybank and slash it.' },
+    probe: { mark: '3:30', de: 'Besiege einen Gegner mit dem ersten Angriff aus dem Versteck.', en: 'KO an enemy with the first attack from hiding.', check: { kind: 'ko', count: 1 }, solution: 'Sneak next to the Piggybank and slash it.', setup: { enemyHp: 0.3 } },
   },
   {
     id: 'pumpkin', title: 'Teleport and Candy Rain', titleDe: 'Teleport und Candy Rain', complexity: 'standard', rounds: 3, duration: '3:50', zone: 'forest', walls: W2,
@@ -176,7 +179,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Snap und Schwäche', de: 'Snap heilt 15% des Schadens. Nexus schießt aus Range 7: kein Rückstoß.', en: 'Snap heals 15% of the damage. Nexus shoots from range 7: no recoil.', hints: ['Iron Tonic helps against ranged fire.'], tasks: [t('Nutze Snap', 'Use Snap', { kind: 'used', name: 'Snap' })], enemy: { mode: 'bot' } },
     ],
     synergies: 'Mycel (verteilt Schaden), Cruorina, Heavy Gloves.', weakness: 'Fernkämpfer ab Reichweite 3. Silencer verhindert den Rückstoß. Speed 60.',
-    probe: { mark: '3:30', de: 'Lass einen Gegner sich durch den Rückstoß selbst besiegen.', en: 'Let an enemy KO itself through recoil.', check: { kind: 'ko', count: 1 }, solution: 'Hold Position next to the wounded Ballerina.' },
+    probe: { mark: '3:30', de: 'Lass einen Gegner sich durch den Rückstoß selbst besiegen.', en: 'Let an enemy KO itself through recoil.', check: { kind: 'ko', count: 1 }, solution: 'Hold Position next to the wounded Ballerina.', setup: { enemyHp: 0.1 } },
   },
   {
     id: 'ballerina', title: 'Tempo and crit', titleDe: 'Tempo und Crit', complexity: 'standard', rounds: 3, duration: '3:50', zone: 'toyroom', walls: W1,
@@ -258,7 +261,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Head Count und Schwäche', de: 'Köpfe zählen für Hive Mind. Flächenschaden ×1.25 gegen Colony.', en: 'Heads count for Hive Mind. Area damage ×1.25 against Colony.', hints: ['If the Master falls, the heads vanish.'], tasks: [t('Nutze Head Swap', 'Use Head Swap', { kind: 'used', name: 'Head Swap' })], enemy: { mode: 'bot' } },
     ],
     synergies: 'Zombie Limb, Termite Mound (Hive Mind). Iron Tonic auf dem Master.', weakness: 'Flächenangriffe, Master-HP 260. Köpfe geben keine Belohnung.',
-    probe: { mark: '3:30', de: 'Besiege einen Gegner mit Shrunken Strike.', en: 'KO an enemy with Shrunken Strike.', check: { kind: 'ko', count: 1 }, solution: 'Surround the target with heads first.' },
+    probe: { mark: '3:30', de: 'Besiege einen Gegner mit Shrunken Strike.', en: 'KO an enemy with Shrunken Strike.', check: { kind: 'ko', count: 1 }, solution: 'Surround the target with heads first.', setup: { enemyHp: 0.3 } },
   },
   {
     id: 'swamp_siren', title: 'Own terrain', titleDe: 'Eigenes Gelände', complexity: 'standard', rounds: 3, duration: '3:50', zone: 'bog', walls: W2,
@@ -270,7 +273,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Mud Double und Schwäche', de: 'Mud Double lässt eine Decoy zurück. Feuer trocknet den Sumpf.', en: 'Mud Double leaves a decoy. Fire dries the swamp.', hints: ['The decoy bursts when destroyed.'], tasks: [t('Nutze Mud Double', 'Use Mud Double', { kind: 'event', text: 'Mud Decoy' })], enemy: { mode: 'bot', items: ['molotov'] } },
     ],
     synergies: 'Vile (Gift im Sumpf), Mycel, Rain Barrel.', weakness: 'Fire, Electric, trockene Felder.',
-    probe: { mark: '3:30', de: 'Blende 2 Gegner mit einem Mire Song.', en: 'Blind 2 enemies with one Mire Song.', check: { kind: 'status', status: 'blind', count: 2, side: 'enemy' }, solution: 'Spread swamp under both, then sing.' },
+    probe: { mark: '3:30', de: 'Blende 2 Gegner mit einem Mire Song.', en: 'Blind 2 enemies with one Mire Song.', check: { kind: 'status', status: 'blind', count: 2, side: 'enemy' }, solution: 'Sing before they wade out of the swamp.', setup: { fieldUnderEnemies: 'swamp' } },
   },
   {
     id: 'wisp', title: 'Gas and candle', titleDe: 'Gas und Kerze', complexity: 'standard', rounds: 3, duration: '3:50', zone: 'graveyard', walls: W1,
@@ -278,7 +281,7 @@ export const TUTORIALS: TutorialPlan[] = [
     intro: { de: 'Gas, Spectral, Airborne. 230 HP. Eine Kerze heilt sie.', en: 'Gas, Spectral, Airborne. 230 HP. A candle heals her.' },
     acts: [
       { act: 2, mark: '0:25', title: 'Candle', de: 'Sie setzt die Kerze neben sich: 20% Heilung in 3 Feldern.', en: 'She places the candle next to her: 20% healing within 3 tiles.', hints: ['The candle has only 60 HP.'], tasks: [t('Setze das Wisp ein', 'Deploy the Wisp', { kind: 'deployed', defId: 'wisp' })], enemy: { mode: 'idle' }, timelapse: 1 },
-      { act: 3, mark: '1:25', title: 'Marsh Gas', de: 'Erst Gas legen, dann dasselbe Feld zünden: Power 80.', en: 'Lay gas first, then ignite the same tile: Power 80.', hints: ['Two casts on the same tile.'], tasks: [t('Zünde das Gas', 'Ignite the gas', { kind: 'event', text: 'gas' })], enemy: { mode: 'idle' } },
+      { act: 3, mark: '1:25', title: 'Marsh Gas', de: 'Erst Gas legen, dann dasselbe Feld zünden: Power 80.', en: 'Lay gas first, then ignite the same tile: Power 80.', hints: ['Two casts on the same tile.'], tasks: [t('Zünde das Gas', 'Ignite the gas', { kind: 'event', text: 'ignites the Marsh Gas' })], enemy: { mode: 'idle' } },
       { act: 4, mark: '2:30', title: 'Zünder und Schwäche', de: 'Skybolt zündet Gas. Flicker blendet und teleportiert zur Kerze.', en: 'Skybolt ignites gas. Flicker blinds and teleports to the candle.', hints: ['Fire ×1.5 against Gas bodies.'], tasks: [t('Nutze Flicker', 'Use Flicker', { kind: 'used', name: 'Flicker' })], enemy: { mode: 'bot' } },
     ],
     synergies: 'Frankenstein, Calaca Flamenca (Fire), Nexus, Smoke Candle.', weakness: 'Kerze zerstörbar, Fire ×1.5, Electric ×1.25. Explosionen treffen Freunde.',
@@ -306,7 +309,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Hive Shift und Schwäche', de: 'Hive Shift tauscht mit dem Zombie Limb (6 Felder).', en: 'Hive Shift swaps with the Zombie Limb (6 tiles).', hints: ['Field damage hits Rooted ×1.25.'], tasks: [t('Nutze Hive Shift', 'Use Hive Shift', { kind: 'event', text: 'Hive-Shifts' })], enemy: { mode: 'bot' } },
     ],
     synergies: 'Zombie Limb (Burrowing), Shrink Heads, Mycel.', weakness: 'Fire, Feldschaden und Flächenangriffe. Parasitic −20% gegen Steel usw.',
-    probe: { mark: '3:30', de: 'Zerstöre eine Wand und triff einen Gegner mit der Säure.', en: 'Destroy a wall and hit an enemy with the acid.', check: { kind: 'status', status: 'corrosion', side: 'enemy' }, solution: 'Eat the wall the enemy will walk through.' },
+    probe: { mark: '3:30', de: 'Zerstöre in einer Runde eine Wand und triff einen Gegner mit dem Schwarm.', en: 'In one round, destroy a wall and hit an enemy with the swarm.', check: { kind: 'all', of: [{ kind: 'event', text: 'devours a wall' }, { kind: 'damaged', count: 1 }] }, solution: 'Gnaw a wall open, then send the second swarm at the closest enemy.' },
   },
   {
     id: 'cymbal_chimp', title: 'Revenge and rest', titleDe: 'Rache und Rest', complexity: 'standard', rounds: 3, duration: '3:50', zone: 'toyroom', walls: W1,
@@ -339,10 +342,10 @@ export const TUTORIALS: TutorialPlan[] = [
     acts: [
       { act: 2, mark: '0:30', title: 'Flaming Skull', de: 'Der Schädel stoppt am ersten Gegner, Ring-1 nimmt 50%. Burn 30%.', en: 'The skull stops at the first enemy, Ring-1 takes 50%. Burn 30%.', hints: ['Hit the Steak and the dummy behind it.'], tasks: [t('Nutze Flaming Skull', 'Use Flaming Skull', { kind: 'used', name: 'Flaming Skull' })], enemy: { mode: 'idle' } },
       { act: 3, mark: '1:25', title: 'Seelen', de: 'Jeder KO in 4 Feldern gibt eine Seele (+4% Fire, +3 Speed).', en: 'Every KO within 4 tiles gives a Soul (+4% Fire, +3 Speed).', hints: ['Burning KOs give one more.'], tasks: [t('Sammle eine Seele', 'Collect a Soul', { kind: 'counter', key: 'souls', min: 1 })], enemy: { mode: 'bot' } },
-      { act: 4, mark: '2:30', title: 'Marigold Garland', de: 'Für 3 Seelen: Kranz und Marigold Field. Der Freund kehrt zurück.', en: 'For 3 Souls: a wreath and a Marigold Field. The friend returns.', hints: ['Garland lasts 3 rounds.'], tasks: [t('Lege den Kranz', 'Give the Garland', { kind: 'status', status: 'garland', side: 'ally' })], enemy: { mode: 'bot', items: ['rain_barrel'] } },
+      { act: 4, mark: '2:30', title: 'Marigold Garland', de: 'Für 3 Seelen: Kranz und Marigold Field. Der Freund kehrt zurück.', en: 'For 3 Souls: a wreath and a Marigold Field. The friend returns.', hints: ['Garland lasts 3 rounds.'], tasks: [t('Lege den Kranz', 'Give the Garland', { kind: 'status', status: 'garland', side: 'ally' })], enemy: { mode: 'bot', items: ['rain_barrel'] }, setup: { counters: { souls: 3 } } },
     ],
     synergies: 'Gas Will-o-Wisp (Explosion bringt Seelen), Vile und Leech Cook.', weakness: 'Wasser, Electric ×1.25, Blunt und Sonic.',
-    probe: { mark: '4:25', de: 'Belebe einen Verbündeten mit dem Garland wieder.', en: 'Revive an ally with the Garland.', check: { kind: 'event', text: 'returns with' }, solution: 'Garland the Wisp before it charges in.' },
+    probe: { mark: '4:25', de: 'Belebe einen Verbündeten mit dem Garland wieder.', en: 'Revive an ally with the Garland.', check: { kind: 'event', text: 'returns with' }, solution: 'Garland the Wisp before it charges in.', setup: { counters: { souls: 3 }, allyHp: 0.2 } },
   },
   {
     id: 'werewolf', title: 'Human and wolf', titleDe: 'Mensch und Wolf', complexity: 'standard', rounds: 3, duration: '3:50', zone: 'forest', walls: W1,
@@ -354,7 +357,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Mond und Schwäche', de: 'Moon Charm: freie Verwandlung. Danach Exhausted.', en: 'Moon Charm: free transformation. Afterwards Exhausted.', hints: ['Fire and Radiant ×1.25.'], tasks: [t('Spiele Moon Charm', 'Play Moon Charm', { kind: 'field', field: 'moonlit' })], enemy: { mode: 'bot', items: ['molotov'] } },
     ],
     synergies: 'Scarecrow (Zug), Moon Charm, Cog Cuckoo, Calaca.', weakness: 'Fire, Radiant, halbe Heilung als Wolf. Feral: Gear nur halb wirksam.',
-    probe: { mark: '3:30', de: 'Besiege einen Gegner mit Charge und Bleeding.', en: 'KO an enemy with Charge and Bleeding.', check: { kind: 'ko', count: 1 }, solution: 'Claw first for Bleeding, then charge.' },
+    probe: { mark: '3:30', de: 'Besiege einen Gegner mit Charge und Bleeding.', en: 'KO an enemy with Charge and Bleeding.', check: { kind: 'ko', count: 1 }, solution: 'Claw first for Bleeding, then charge.', setup: { enemyHp: 0.3 } },
   },
   {
     id: 'midas_mummy', title: 'Gold against cards', titleDe: 'Gold gegen Karten', complexity: 'elite', rounds: 4, duration: '4:50', zone: 'graveyard', walls: W1,
@@ -374,7 +377,7 @@ export const TUTORIALS: TutorialPlan[] = [
     intro: { de: 'Wood, Chronal, Emotionless. Sie gewinnt Gleichstände.', en: 'Wood, Chronal, Emotionless. She wins speed ties.' },
     acts: [
       { act: 2, mark: '0:25', title: 'Strike the Hour', de: 'Runde 5: Stundenzeiger auf 5, Minutenzeiger auf 11.', en: 'Round 5: hour hand on 5, minute hand on 11.', hints: ['Pick the centre so 5 hits the Ballerina.'], tasks: [t('Nutze Strike the Hour', 'Use Strike the Hour', { kind: 'event', text: 'strikes the hour' })], enemy: { mode: 'idle' } },
-      { act: 3, mark: '1:25', title: 'Trainticket', de: 'Ghost Train schiebt die Piggybank auf den Zeiger.', en: 'Ghost Train pushes the Piggybank onto the hand.', hints: ['Priority −1: the hands strike late.'], tasks: [t('Lege Chrono Fields', 'Create Chrono Fields', { kind: 'field', field: 'chrono' })], enemy: { mode: 'idle' } },
+      { act: 3, mark: '1:25', title: 'Trainticket', de: 'Ghost Train schiebt die Piggybank auf den Zeiger.', en: 'Ghost Train pushes the Piggybank onto the hand.', hints: ['Priority −1: the hands strike late.'], tasks: [t('Lege Chrono Fields', 'Create Chrono Fields', { kind: 'event', text: 'strikes the hour' })], enemy: { mode: 'idle' } },
       { act: 4, mark: '2:30', title: 'Turn Back Time', de: 'Einmal pro Match: Position und HP vom Rundenanfang.', en: 'Once per match: position and HP from the start of the round.', hints: ["A KO'd unit stays KO'd."], tasks: [t('Nutze Turn Back Time', 'Use Turn Back Time', { kind: 'event', text: 'turned back in time' })], enemy: { mode: 'bot' } },
     ],
     synergies: 'Ghost Train (verschiebt auf die Zeiger), Werewolf (Rettung).', weakness: 'Muster vorhersagbar. Wood: Fire ×1.5. Shock und Frozen +1 Runde.',
@@ -435,7 +438,7 @@ export const TUTORIALS: TutorialPlan[] = [
       { act: 4, mark: '2:30', title: 'Serve Stew', de: 'Mit 3 Broth heilt das Steak 24% und wird Well Fed.', en: 'With 3 Broth the Steak heals 24% and becomes Well Fed.', hints: ['Stay within 2 tiles of the pot.'], tasks: [t('Serviere Stew', 'Serve Stew', { kind: 'event', text: 'Stew' })], enemy: { mode: 'bot', items: ['antidote'] } },
     ],
     synergies: 'Mycel und Arachnia (Status), Steak (Tank), Rain Barrel gegen Scalded.', weakness: 'Der Topf selbst, Antidote und Sterile Fields, Parasitic gegen Synthetic.',
-    probe: { mark: '3:30', de: 'Serviere Stew mit 3 Broth.', en: 'Serve Stew with 3 Broth.', check: { kind: 'event', text: '(3 Broth)' }, solution: 'Let the leeches drain, then serve the Steak.' },
+    probe: { mark: '3:30', de: 'Serviere Stew mit 3 Broth.', en: 'Serve Stew with 3 Broth.', check: { kind: 'event', text: '(3 Broth)' }, solution: 'Let the leeches drain, then serve the Steak.', setup: { counters: { broth: 3 } } },
   },
 ];
 

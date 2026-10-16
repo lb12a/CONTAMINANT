@@ -268,10 +268,16 @@ export function dealDamage(s: GameState, target: Unit, amount: number, info: Dea
   if (info.tag === 'fire') target.rt.damagedByFireOrAcid = true;
   if (info.tag === 'fire' && target.chars.material === 'gas') applyStatus(s, target, 'burn');
 
-  if (target.hp <= 0 && s.settings.protectOwner === target.owner && !target.isSummon && !target.isObject) {
+  // (a unit under Garland or Phoenix may fall: it comes back next round, which is the lesson)
+  if (target.hp <= 0 && s.settings.protectOwner === target.owner && !target.isSummon && !target.isObject && !hasStatus(target, 'garland') && !hasStatus(target, 'phoenix')) {
     // Testing Chambers: the Warden never lets the subject die, so every lesson stays possible
     target.hp = 1;
     addEvent(s, { kind: 'info', text: `The Warden pulls ${target.name} back from the brink (1 HP)`, target: target.uid });
+    // the Baby Mummy's lesson is her Little Curse: it strikes as if she had fallen
+    if (target.defId === 'baby_mummy') {
+      if (att && s.units.includes(att) && att.owner !== target.owner) applyStatus(s, att, 'jinx', { duration: 2, source: target });
+      addField(s, target.pos, 'bandage', { duration: 2, owner: target.owner });
+    }
   }
   if (target.hp <= 0) {
     koUnit(s, target, att, { bonusVp: info.bonusVpOnKo });

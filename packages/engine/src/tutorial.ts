@@ -6,6 +6,7 @@ import { TUTORIAL_BY_ID, type Check, type TutorialPlan } from './data/tutorials.
 import { createSandbox, type SandboxUnit } from './sandbox.ts';
 import { createSummon, createUnitFromCard, freshRound, isFree } from './state.ts';
 import { neighbors } from './hex.ts';
+import { addField } from './fields.ts';
 import { botPlan } from './ai.ts';
 import { playRound } from './match.ts';
 import { eventsFor } from './visibility.ts';
@@ -97,9 +98,29 @@ export function currentTasks(sess: TutorialSession) {
   return [];
 }
 
+/** The Warden tops up the subject's counters for the act that begins now (souls for the Garland …). */
+function prepareStage(sess: TutorialSession): void {
+  const setup = isProbe(sess) ? sess.plan.probe.setup : sess.plan.acts[sess.stage - 1]?.setup;
+  if (!setup) return;
+  const main = mainUnit(sess.state, sess.plan);
+  if (setup.counters && main) for (const [k, v] of Object.entries(setup.counters)) main.counters[k] = Math.max(main.counters[k] ?? 0, v);
+  if (setup.enemyHp !== undefined) {
+    for (const u of sess.state.units) if (u.owner === 1 && !u.isObject) u.hp = Math.max(1, Math.min(u.hp, Math.round(u.maxHp * setup.enemyHp)));
+  }
+  // the Warden floods the enemies' tiles (a swamp for the Mire Song …)
+  if (setup.fieldUnderEnemies) {
+    for (const u of sess.state.units) if (u.owner === 1 && !u.isObject) addField(sess.state, u.pos, setup.fieldUnderEnemies, { duration: 3, owner: 0, silent: true });
+  }
+  // the subject's friends at low HP (a Garland lesson needs a friend that can fall)
+  if (setup.allyHp !== undefined) {
+    for (const u of sess.state.units) if (u.owner === 0 && u !== main && !u.isObject && !u.isSummon) u.hp = Math.max(1, Math.min(u.hp, Math.round(u.maxHp * setup.allyHp)));
+  }
+}
+
 /** Moves from the introduction to the first act. */
 export function beginActs(sess: TutorialSession): void {
   if (sess.stage === 0) sess.stage = 1;
+  prepareStage(sess);
   sess.snapshot = structuredClone(sess.state);
 }
 
@@ -254,6 +275,7 @@ export function playTutorialRound(sess: TutorialSession, playerPlan: Plan): Tuto
   if (passed) {
     sess.stage++;
     sess.rewindsLeft = 2;
+    prepareStage(sess);
   }
   return { events, tasks, passed };
 }
@@ -270,6 +292,7 @@ export function rewindTutorial(sess: TutorialSession): boolean {
 export function skipAct(sess: TutorialSession): void {
   sess.stage++;
   sess.rewindsLeft = 2;
+  prepareStage(sess);
 }
 
 export function tutorialStations(sess: TutorialSession): boolean[] {

@@ -1,7 +1,7 @@
 # Contaminant
 
 A dark, hand-drawn horror tactics game in a leaking laboratory. Both players plan their round in secret
-(30 seconds by default), then everything resolves at once: Priority first, then Speed. Spend Action Points
+(45 seconds by default, competitions included), then everything resolves at once: Priority first, then Speed. Spend Action Points
 to deploy creatures, move, attack and play item cards on a 15 × 9 hex board. First to 100 Victory Points wins.
 
 It runs in the browser, as a desktop app (Windows installer, macOS, Linux), as an Android app and as an
@@ -72,10 +72,20 @@ its own server when none is found. Public hosting with Docker: [docs/DEPLOY.md](
 
 ## Playing
 
-- **Basic Training** (offered on first launch): a guided first match. The coach explains, but every step
+- **Profiles**: the first start opens the subject file (name, creature, language); signing it goes straight
+  into Basic Training. Several profiles can live on one device, each with its own collection, decks,
+  trophies and online account (Profile → Switch profile, or Settings).
+- **Collection**: a new subject owns the four lab residents (Nexus, Lab Assistant, Frankenstein, Crystal Eye)
+  and six item cards. Chests unlock the rest — the Graveyard is in the pool from the start, the Bog, Toy
+  Room, Haunted Forest and Tomb join at 150 / 400 / 800 / 1300 trophies. The first chest always holds a new
+  character, and every new character arrives with an unlock cutscene. Character decks hold 4–10
+  characters, item decks 5–20 cards.
+- **Basic Training** (right after creating a profile): a guided first match. The coach explains, but every step
   waits until you have done it yourself: deploy, seal, select, move, attack, attach a card, read the result.
 - **Testing Chambers**: one five-act tutorial per character.
 - **Play vs Bot**: six modes (Contamination, Elimination, Domination, Research, Escape, Anomaly) and four bot levels.
+  The bot only fields characters a player could own at the same trophy count, as many as the player brings and
+  never above the player's level (tournament bots stay strong).
 - **Online**: one button to go online, ranked and casual queues, **players nearby** (everyone on the same
   Wi-Fi) and online friends with a **Challenge** button, friendly lobbies, two-player Team Battles, and
   **Direct match (P2P)**: a WebRTC connection between two browsers where plans are sealed as hashes before
@@ -83,8 +93,8 @@ its own server when none is found. Public hosting with Docker: [docs/DEPLOY.md](
 - **Friends**: a 6-letter friend code to share, requests, presence (online / in a match), challenges.
 - **Daily rewards**: a seven-day login calendar, a free chest every day and rewards for 1, 3, 5 and 10 matches
   played. The Android app reminds you in the evening; challenges and friend requests arrive as notifications.
-- **Developer accounts**: a name ending in `#` unlocks everything with unlimited gold; such accounts never
-  appear on the ladder, in tournaments or in the meta.
+- **Developer profiles**: a name ending in `#` unlocks everything with unlimited gold; such profiles and accounts
+  never appear on the ladder, in tournaments, statistics or the meta.
 - **Tournaments**: daily and weekly cups run automatically with check-in, MMR seeding, brackets and prizes.
 - **World Cup**: every year on Halloween. From November to September a Monthly Major runs on the first
   Saturday (double elimination, minimum MMR to enter). Placements earn Circuit Points; Major champions and
@@ -140,8 +150,10 @@ props, team-coloured glowing hexes, hologram plan previews, warm god rays and a 
 npm test
 ```
 
-Engine tests (formulas, every major mechanic, tutorials that cannot be lost, Basic Training path, bots
-walking around walls, daily rewards, determinism) and server tests (brackets, ratings, tournaments, the
+Engine tests (formulas, every major mechanic, every Testing Chamber completed act by act along a walkthrough
+that `tools/qa/chambers.ts` finds by searching legal plans,
+tutorials that cannot be lost, Basic Training path, all six modes played to the end with 4- and 10-character
+decks, the collection economy and fair bots, bots walking around walls, daily rewards, determinism) and server tests (brackets, ratings, tournaments, the
 circuit and Halloween World Cup, teams and team management, friends, players nearby, challenges, developer
 accounts, replay verification, a ranked match over real HTTP and WebSocket).
 

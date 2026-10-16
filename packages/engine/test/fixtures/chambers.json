@@ -1,0 +1,2100 @@
+{
+ "arachnia": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 2,
+       "r": 0
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "arachnia.poison_bite",
+     "target": {
+      "unit": "u4"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "arachnia.lay_eggs",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "mycel.sporecloud",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "s5",
+     "attack": "arachnia.poison_bite",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": [
+    "s5"
+   ]
+  }
+ ],
+ "nexus": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 2,
+       "r": 1
+      },
+      {
+       "c": 3,
+       "r": 1
+      },
+      {
+       "c": 4,
+       "r": 1
+      }
+     ]
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u5",
+     "attack": "nexus.overclock",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "frankenstein.galvanic_fist",
+     "target": {
+      "unit": "u4"
+     },
+     "item": "h0-0"
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "vile": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "vile.reapers_slash",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "vile.miasma_rot",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "vile.miasma_rot",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "vile.miasma_rot",
+     "target": {
+      "tile": {
+       "c": 2,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "cruorina": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 2
+      },
+      {
+       "c": 4,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cruorina.crimson_lance",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cruorina.hemorrhage_burst",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u2",
+     "attack": "steak.order_up",
+     "target": {
+      "tile": {
+       "c": 3,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cruorina.crimson_lance",
+     "target": {
+      "unit": "u5"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "mycel": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "mycel.sporecloud",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "mycel.mind_root",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  }
+ ],
+ "lullabun": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "lullabun.stuffing_slash",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 2,
+       "r": 1
+      },
+      {
+       "c": 3,
+       "r": 1
+      },
+      {
+       "c": 4,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "scarecrow.harvest_hook",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "scarecrow.harvest_hook",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "ballerina": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ballerina.pirouette",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ballerina.grand_jete",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 2
+      },
+      {
+       "c": 4,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ballerina.pirouette",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 4,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ballerina.pirouette",
+     "target": {
+      "unit": "u4"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ballerina.grand_jete",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "piggybank": [
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "piggybank.shake_down",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  }
+ ],
+ "scarecrow": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "scarecrow.barbed_fence",
+     "target": {
+      "tile": {
+       "c": 4,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "scarecrow.harvest_hook",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "scarecrow.harvest_hook",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "frankenstein": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "frankenstein.galvanic_fist",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "item",
+     "card": "h0-0",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "frankenstein.skybolt",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "frankenstein.galvanic_fist",
+     "target": {
+      "unit": "u1"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "frankenstein.galvanic_fist",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "ghost_train": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 2
+      },
+      {
+       "c": 4,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ghost_train.seers_glance",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ghost_train.trainticket",
+     "target": {
+      "unit": "u1",
+      "dir": 0,
+      "dist": 1
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "ghost_train.seers_glance",
+     "target": {
+      "unit": "u3"
+     },
+     "item": "h0-0"
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u2",
+     "attack": "lab_assistant.scalpel_backstab",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "pokerface": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "pokerface.spotlight",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cruorina.crimson_lance",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cruorina.hemorrhage_burst",
+     "target": {}
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "swamp_siren": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "swamp_siren.mire_song",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "swamp_siren.mud_double",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "swamp_siren.mud_double",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 2
+      }
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "swamp_siren.mire_song",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 2
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "wisp": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "wisp.marsh_gas",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "wisp.marsh_gas",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 2,
+       "r": 1
+      },
+      {
+       "c": 3,
+       "r": 1
+      },
+      {
+       "c": 4,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "wisp.flicker",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u4",
+     "path": [
+      {
+       "c": 1,
+       "r": 0
+      },
+      {
+       "c": 2,
+       "r": 0
+      },
+      {
+       "c": 3,
+       "r": 0
+      },
+      {
+       "c": 3,
+       "r": 1
+      },
+      {
+       "c": 4,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "wisp.marsh_gas",
+     "target": {
+      "tile": {
+       "c": 5,
+       "r": 1
+      }
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "wisp.marsh_gas",
+     "target": {
+      "tile": {
+       "c": 5,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "crystal_eye": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "crystal_eye.prismatic_beam",
+     "target": {
+      "tile": {
+       "c": 7,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "crystal_eye.orb_bomb",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "crystal_eye.orb_bomb",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "crystal_eye.orb_bomb",
+     "target": {
+      "tile": {
+       "c": 3,
+       "r": 2
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "termite_mound": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "termite_mound.gnaw_swarm",
+     "target": {
+      "tile": {
+       "c": 3,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "termite_mound.ant_trail",
+     "target": {
+      "tile": {
+       "c": 4,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "termite_mound.hive_shift",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "termite_mound.gnaw_swarm",
+     "target": {
+      "tile": {
+       "c": 4,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "cymbal_chimp": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cymbal_chimp.crash",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cymbal_chimp.echo_clap",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cymbal_chimp.crash",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": [
+    "u1"
+   ]
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cymbal_chimp.echo_clap",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "mambo": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "mambo.hex_dart",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "mambo.spirit_link",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "mambo.voodoo_doll",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "v7",
+     "attack": "voodoo_copy.pain_link",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "calaca": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "calaca.flaming_skull",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "calaca.flaming_skull",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "calaca.flaming_skull",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "calaca.marigold_garland",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  }
+ ],
+ "werewolf": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "werewolf.moon_pull",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "werewolf.moonlit_charge",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "item",
+     "card": "h0-0",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 2
+      },
+      {
+       "c": 4,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "werewolf.moonlit_charge",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "midas_mummy": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "midas_mummy.curse_of_the_tomb",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "midas_mummy.midas_touch",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "item",
+     "card": "h0-0",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  }
+ ],
+ "cog_cuckoo": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cog_cuckoo.strike_the_hour",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cog_cuckoo.strike_the_hour",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "cog_cuckoo.turn_back_time",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "cog_cuckoo.strike_the_hour",
+     "target": {
+      "tile": {
+       "c": 2,
+       "r": 1
+      }
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "zombie_limb": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "zombie_limb.flail",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "zombie_limb.fuse",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "ability",
+     "unit": "u1",
+     "ability": "zombie_limb.fuse",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "baby_mummy": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "baby_mummy.wail",
+     "target": {}
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "baby_mummy.pacifier_toss",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "lab_assistant": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 2
+      },
+      {
+       "c": 4,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "lab_assistant.bedside_manner",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "lab_assistant.scalpel_backstab",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "lab_assistant.scalpel_backstab",
+     "target": {
+      "unit": "u3"
+     },
+     "item": "h0-0"
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 3,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "lab_assistant.bedside_manner",
+     "target": {
+      "unit": "u3"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "lab_assistant.scalpel_backstab",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": [
+    "u1"
+   ]
+  }
+ ],
+ "leech_cook": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 2,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "leech_cook.leech_toss",
+     "target": {
+      "unit": "u2"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "leech_cook.serve_stew",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "leech_cook.serve_stew",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  }
+ ],
+ "pumpkin": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "pumpkin.teleport_trick",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "pumpkin.candy_rain",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "u2",
+     "path": [
+      {
+       "c": 2,
+       "r": 0
+      }
+     ]
+    },
+    {
+     "kind": "item",
+     "card": "h0-0",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "pumpkin.candy_rain",
+     "target": {
+      "tiles": [
+       {
+        "c": 1,
+        "r": 0
+       },
+       {
+        "c": 3,
+        "r": 1
+       }
+      ]
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u2",
+     "attack": "scarecrow.harvest_hook",
+     "target": {
+      "unit": "u4"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u2",
+     "attack": "scarecrow.harvest_hook",
+     "target": {
+      "unit": "u4"
+     }
+    }
+   ],
+   "rest": [],
+   "speedShift": {},
+   "mindsEye": {}
+  }
+ ],
+ "shrink_heads": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "deploy",
+     "card": "d0-0",
+     "tile": {
+      "c": 0,
+      "r": 0
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "shrink_heads.shrunken_strike",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "shrink_heads.head_swap",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "move",
+     "unit": "s7",
+     "path": [
+      {
+       "c": 1,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "s7",
+     "attack": "shrink_head.nibble",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "s7",
+     "attack": "shrink_head.nibble",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "move",
+     "unit": "u4",
+     "path": [
+      {
+       "c": 1,
+       "r": 0
+      },
+      {
+       "c": 2,
+       "r": 0
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "shrink_heads.shrunken_strike",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u4",
+     "attack": "shrink_heads.shrunken_strike",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "move",
+     "unit": "u1",
+     "path": [
+      {
+       "c": 1,
+       "r": 1
+      },
+      {
+       "c": 2,
+       "r": 2
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "zombie_limb.flail",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "zombie_limb.flail",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "move",
+     "unit": "s6",
+     "path": [
+      {
+       "c": 1,
+       "r": 1
+      },
+      {
+       "c": 2,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "s6",
+     "attack": "shrink_head.nibble",
+     "target": {
+      "unit": "u2"
+     }
+    },
+    {
+     "kind": "move",
+     "unit": "s5",
+     "path": [
+      {
+       "c": 2,
+       "r": 0
+      },
+      {
+       "c": 3,
+       "r": 0
+      }
+     ]
+    }
+   ],
+   "rest": [],
+   "speedShift": {},
+   "mindsEye": {}
+  }
+ ],
+ "little_wendigo": [
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "little_wendigo.starving_mark",
+     "target": {
+      "unit": "u3"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "little_wendigo.starving_mark",
+     "target": {
+      "unit": "u3"
+     }
+    },
+    {
+     "kind": "move",
+     "unit": "u2",
+     "path": [
+      {
+       "c": 2,
+       "r": 1
+      },
+      {
+       "c": 3,
+       "r": 1
+      },
+      {
+       "c": 4,
+       "r": 1
+      },
+      {
+       "c": 5,
+       "r": 1
+      }
+     ]
+    },
+    {
+     "kind": "attack",
+     "unit": "u2",
+     "attack": "ballerina.pirouette",
+     "target": {}
+    }
+   ],
+   "rest": [],
+   "speedShift": {},
+   "mindsEye": {}
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u2",
+     "attack": "ballerina.pirouette",
+     "target": {}
+    }
+   ],
+   "rest": [
+    "u2"
+   ]
+  }
+ ],
+ "steak": [
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "steak.order_up",
+     "target": {
+      "tile": {
+       "c": 0,
+       "r": 0
+      }
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [
+    {
+     "kind": "attack",
+     "unit": "u1",
+     "attack": "steak.snap",
+     "target": {
+      "unit": "u1"
+     }
+    }
+   ],
+   "rest": []
+  },
+  {
+   "player": 0,
+   "commands": [],
+   "rest": []
+  }
+ ]
+}

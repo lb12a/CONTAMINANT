@@ -22,8 +22,13 @@ limits that remain.
 - Six modes: Contamination, Elimination, Domination, Research, Escape, Anomaly (boss).
 - Fog-of-war views (`viewFor`): opponent hand, offers, RNG and hidden units are never exposed.
 - Bots (easy, normal, hard, boss) on their own fog-of-war view.
-- Progression: collection, levels, chests, gold, trophies, zone milestones, daily missions, decks.
-- Testing Chambers: one five-act tutorial per character with checks, rewinds, skip and solution.
+- Progression: collection, levels, chests, gold, trophies, zone milestones, daily missions, decks. New subjects
+  start with the four lab residents; character decks hold 4–10 characters, item decks 5–20 cards; the first
+  chest always holds a new character; fair bot decks (`fairBotDeck`) only use the areas the player has reached.
+- Planning follows relocations: after a leap, swap, portal or Trainticket the next command starts from the new tile.
+- Testing Chambers: one five-act tutorial per character with checks, rewinds, skip and solution. The Warden can
+  prepare an act (souls, broth, weakened enemies, a flooded tile) so every lesson works in one round; a solver
+  (`tools/qa/chambers.ts`) proves every chamber can be completed and records walkthroughs the tests replay.
 - Basic Training scenario (`training.ts`).
 - Replays: `replayFrames` re-simulates a stored match (seed + ops + plans) and checks state hashes.
 
@@ -77,6 +82,17 @@ limits that remain.
 - Full-bleed match layout with floating HUD (AP, scoreboard with VP race and fuse, seal button), unit
   dossier, action order, combat log drawer, dock with offered characters and hand.
 - Basic Training with a coach that waits for the player's own actions; Testing Chambers.
+- Profiles: the subject file on first start (name, creature, language, `#` developer hint) leads into Basic
+  Training; a profile cabinet switches, creates and deletes profiles per device.
+- Unlock cutscene: a containment pod shakes and leaks light in the rarity colour, the seal bursts and the new
+  character steps out with its name, rarity and area.
+- Attacks play as wind-up, flight and impact with a look per damage type (fireball, bolt, toxic glob, acid
+  spray, sonic waves, psychic orbs, soul wisp, radiant beam, arrow, rock, blade) and board shake on heavy hits;
+  the whole round plays slower so it can be followed. The planning clock starts after the playback.
+- Tournament trees: knockout brackets drawn as a tree with glowing winner paths up to the champion; the World
+  Cup group stage shows a cross table of who beat whom.
+- Loading screen: a walk down the lab corridor (flickering lamps, floor fog, spores, a creature crossing the
+  lit door) with a bubbling test tube and rotating tips, shown for at least four seconds.
 - Navigation in four sections (Play, Collection, Compete, Watch) with sub-tabs, a phone tab bar and a
   loading screen.
 - Screens: home with daily rewards, collection, deck builder, shop, missions, online (**Play online** with
@@ -170,9 +186,12 @@ limits that remain.
 
 ## Verification
 
-- `npm test`: engine and server suites (friends, nearby, challenges, team management, daily rewards included).
+- `npm test`: engine and server suites (friends, nearby, challenges, team management, daily rewards, Testing
+  Chamber walkthroughs, all modes with small and full decks included). `node tools/qa/chambers.ts` re-solves
+  the chambers after a change.
 - `npm run qa:i18n`: every interface string exists in all twelve languages.
 - `npm run typecheck`: engine, server, client.
 - `npm run smoke`: bundled server boots and answers 16 checks.
-- `tools/qa`: screenshots of every screen at 1600 × 900 and 390 × 844, Basic Training played by clicks,
+- `tools/qa`: screenshots of every screen at 1600 × 900 and 390 × 844, Basic Training played by clicks from a
+  brand-new profile, frames of every attack effect (`fx.ts`),
   two-browser P2P match with equal hashes after three rounds, desktop app launch with embedded server.
