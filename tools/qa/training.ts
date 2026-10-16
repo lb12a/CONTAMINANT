@@ -4,7 +4,7 @@ import { chromium, type Page } from 'playwright';
 import { mkdirSync } from 'node:fs';
 
 const base = process.argv[2] ?? 'http://localhost:5173';
-const out = process.argv[3] ?? 'tools/qa/shots/training';
+const out = process.argv[3] && !process.argv[3].startsWith('--') ? process.argv[3] : 'tools/qa/shots/training';
 const phone = process.argv.includes('--phone');
 mkdirSync(out, { recursive: true });
 
