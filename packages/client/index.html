@@ -13,24 +13,79 @@
     <title>Contaminant</title>
   </head>
   <body>
-    <!-- loading screen: visible before any script runs, removed by main.tsx once the game is ready -->
+    <!-- loading screen: visible before any script runs, removed by main.tsx once the game is ready (and shown
+         for a few seconds at least). A slow walk down the lab corridor: flickering lamps, floor fog, rising spores
+         and something crossing the lit door at the end. -->
     <div id="boot" role="status" aria-live="polite">
       <style>
-        #boot { position: fixed; inset: 0; z-index: 100; display: grid; place-items: end center; padding: 0 24px 12vh; color: #f2e8cc;
-          background: radial-gradient(ellipse at 50% 40%, rgba(14,10,18,0.15), rgba(14,10,18,0.9) 75%), url('./assets/gen/backdrops/loading.webp') center / cover, #0e0a12;
-          font-family: Georgia, serif; transition: opacity 0.6s ease; }
-        #boot.gone { opacity: 0; pointer-events: none; }
-        #boot .t { font-size: clamp(44px, 9vw, 96px); font-weight: 800; line-height: 1; letter-spacing: 0.01em; -webkit-text-stroke: 6px #0e0a12; paint-order: stroke fill;
-          text-shadow: 0 6px 0 #000, 0 0 40px rgba(140,255,90,0.45); text-align: center; }
-        #boot .bar { width: min(420px, 80vw); height: 14px; margin: 22px auto 10px; border-radius: 10px; border: 3px solid #0e0a12; background: #1a1420; overflow: hidden; box-shadow: 0 4px 0 rgba(0,0,0,0.5); }
-        #boot .fill { height: 100%; width: 6%; background: linear-gradient(90deg, #4fa82a, #b6ff8c); box-shadow: 0 0 14px #8cff5a; transition: width 0.3s ease; }
-        #boot .msg { font-family: system-ui, sans-serif; font-weight: 600; font-size: 15px; opacity: 0.85; text-align: center; min-height: 1.3em; }
-        @media (prefers-reduced-motion: no-preference) { #boot .t { animation: bootPulse 2.4s ease-in-out infinite; } }
-        @keyframes bootPulse { 50% { text-shadow: 0 6px 0 #000, 0 0 70px rgba(140,255,90,0.7); } }
+        #boot { position: fixed; inset: 0; z-index: 100; overflow: hidden; overflow: clip; display: grid; place-items: end center;
+          padding: 0 24px calc(6vh + env(safe-area-inset-bottom, 0px)); color: #f2e8cc; background: #07050a; font-family: Georgia, serif;
+          transition: opacity 0.8s ease, filter 0.8s ease; }
+        #boot.gone { opacity: 0; filter: brightness(2.2) blur(3px); pointer-events: none; }
+        /* the corridor image covers the screen; the door sits at a fixed spot of the image */
+        #boot .scene { position: absolute; left: 50%; top: 41%; width: max(106vw, 106vh * 2.333); aspect-ratio: 1344 / 576; transform: translate(-50%, -50%);
+          background: url('./assets/gen/backdrops/loading.webp') 0 0 / 100% 100%, #0e0a12; transform-origin: 56% 58%; }
+        #boot .door { position: absolute; left: 53%; top: 46%; width: 6.5%; height: 27%; overflow: hidden; }
+        #boot .door img { position: absolute; bottom: 4%; height: 80%; left: -70%; filter: brightness(0); opacity: 0; }
+        #boot .lamps { position: absolute; inset: 0 0 55% 0; background: radial-gradient(ellipse at 50% 0%, rgba(160, 255, 120, 0.35), transparent 60%); mix-blend-mode: screen; }
+        #boot .fog { position: absolute; left: -50%; right: -50%; bottom: -6%; height: 42%; opacity: 0.75;
+          background: radial-gradient(ellipse at 20% 70%, rgba(120, 200, 110, 0.32), transparent 55%), radial-gradient(ellipse at 65% 80%, rgba(90, 160, 100, 0.28), transparent 50%), radial-gradient(ellipse at 90% 60%, rgba(140, 220, 120, 0.22), transparent 45%); filter: blur(6px); }
+        #boot .fog.b { bottom: -12%; opacity: 0.5; transform: scaleX(-1); }
+        #boot .shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(7, 5, 10, 0.55) 62%, rgba(7, 5, 10, 0.95) 100%), linear-gradient(0deg, rgba(7, 5, 10, 0.95) 0%, transparent 45%); }
+        #boot .spore { position: absolute; bottom: -10px; width: 5px; height: 5px; border-radius: 50%; background: #b6ff8c; box-shadow: 0 0 8px #8cff5a; opacity: 0; }
+        #boot .eyes { position: absolute; width: 34px; height: 8px; opacity: 0; }
+        #boot .eyes::before, #boot .eyes::after { content: ''; position: absolute; top: 0; width: 9px; height: 7px; border-radius: 50% 50% 40% 40%; background: #ffcf4a; box-shadow: 0 0 10px #ff9a1f; }
+        #boot .eyes::before { left: 0; } #boot .eyes::after { right: 0; }
+        #boot .bootcard { position: relative; display: grid; justify-items: center; gap: 4px; text-align: center; }
+        #boot .t { position: relative; font-size: clamp(46px, 10vw, 104px); font-weight: 800; line-height: 1; letter-spacing: 0.01em; -webkit-text-stroke: 6px #0e0a12; paint-order: stroke fill;
+          text-shadow: 0 6px 0 #000, 0 0 40px rgba(140, 255, 90, 0.45); }
+        #boot .drip { position: absolute; top: 78%; width: 7px; border-radius: 0 0 6px 6px; background: linear-gradient(180deg, #4fa82a, #b6ff8c); box-shadow: 0 0 8px #8cff5a; height: 0; border: 2px solid #0e0a12; border-top: 0; }
+        #boot .tube { position: relative; width: min(440px, 80vw); height: 22px; margin: 20px auto 10px; border-radius: 12px; border: 3px solid #0e0a12;
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(0, 0, 0, 0.2)), #18121e; overflow: hidden; box-shadow: 0 4px 0 rgba(0, 0, 0, 0.5), inset 0 2px 0 rgba(255, 255, 255, 0.08); }
+        #boot .fill { position: relative; height: 100%; width: 6%; background: linear-gradient(180deg, #b6ff8c, #4fa82a 70%); box-shadow: 0 0 14px #8cff5a; transition: width 0.5s cubic-bezier(0.25, 1, 0.5, 1); overflow: hidden; }
+        #boot .fill i { position: absolute; bottom: -6px; width: 6px; height: 6px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.7); }
+        #boot .tube::after { content: ''; position: absolute; left: 8px; right: 8px; top: 3px; height: 4px; border-radius: 4px; background: rgba(255, 255, 255, 0.22); }
+        #boot .msg { font-family: system-ui, sans-serif; font-weight: 600; font-size: 15px; opacity: 0.88; min-height: 2.6em; max-width: 44ch; transition: opacity 0.35s ease; text-shadow: 0 2px 2px #000; }
+        #boot .msg.out { opacity: 0; }
+        @media (prefers-reduced-motion: no-preference) {
+          #boot .scene { animation: bootWalk 9s cubic-bezier(0.33, 0, 0.2, 1) forwards; }
+          #boot .lamps { animation: bootFlicker 3.7s steps(1) infinite; }
+          #boot .fog { animation: bootFog 14s ease-in-out infinite alternate; }
+          #boot .fog.b { animation-duration: 19s; animation-direction: alternate-reverse; }
+          #boot .door img { animation: bootCross 2.4s ease-in-out 1.6s forwards; }
+          #boot .spore { animation: bootRise var(--d, 5s) linear var(--w, 0s) infinite; }
+          #boot .eyes { animation: bootBlink 4.4s ease-in-out var(--w, 0s) infinite; }
+          #boot .t { animation: bootPulse 2.4s ease-in-out infinite; }
+          #boot .drip { animation: bootDrip var(--d, 3s) cubic-bezier(0.55, 0, 0.8, 0.4) var(--w, 0s) infinite; }
+          #boot .fill i { animation: bootBubble 1.6s ease-in var(--w, 0s) infinite; }
+        }
+        @keyframes bootWalk { from { transform: translate(-50%, -50%) scale(1); } to { transform: translate(-50%, -50%) scale(1.16); } }
+        @keyframes bootFlicker { 0% { opacity: 1; } 8% { opacity: 0.25; } 10% { opacity: 1; } 47% { opacity: 0.85; } 49% { opacity: 0.1; } 51% { opacity: 0.9; } 53% { opacity: 0.3; } 55% { opacity: 1; } }
+        @keyframes bootFog { from { transform: translateX(-6%); } to { transform: translateX(6%); } }
+        @keyframes bootCross { 0% { left: -70%; opacity: 0.95; } 100% { left: 110%; opacity: 0.95; } }
+        @keyframes bootRise { 0% { transform: translate(0, 0); opacity: 0; } 12% { opacity: 0.85; } 100% { transform: translate(30px, -90vh); opacity: 0; } }
+        @keyframes bootBlink { 0%, 20% { opacity: 0; } 26%, 44% { opacity: 0.9; } 46% { opacity: 0; } 48%, 60% { opacity: 0.9; } 66%, 100% { opacity: 0; } }
+        @keyframes bootPulse { 50% { text-shadow: 0 6px 0 #000, 0 0 70px rgba(140, 255, 90, 0.75); } }
+        @keyframes bootDrip { 0% { height: 0; transform: translateY(0); opacity: 1; } 55% { height: 22px; transform: translateY(0); opacity: 1; } 100% { height: 10px; transform: translateY(70px); opacity: 0; } }
+        @keyframes bootBubble { 0% { transform: translateY(0) scale(0.6); opacity: 0; } 20% { opacity: 1; } 100% { transform: translateY(-26px) scale(1.1); opacity: 0; } }
       </style>
-      <div>
-        <div class="t">Contaminant</div>
-        <div class="bar"><div class="fill" id="boot-fill"></div></div>
+      <div class="scene"><div class="door"><img src="./assets/gen/tokens/frankenstein.webp" alt="" /></div></div>
+      <div class="lamps"></div>
+      <div class="fog"></div>
+      <div class="fog b"></div>
+      <div class="shade"></div>
+      <span class="eyes" style="left: 7%; top: 38%; --w: 0.8s"></span>
+      <span class="eyes" style="right: 9%; top: 52%; --w: 2.9s; transform: scale(0.8)"></span>
+      <span class="spore" style="left: 12%; --d: 6s; --w: 0.2s"></span>
+      <span class="spore" style="left: 24%; --d: 5s; --w: 1.6s"></span>
+      <span class="spore" style="left: 37%; --d: 7s; --w: 0.9s"></span>
+      <span class="spore" style="left: 51%; --d: 5.5s; --w: 2.4s"></span>
+      <span class="spore" style="left: 63%; --d: 6.5s; --w: 0.5s"></span>
+      <span class="spore" style="left: 76%; --d: 5s; --w: 3.1s"></span>
+      <span class="spore" style="left: 88%; --d: 7.5s; --w: 1.2s"></span>
+      <div class="bootcard">
+        <div class="t">Contaminant<span class="drip" style="left: 18%; --d: 3.2s; --w: 0.6s"></span><span class="drip" style="left: 47%; --d: 4s; --w: 1.8s"></span><span class="drip" style="left: 81%; --d: 3.6s; --w: 1.1s"></span></div>
+        <div class="tube"><div class="fill" id="boot-fill"><i style="left: 20%; --w: 0.2s"></i><i style="left: 45%; --w: 0.9s"></i><i style="left: 70%; --w: 0.5s"></i><i style="left: 88%; --w: 1.3s"></i></div></div>
         <div class="msg" id="boot-msg">Waking the specimens…</div>
       </div>
     </div>
