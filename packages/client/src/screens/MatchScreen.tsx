@@ -28,6 +28,9 @@ import { t } from '../i18n.ts';
 import { getProfile, toast } from '../store.ts';
 import { sfx } from '../audio.ts';
 
+/** the sound an attack makes as it leaves the attacker */
+const LAUNCH_SFX = { fire: 'whoosh', electric: 'zap', toxic: 'splash', acid: 'splash', sonic: 'resolve', psychic: 'zap', soul: 'whoosh', radiant: 'zap', pierce: 'whoosh', blunt: 'whoosh', slash: 'whoosh' } as const;
+
 interface Props {
   ctrl: MatchController;
   onExit: (summary: { won: boolean | null; snap: MatchSnapshot; log: string[] }) => void;
@@ -111,7 +114,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
         floaters: floaters.slice(-30),
         flashes: flashes.slice(-20),
         pulses: pulses.slice(-30),
-        vfx: vfx.slice(-12),
+        vfx: vfx.slice(-20),
         tombs: [...tombs],
         arrived: [...arrived],
         vpLive: [...vpLive] as [number, number],
@@ -128,7 +131,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             pulses.push({ uid: e.target, kind: 'hit', t0: now });
             sfx('hit');
             show();
-            await wait(260);
+            await wait(420);
           }
           break;
         case 'heal':
@@ -138,14 +141,14 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             if (at) floaters.push({ h: at, text: `+${e.amount}`, color: '#8CFF5A', t0: now });
             pulses.push({ uid: e.target, kind: 'heal', t0: now });
             show();
-            await wait(260);
+            await wait(400);
           }
           break;
         case 'miss':
           if (at) floaters.push({ h: at, text: t('miss'), color: '#e8dfc8', t0: now });
           sfx('miss');
           show();
-          await wait(260);
+          await wait(400);
           break;
         case 'crit':
           if (at) flashes.push({ tiles: [at], color: 'rgba(255,207,58,0.8)', t0: now, dur: 450 });
@@ -153,39 +156,39 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
           if (e.target) pulses.push({ uid: e.target, kind: 'crit', t0: now });
           sfx('crit');
           show();
-          await wait(200);
+          await wait(320);
           break;
         case 'status':
           if (at && e.status && !e.text.includes('loses') && !e.text.includes('immune')) {
             floaters.push({ h: at, text: STATUSES[e.status]?.name ?? e.status, color: STATUSES[e.status]?.kind === 'buff' ? '#8CFF5A' : '#e8dfc8', t0: now });
             show();
-            await wait(200);
+            await wait(420);
           }
           break;
         case 'ko':
-          await wait(250);
+          await wait(380);
           if (e.target) gone.add(e.target);
           if (e.to) tombs.push(e.to);
           if (e.to) floaters.push({ h: e.to, text: t('KO'), color: '#ff2b3a', t0: performance.now(), big: true });
           sfx('ko');
           show();
-          await wait(450);
+          await wait(850);
           break;
         case 'field':
-          if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,154,31,0.45)', t0: now, dur: 800 });
+          if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,154,31,0.45)', t0: now, dur: 900 });
           show();
-          await wait(200);
+          await wait(380);
           break;
         case 'trap':
-          if (at) flashes.push({ tiles: [at], color: 'rgba(194,43,51,0.8)', t0: now, dur: 600 });
+          if (at) flashes.push({ tiles: [at], color: 'rgba(194,43,51,0.8)', t0: now, dur: 700 });
           show();
-          await wait(250);
+          await wait(450);
           break;
         case 'vp':
           if (e.owner !== undefined && e.amount) {
             vpLive[e.owner] += e.amount;
             show();
-            await wait(250);
+            await wait(380);
           }
           break;
         default:
@@ -193,7 +196,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
       }
     };
     (async () => {
-      await wait(900);
+      await wait(1200);
       const newLog: { text: string; kind: string }[] = [];
       for (const [bi, beat] of beats.entries()) {
         if (cancelled) return;
@@ -209,7 +212,7 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             if (e.privateTo === me) setPopups((n) => n + 1);
             sfx('deploy');
             show();
-            await wait(900);
+            await wait(1200);
             break;
           }
           case 'move': {
@@ -219,25 +222,56 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
               if (e.target && !e.actor) pos.set(e.target, tile);
               sfx('step');
               show();
-              await wait(300);
+              await wait(400);
             }
             if (e.actor && e.to) pos.set(e.actor, e.to);
             show();
-            await wait(250);
+            await wait(450);
             break;
           }
           case 'attack': {
             const from = unitPos(e.actor);
-            const firstHit = beat.events.find((x) => x.kind === 'damage' || x.kind === 'miss' || x.kind === 'heal');
-            const to = e.to ?? unitPos(firstHit?.target) ?? e.tiles?.[0];
-            const tag = beat.events.find((x) => x.tag)?.tag;
-            if (e.actor && to) pulses.push({ uid: e.actor, kind: 'lunge', to, t0: now });
-            if (from && to) vfx.push({ kind: distance(from, to) > 1 ? (tag === 'electric' ? 'beam' : 'projectile') : 'slash', from, to, color: TAG_COLOR[tag ?? 'slash'] ?? '#ffcf6a', t0: now, dur: distance(from, to) > 1 ? 420 : 320 });
-            if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(255,90,90,0.45)', t0: now, dur: 600 });
+            const hits = beat.events.filter((x) => x.kind === 'damage' || x.kind === 'miss' || x.kind === 'heal');
+            const to = e.to ?? unitPos(hits[0]?.target) ?? e.tiles?.[0];
+            const tag = beat.events.find((x) => x.tag)?.tag ?? 'slash';
+            const color = TAG_COLOR[tag] ?? '#ffcf6a';
+            const missed = hits.length > 0 && hits.every((x) => x.kind === 'miss');
+            const crit = beat.events.some((x) => x.kind === 'crit');
+            const heavy = beat.events.some((x) => x.kind === 'damage' && (x.amount ?? 0) >= 60);
+            const ranged = !!from && !!to && distance(from, to) > 1;
+            const fast = tag === 'electric' || tag === 'radiant';
+            // effects run on the clock, so they follow the playback speed too
+            const dur = (ms: number) => (skipRef.current ? 1 : ms / speed);
+            await wait(320);
+            // 1. wind-up: the attacker gathers its strike
+            if (from) {
+              vfx.push({ kind: 'charge', tag, from, to: from, color, t0: performance.now(), dur: dur(ranged ? 640 : 440) });
+              show();
+              await wait(ranged ? 580 : 380);
+            }
+            // 2. the flight (or the lunge of a melee attack)
+            if (e.actor && to) pulses.push({ uid: e.actor, kind: 'lunge', to, t0: performance.now() });
+            sfx(LAUNCH_SFX[tag] ?? 'whoosh');
+            if (ranged && from && to) {
+              const flight = Math.min(1150, 440 + distance(from, to) * 120);
+              vfx.push({ kind: fast ? 'beam' : 'projectile', tag, from, to, color, t0: performance.now(), dur: dur(flight) });
+              show();
+              await wait(fast ? flight * 0.45 : flight);
+            } else {
+              show();
+              await wait(230);
+            }
+            // 3. the impact, on every creature it reaches
+            const t0 = performance.now();
+            const struck = [...new Map(hits.map((x) => unitPos(x.target)).filter((h): h is Hex => !!h).map((h) => [`${h.c},${h.r}`, h])).values()];
+            for (const [i, h] of (struck.length ? struck : to ? [to] : []).entries()) {
+              vfx.push({ kind: 'impact', tag, from: from ?? h, to: h, color, t0: t0 + dur(i * 90), dur: dur(760), miss: missed, shake: missed ? 0 : crit ? 10 : heavy ? 5 : 0 });
+            }
+            if (e.tiles?.length) flashes.push({ tiles: e.tiles, color, t0, dur: dur(1000) });
             show();
-            await wait(distance(from ?? to ?? { c: 0, r: 0 }, to ?? from ?? { c: 0, r: 0 }) > 1 ? 450 : 350);
+            await wait(280);
             for (const c of beat.events.slice(1)) await consequence(c);
-            await wait(650);
+            await wait(950);
             break;
           }
           default: {
@@ -245,14 +279,14 @@ export function MatchScreen({ ctrl, onExit, tutorialPanel, hideHand, onPlanner, 
             if (e.tiles?.length) flashes.push({ tiles: e.tiles, color: 'rgba(180,140,255,0.45)', t0: now, dur: 700 });
             else if (at && beat.kind !== 'score') vfx.push({ kind: 'burst', from: at, to: at, color: '#b48cff', t0: now, dur: 500 });
             show();
-            await wait(beat.kind === 'score' ? 200 : 350);
+            await wait(beat.kind === 'score' ? 300 : 550);
             for (const c of beat.kind === 'score' ? beat.events : beat.events.slice(1)) await consequence(c);
-            await wait(beat.kind === 'score' ? 500 : 550);
+            await wait(beat.kind === 'score' ? 650 : 900);
           }
         }
       }
       if (cancelled) return;
-      await wait(400);
+      await wait(600);
       setCaption(null);
       setLog((l) => [...l, ...newLog].slice(-400));
       setPlay({});

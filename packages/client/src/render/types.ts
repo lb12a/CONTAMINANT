@@ -1,6 +1,6 @@
 // Shared board overlay types (planning highlights, playback overrides and effects).
 
-import type { Hex, Unit } from '@contaminant/engine';
+import type { Hex, Unit, DamageTag } from '@contaminant/engine';
 
 export type HighlightKind = 'move' | 'attack' | 'deploy' | 'target' | 'invalid' | 'area' | 'ally' | 'path' | 'corrupt';
 
@@ -31,9 +31,15 @@ export interface Pulse {
   t0: number;
 }
 
-/** Attack visuals between two tiles (projectiles, slashes, beams, bursts). */
+/** Attack visuals between two tiles: the wind-up at the attacker (charge), the flight (projectile, beam),
+ * melee marks (slash), the hit at the target (impact) and plain bursts. The damage type picks the look. */
 export interface Vfx {
-  kind: 'projectile' | 'slash' | 'beam' | 'burst';
+  kind: 'projectile' | 'slash' | 'beam' | 'burst' | 'charge' | 'impact';
+  tag?: DamageTag;
+  /** the attack missed: no impact, only a puff */
+  miss?: boolean;
+  /** screen shake strength in pixels (crits, heavy hits) */
+  shake?: number;
   from: Hex;
   to: Hex;
   color: string;

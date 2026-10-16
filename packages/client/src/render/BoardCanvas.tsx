@@ -33,7 +33,7 @@ export function BoardCanvas({ state, me, overlay, insets, onTile, onHover, onCon
     void r.init(el).then(() => {
       onRenderer?.(r);
       // QA hook: lets the Playwright scripts find tiles on screen (dev builds only)
-      if (import.meta.env.DEV) (window as unknown as { __board?: DioramaRenderer }).__board = r;
+      if (import.meta.env.DEV && rendererRef.current === r) (window as unknown as { __board?: DioramaRenderer }).__board = r;
     });
     const ro = new ResizeObserver(() => r.resize());
     ro.observe(el);

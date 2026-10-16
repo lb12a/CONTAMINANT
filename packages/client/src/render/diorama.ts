@@ -12,6 +12,7 @@ import { figureCanvas, lookKey } from './art.ts';
 import { statusKind } from '../ui/glyphs.ts';
 import { iconUrl } from '../ui/Icon.tsx';
 import type { Camera, Floater, HighlightKind, Insets, Overlay, Pulse } from './types.ts';
+import { drawAttackFx, shakeOffset } from './attackFx.ts';
 
 /** world hex radius */
 const S = 64;
@@ -1043,6 +1044,9 @@ export class DioramaRenderer {
       this.syncTombs();
     }
     this.layout();
+    // heavy hits shake the board a little (the pivot moves the content without touching the camera)
+    const shake = this.reduce ? { x: 0, y: 0 } : shakeOffset(this.ov.vfx, now);
+    this.world.pivot.set(-shake.x / this.scale, -shake.y / this.scale);
     const t = now / 1000;
     if (this.godray) this.godray.time = t * 0.12;
     this.drawFields(now);
@@ -1493,37 +1497,22 @@ export class DioramaRenderer {
         g.poly(hexPoints(x, y, S * (0.9 + k * 0.4)), true).stroke({ width: 4, color: f.color, alpha: (1 - k) * 0.8 });
       }
     }
-    // attack visuals: projectiles arc to the target, melee slashes, beams, bursts
+    // attack visuals by damage type: charge at the attacker, the flight, the impact (render/attackFx.ts)
+    const ctx = {
+      g,
+      now,
+      S,
+      reduce: this.reduce,
+      emit: (x: number, y: number, vx: number, vy: number, life: number, color: number, r: number, grav?: number) => {
+        if (this.particles.length < 700) this.particles.push({ x, y, vx, vy, life, t0: now, color, r: (r * S) / 30, grav });
+      },
+    };
     for (const fx of ov.vfx ?? []) {
       const k = (now - fx.t0) / fx.dur;
       if (k < 0 || k > 1.15) continue;
       const a = worldCenter(fx.from);
       const b = worldCenter(fx.to);
-      const ay = a.y - S * 0.85;
-      const by2 = b.y - S * 0.6;
-      if (fx.kind === 'projectile') {
-        const kk = Math.min(1, k);
-        for (let i = 0; i < 6; i++) {
-          const t = Math.max(0, kk - i * 0.04);
-          const x = a.x + (b.x - a.x) * t;
-          const y = ay + (by2 - ay) * t - Math.sin(Math.PI * t) * S * 1.1;
-          g.circle(x, y, (9 - i * 1.2) * (i === 0 ? 1.2 : 1)).fill({ color: fx.color, alpha: (1 - i / 6) * (k > 1 ? 1.15 - k : 1) });
-        }
-        if (k >= 0.95) g.circle(b.x, by2, S * 0.45 * (k - 0.95) * 8).stroke({ width: 4, color: fx.color, alpha: Math.max(0, 1.15 - k) });
-      } else if (fx.kind === 'beam') {
-        const w = 10 * (1 - Math.abs(k - 0.5));
-        g.moveTo(a.x, ay).lineTo(b.x, by2).stroke({ width: w + 6, color: fx.color, alpha: 0.35 * (1 - k) });
-        g.moveTo(a.x, ay).lineTo(b.x, by2).stroke({ width: w, color: 0xffffff, alpha: 0.9 * (1 - k) });
-      } else if (fx.kind === 'slash') {
-        const r = S * (0.55 + 0.35 * k);
-        for (let i = -1; i <= 1; i++) {
-          const rot = -0.9 + i * 0.35 + k * 0.6;
-          g.arc(b.x + i * 6, by2 - i * 6, r, rot, rot + 1.7).stroke({ width: 6 - Math.abs(i) * 2, color: i === 0 ? 0xffffff : fx.color, alpha: Math.max(0, 1 - k) });
-        }
-      } else {
-        const r = S * (0.3 + 0.9 * k);
-        g.ellipse(b.x, b.y - S * 0.3, r, r * 0.7).stroke({ width: 5, color: fx.color, alpha: Math.max(0, 1 - k) });
-      }
+      drawAttackFx(ctx, fx, { x: a.x, y: a.y - S * 0.85 }, { x: b.x, y: b.y - S * 0.6 }, k);
     }
     // particles
     const dt = 1 / 60;
