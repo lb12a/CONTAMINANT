@@ -96,7 +96,17 @@ function poolFor(zones: Zone[], rarity: Rarity) {
 export function openChest(col: Collection, size: ChestSize, rng: RngState, zones = zonesForTrophies(col.bestTrophies)): ChestResult {
   const chest = CHESTS[size];
   const drops: Drop[] = [];
-  for (let i = 0; i < chest.cards; i++) {
+  // a subject who only has the starter residents always finds a new character in the next chest
+  const firstFind = Object.keys(col.chars).length <= STARTER_DECK.characters.length;
+  if (firstFind) {
+    const fresh = CHARACTER_LIST.filter((c) => zones.includes(c.zone) && !col.chars[c.id] && !c.isSummon && (c.rarity === 'common' || c.rarity === 'uncommon' || c.rarity === 'rare'));
+    if (fresh.length) {
+      const c = fresh[Math.floor(rand(rng) * fresh.length)]!;
+      col.chars[c.id] = { level: 1, dups: 0, tutorialDone: false, isNew: true };
+      drops.push({ kind: 'character', id: c.id, rarity: c.rarity, duplicate: false });
+    }
+  }
+  for (let i = drops.length; i < chest.cards; i++) {
     let rarity = weighted(rng, RARITY_DROP);
     let pool = poolFor(zones, rarity);
     // fall back to a lower rarity if the unlocked pool is empty

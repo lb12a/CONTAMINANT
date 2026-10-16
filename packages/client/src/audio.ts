@@ -10,7 +10,7 @@ function ac(): AudioContext | null {
   return ctx;
 }
 
-type Sfx = 'click' | 'hit' | 'crit' | 'miss' | 'ko' | 'step' | 'deploy' | 'seal' | 'resolve' | 'win' | 'lose' | 'chest' | 'card';
+type Sfx = 'click' | 'hit' | 'crit' | 'miss' | 'ko' | 'step' | 'deploy' | 'seal' | 'resolve' | 'win' | 'lose' | 'chest' | 'card' | 'rumble' | 'burst' | 'reveal' | 'whoosh' | 'zap' | 'splash';
 
 export function sfx(kind: Sfx): void {
   const vol = getProfile().settings.volume;
@@ -32,10 +32,11 @@ export function sfx(kind: Sfx): void {
     o.start(now + delay);
     o.stop(now + delay + dur + 0.02);
   };
-  const noise = (dur: number, v = 0.2, lp = 1200) => {
+  /** filtered noise; swell = grows instead of fading (rumbles), delay in seconds */
+  const noise = (dur: number, v = 0.2, lp = 1200, delay = 0, swell = false) => {
     const buf = a.createBuffer(1, Math.floor(a.sampleRate * dur), a.sampleRate);
     const d = buf.getChannelData(0);
-    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+    for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (swell ? i / d.length : 1 - i / d.length);
     const src = a.createBufferSource();
     src.buffer = buf;
     const f = a.createBiquadFilter();
@@ -44,7 +45,7 @@ export function sfx(kind: Sfx): void {
     const gg = a.createGain();
     gg.gain.value = v * vol;
     src.connect(f).connect(gg).connect(g);
-    src.start(now);
+    src.start(now + delay);
   };
   switch (kind) {
     case 'click':
@@ -85,6 +86,29 @@ export function sfx(kind: Sfx): void {
     case 'chest':
       tone('sawtooth', 80, 160, 0.5, 0.15);
       noise(0.6, 0.15, 1500);
+      break;
+    case 'rumble':
+      noise(1.7, 0.35, 220, 0, true);
+      tone('sine', 42, 70, 1.7, 0.22);
+      break;
+    case 'burst':
+      noise(0.7, 0.4, 3000);
+      tone('sawtooth', 220, 40, 0.5, 0.2);
+      break;
+    case 'reveal':
+      [196, 247, 294, 392].forEach((f, i) => tone('triangle', f, f, 1.2, 0.12, i * 0.09));
+      tone('sine', 784, 784, 1.4, 0.05, 0.4);
+      break;
+    case 'whoosh':
+      noise(0.28, 0.12, 2600, 0, true);
+      break;
+    case 'zap':
+      tone('square', 1400, 300, 0.16, 0.07);
+      tone('square', 900, 1800, 0.1, 0.05, 0.05);
+      break;
+    case 'splash':
+      noise(0.3, 0.16, 700);
+      tone('sine', 300, 120, 0.25, 0.08);
       break;
     case 'win':
       [262, 330, 392, 523].forEach((f, i) => tone('triangle', f, f, 0.35, 0.18, i * 0.12));

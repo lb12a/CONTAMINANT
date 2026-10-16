@@ -169,7 +169,7 @@ export function App() {
         {route.name === 'menu' && <MenuScreen nav={nav} />}
         {route.name === 'collection' && <CollectionScreen nav={nav} />}
         {route.name === 'deck' && <DeckBuilder nav={nav} deckId={route.deckId} />}
-        {route.name === 'shop' && <ShopScreen />}
+        {route.name === 'shop' && <ShopScreen nav={nav} />}
         {route.name === 'settings' && <SettingsScreen nav={nav} />}
         {route.name === 'online' && <OnlineScreen nav={nav} />}
         {route.name === 'tournaments' && <TournamentsScreen nav={nav} id={route.id} />}

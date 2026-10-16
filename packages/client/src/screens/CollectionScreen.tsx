@@ -5,6 +5,7 @@ import {
   CATEGORY_ORDER,
   ITEM_LIST,
   ITEM_TYPE_INFO,
+  MILESTONES,
   canLevelUp,
   duplicatesForLevel,
   expectedDamagePerAp,
@@ -60,12 +61,37 @@ export function CollectionScreen({ nav }: { nav: Nav }) {
           )}
         </div>
         {tab === 'characters' ? (
-          <div className="grid-cards">
-            {CHARACTER_LIST.filter((c) => rarity === 'all' || c.rarity === rarity).map((c) => {
-              const o = p.collection.chars[c.id];
-              return <CharacterCard key={c.id} defId={c.id} level={o?.level} locked={!o} isNew={o?.isNew} onClick={() => setOpen(c.id)} />;
-            })}
-          </div>
+          // one shelf per area: later areas join the chest pool once the best trophy count reaches them
+          MILESTONES.map((m) => {
+            const reached = p.collection.bestTrophies >= m.trophies;
+            const list = CHARACTER_LIST.filter((c) => m.cards.includes(c.id) && (rarity === 'all' || c.rarity === rarity));
+            if (!list.length) return null;
+            const have = m.cards.filter((id) => p.collection.chars[id]).length;
+            return (
+              <section key={m.zone} className={`zone-shelf${reached ? '' : ' sealed'}`}>
+                <header className="zone-head">
+                  <b className="display">{t(m.name)}</b>
+                  <span className="small muted num">
+                    {have}/{m.cards.length}
+                  </span>
+                  <span className="spacer" />
+                  {reached ? (
+                    <span className="chip buff small">{m.zone === 'laboratory' ? t('Start area') : t('In the chest pool')}</span>
+                  ) : (
+                    <span className="chip zone-lock small" title={t('Characters of this area drop from chests once your best trophy count reaches the mark.')}>
+                      <Icon name="ui/lock" size={14} /> <Icon name="ui/trophy" size={14} /> {m.trophies}
+                    </span>
+                  )}
+                </header>
+                <div className="grid-cards">
+                  {list.map((c) => {
+                    const o = p.collection.chars[c.id];
+                    return <CharacterCard key={c.id} defId={c.id} level={o?.level} locked={!o} isNew={o?.isNew} onClick={() => setOpen(c.id)} />;
+                  })}
+                </div>
+              </section>
+            );
+          })
         ) : (
           <div className="grid-cards">
             {ITEM_LIST.filter((i) => (rarity === 'all' || i.rarity === rarity) && (type === 'all' || i.type === type)).map((i) => (
@@ -81,6 +107,20 @@ export function CollectionScreen({ nav }: { nav: Nav }) {
       </div>
       {open && <CharacterDetail def={CHARACTER_LIST.find((c) => c.id === open)!} onClose={() => setOpen(null)} nav={nav} />}
     </div>
+  );
+}
+
+/** Where a character the player does not own yet comes from. */
+function LockNote({ defId }: { defId: string }) {
+  const p = useProfile();
+  const m = MILESTONES.find((x) => x.cards.includes(defId));
+  if (!m) return null;
+  const reached = p.collection.bestTrophies >= m.trophies;
+  return (
+    <p className="paper small lock-note">
+      <Icon name={reached ? 'ui/chest' : 'ui/lock'} size={18} />{' '}
+      {reached ? t('Not found yet: it can drop from any chest.') : `${t('Unlocks in chests from')} ${m.trophies} ${t('Trophies')} (${t(m.name)}).`}
+    </p>
   );
 }
 
@@ -133,6 +173,7 @@ export function CharacterDetail({ def, onClose, nav }: { def: CharacterDef; onCl
           })}
         </div>
       </div>
+      {!o && <LockNote defId={def.id} />}
       <h3 style={{ marginTop: 12 }}>{t('Attacks')}</h3>
       {def.attacks.map((a) => (
         <div key={a.id} className="paper small" style={{ padding: 8, marginBottom: 6 }}>

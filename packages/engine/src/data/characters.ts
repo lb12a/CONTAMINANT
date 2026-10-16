@@ -483,11 +483,11 @@ export const KO_REWARD: Record<string, number> = { swarm: 4, standard: 10, elite
 
 export const MILESTONES: { zone: Zone; name: string; trophies: number; cards: string[] }[] = [
   { zone: 'laboratory', name: 'Laboratory', trophies: 0, cards: ['nexus', 'lab_assistant', 'frankenstein', 'crystal_eye'] },
-  { zone: 'graveyard', name: 'Graveyard', trophies: 100, cards: ['vile', 'zombie_limb', 'calaca', 'steak', 'mambo'] },
-  { zone: 'bog', name: 'Bog', trophies: 300, cards: ['arachnia', 'swamp_siren', 'mycel', 'termite_mound', 'wisp', 'leech_cook'] },
-  { zone: 'toyroom', name: 'Toy Room', trophies: 600, cards: ['lullabun', 'pokerface', 'piggybank', 'cymbal_chimp', 'ballerina', 'cog_cuckoo'] },
-  { zone: 'forest', name: 'Haunted Forest', trophies: 1000, cards: ['werewolf', 'little_wendigo', 'scarecrow', 'pumpkin', 'ghost_train'] },
-  { zone: 'tomb', name: 'Tomb', trophies: 1500, cards: ['midas_mummy', 'baby_mummy', 'shrink_heads', 'cruorina'] },
+  { zone: 'graveyard', name: 'Graveyard', trophies: 0, cards: ['vile', 'zombie_limb', 'calaca', 'steak', 'mambo'] },
+  { zone: 'bog', name: 'Bog', trophies: 150, cards: ['arachnia', 'swamp_siren', 'mycel', 'termite_mound', 'wisp', 'leech_cook'] },
+  { zone: 'toyroom', name: 'Toy Room', trophies: 400, cards: ['lullabun', 'pokerface', 'piggybank', 'cymbal_chimp', 'ballerina', 'cog_cuckoo'] },
+  { zone: 'forest', name: 'Haunted Forest', trophies: 800, cards: ['werewolf', 'little_wendigo', 'scarecrow', 'pumpkin', 'ghost_train'] },
+  { zone: 'tomb', name: 'Tomb', trophies: 1300, cards: ['midas_mummy', 'baby_mummy', 'shrink_heads', 'cruorina'] },
 ];
 
 export function attacksFor(defId: string, form: string | null): AttackDef[] {

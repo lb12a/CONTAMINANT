@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { assetUrl } from '../render/assets.ts';
-import { CHARACTERS, CHESTS, hashString, makeRng, openChest, type ChestResult, type ChestSize } from '@contaminant/engine';
+import { CHESTS, hashString, makeRng, openChest, type ChestResult, type ChestSize } from '@contaminant/engine';
 import { CharacterCard, ItemCard, Modal } from '../ui/components.tsx';
 import { getApi, setProfile, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { sfx } from '../audio.ts';
 import { Icon } from '../ui/Icon.tsx';
+import { UnlockCutscene } from '../ui/UnlockCutscene.tsx';
+import type { Nav } from '../App.tsx';
 
 
 /** Generated chest art when available, the drawn chest icon otherwise. */
@@ -14,10 +16,11 @@ function ChestArt({ size, px }: { size: ChestSize; px: number }) {
   return url ? <img src={url} alt="" style={{ height: px, width: 'auto', filter: 'drop-shadow(0 6px 4px rgba(0,0,0,0.55))' }} draggable={false} /> : <Icon name="ui/chest" size={px} />;
 }
 
-export function ShopScreen() {
+export function ShopScreen({ nav }: { nav?: Nav }) {
   const p = useProfile();
   const [opening, setOpening] = useState<{ size: ChestSize; result: ChestResult | null } | null>(null);
-  const [unlock, setUnlock] = useState<string | null>(null);
+  /** new characters from the last chest: the unlock cutscene plays them one after the other */
+  const [unlock, setUnlock] = useState<string[] | null>(null);
 
   const buy = async (size: ChestSize) => {
     if (p.online) {
@@ -56,6 +59,8 @@ export function ShopScreen() {
       setTimeout(() => setProfile((x) => ({ ...x, collection: col })), 1500);
     }
     setTimeout(() => setOpening({ size, result }), 1500);
+    const fresh = result.drops.filter((d) => d.kind === 'character' && !d.duplicate).map((d) => d.id);
+    if (fresh.length) setTimeout(() => setUnlock(fresh), 2700);
   };
 
   return (
@@ -102,7 +107,7 @@ export function ShopScreen() {
                 <div className="row wrap" style={{ justifyContent: 'center' }}>
                   {opening.result.drops.map((d, i) => (
                     <div key={i} className="float-in col" style={{ animationDelay: `${i * 0.15}s`, alignItems: 'center', gap: 4 }}>
-                      {d.kind === 'character' ? <CharacterCard defId={d.id} width={110} isNew={!d.duplicate} onClick={() => !d.duplicate && setUnlock(d.id)} /> : <ItemCard itemId={d.id} width={96} />}
+                      {d.kind === 'character' ? <CharacterCard defId={d.id} width={110} isNew={!d.duplicate} onClick={() => !d.duplicate && setUnlock([d.id])} /> : <ItemCard itemId={d.id} width={96} />}
                       <span className={`small rarity-${d.rarity} rar-text`}>{d.duplicate ? 'duplicate' : 'NEW'}</span>
                     </div>
                   ))}
@@ -118,27 +123,7 @@ export function ShopScreen() {
           </div>
         </Modal>
       )}
-      {unlock && <UnlockStage defId={unlock} onClose={() => setUnlock(null)} />}
+      {unlock && <UnlockCutscene defIds={unlock} onDone={() => setUnlock(null)} onTutorial={nav ? (defId) => nav({ name: 'match', tutorial: defId }) : undefined} />}
     </div>
-  );
-}
-
-/** Card unlock: dark stage, the seal breaks and the spotlight falls on the character; then the tutorial offer. */
-export function UnlockStage({ defId, onClose }: { defId: string; onClose: () => void }) {
-  const def = CHARACTERS[defId]!;
-  return (
-    <Modal title={t('A sealed file opens…')} onClose={onClose}>
-      <div className="col" style={{ alignItems: 'center', background: 'radial-gradient(ellipse at 50% 30%, #e8dfc833, transparent 60%)', padding: 12 }}>
-        <div className="float-in">
-          <CharacterCard defId={defId} width={190} isNew />
-        </div>
-        <p className="display">{def.name}</p>
-        <p className="small muted center">{def.title}</p>
-        <p className="small center">{t('Open its Testing Chamber from the collection or the Testing Chambers list.')}</p>
-        <button className="btn secondary" onClick={onClose}>
-          {t('Later')}
-        </button>
-      </div>
-    </Modal>
   );
 }
