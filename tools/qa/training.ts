@@ -40,9 +40,15 @@ const ctx = await browser.newContext({ viewport: phone ? { width: 390, height: 8
 const page = await ctx.newPage();
 const errors: string[] = [];
 page.on('pageerror', (e) => errors.push(e.message));
-await page.addInitScript(() => localStorage.removeItem('contaminant.profile.v1'));
+// a brand-new player: no profile yet, so the subject file opens first and signing it starts Basic Training
+await page.addInitScript(() => {
+  if (sessionStorage.getItem('qa-fresh')) return;
+  localStorage.clear();
+  sessionStorage.setItem('qa-fresh', '1');
+});
 await page.goto(base, { waitUntil: 'networkidle' });
-await page.getByRole('button', { name: 'Start Basic Training' }).click();
+await page.getByPlaceholder('Your name').fill('Tester');
+await page.getByRole('button', { name: 'Sign the file' }).click();
 await page.waitForTimeout(1500);
 await step(page, 1, 'welcome');
 await next(page);

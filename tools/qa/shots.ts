@@ -104,27 +104,19 @@ for (const s of sizes) {
     page.on('pageerror', (e) => errors.push(e.message));
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
     await page.addInitScript((acc) => {
-      const raw = localStorage.getItem('contaminant.profile.v1');
-      const p = raw ? JSON.parse(raw) : { settings: {} };
-      p.settings.lang = 'en';
+      // one QA profile in the profile index, English, past the welcome steps
+      const idx = JSON.parse(localStorage.getItem('contaminant.profiles.v1') ?? 'null') ?? { active: 'qa', list: [{ id: 'qa', name: 'Tester', created: 0 }] };
+      const key = `contaminant.profile.${idx.active}`;
+      const p = JSON.parse(localStorage.getItem(key) ?? '{"name":"Tester","settings":{}}');
+      p.settings = { ...p.settings, lang: 'en' };
       p.onboarded = true;
+      p.trainingDone = true;
       if (acc) p.online = acc;
-      localStorage.setItem('contaminant.profile.v1', JSON.stringify(p));
+      localStorage.setItem(key, JSON.stringify(p));
+      localStorage.setItem('contaminant.profiles.v1', JSON.stringify(idx));
       if (acc) localStorage.setItem('contaminant.server', acc.server);
     }, online);
     await page.goto(base, { waitUntil: 'networkidle' });
-    // a fresh profile is created on first load (German by default): patch it and reload once
-    const patched = await page.evaluate(() => {
-      const raw = localStorage.getItem('contaminant.profile.v1');
-      if (!raw) return false;
-      const p = JSON.parse(raw);
-      if (p.settings.lang === 'en' && p.onboarded) return false;
-      p.settings.lang = 'en';
-      p.onboarded = true;
-      localStorage.setItem('contaminant.profile.v1', JSON.stringify(p));
-      return true;
-    });
-    if (patched) await page.reload({ waitUntil: 'networkidle' });
     await page.waitForTimeout(600);
     try {
       await sc.run(page);
