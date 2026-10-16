@@ -360,8 +360,15 @@ export class WorldCupService {
     const w = this.current();
     if (!w) return null;
     if (w.status === 'qualifiers' && w.qualifiers) return { stage: 'qualifiers', round: w.qualifiers.current, rounds: w.qualifiers.rounds, standings: swissStandings(w.qualifiers) };
-    if (w.status === 'groups' && w.groups) return { stage: 'groups', groups: Object.fromEntries(Object.keys(w.groups.groups ?? {}).map((g) => [g, groupStandings(w.groups!, g)])) };
-    if ((w.status === 'playoffs' || w.status === 'finished') && w.playoffs) return { stage: w.status, bracket: w.playoffs.matches, champion: w.champion, podium: w.podium };
+    // the group stage stays visible after it ends: standings and every result (who beat whom)
+    const groupInfo = w.groups
+      ? {
+          groups: Object.fromEntries(Object.keys(w.groups.groups ?? {}).map((g) => [g, groupStandings(w.groups!, g)])),
+          groupMatches: w.groups.matches.map((m) => ({ id: m.id, group: m.group, round: m.round, a: m.a, b: m.b, winner: m.winner, scoreA: m.scoreA, scoreB: m.scoreB, status: m.status, draw: m.draw, roomId: m.roomId })),
+        }
+      : {};
+    if (w.status === 'groups' && w.groups) return { stage: 'groups', ...groupInfo };
+    if ((w.status === 'playoffs' || w.status === 'finished') && w.playoffs) return { stage: w.status, bracket: w.playoffs.matches, champion: w.champion, podium: w.podium, ...groupInfo };
     return { stage: w.status, registrations: w.registrations.length, direct: w.registrations.filter((r) => r.direct).map((r) => ({ name: r.name, via: r.via })) };
   }
 

@@ -3,6 +3,7 @@ import type { Nav } from '../App.tsx';
 import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { BracketView, SwissView, type BMatch } from './Tournaments.tsx';
+import { GroupResults, type TreeMatch } from '../ui/BracketTree.tsx';
 import { Icon } from '../ui/Icon.tsx';
 import { assetUrl } from '../render/assets.ts';
 import { OnlineConnect } from './Online.tsx';
@@ -81,6 +82,30 @@ function BigCountdown({ to, label }: { to: number; label: string }) {
           </span>
         ))}
       </div>
+    </div>
+  );
+}
+
+type GroupRow = { id: string; name: string; points: number; wins: number; draws: number; losses: number; buchholz: number; vpDiff: number };
+
+/** Every group: the table and the cross table of results (who beat whom). */
+function GroupStage({ lb, names, nav }: { lb: Record<string, unknown>; names: Record<string, string>; nav: Nav }) {
+  const groups = (lb.groups ?? {}) as Record<string, GroupRow[]>;
+  const matches = (lb.groupMatches ?? []) as TreeMatch[];
+  return (
+    <div className="col">
+      {Object.entries(groups).map(([g, rows]) => {
+        const list = matches.filter((m) => m.group === g);
+        return (
+          <div key={g} className="wc-group col">
+            <b className="display">
+              {t('Group')} {g}
+            </b>
+            {list.length > 0 && <GroupResults order={rows} matches={list} names={names} />}
+            <SwissView standings={rows} matches={list as BMatch[]} names={names} nav={nav} />
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -334,14 +359,18 @@ export function WorldCupScreen({ nav }: { nav: Nav }) {
               {lb && (
                 <div className="col" style={{ marginTop: 8 }}>
                   {lb.stage === 'qualifiers' && Array.isArray(lb.standings) && <SwissView standings={lb.standings as never} matches={[]} names={names} nav={nav} />}
-                  {lb.stage === 'groups' &&
-                    Object.entries(lb.groups as Record<string, { id: string; name: string; points: number; wins: number; draws: number; losses: number; buchholz: number; vpDiff: number }[]>).map(([g, rows]) => (
-                      <div key={g}>
-                        <b>Group {g}</b>
-                        <SwissView standings={rows} matches={[]} names={names} nav={nav} />
-                      </div>
-                    ))}
-                  {(lb.stage === 'playoffs' || lb.stage === 'finished') && Array.isArray(lb.bracket) && <BracketView matches={lb.bracket as BMatch[]} names={names} nav={nav} />}
+                  {lb.stage === 'groups' && <GroupStage lb={lb} names={names} nav={nav} />}
+                  {(lb.stage === 'playoffs' || lb.stage === 'finished') && Array.isArray(lb.bracket) && (
+                    <>
+                      <BracketView matches={lb.bracket as BMatch[]} names={names} nav={nav} />
+                      {lb.groups ? (
+                        <details className="wc-groups-done">
+                          <summary className="small">{t('Group stage: every result')}</summary>
+                          <GroupStage lb={lb} names={names} nav={nav} />
+                        </details>
+                      ) : null}
+                    </>
+                  )}
                   {lb.stage === 'registration' && Array.isArray(lb.direct) && (lb.direct as { name: string; via: string }[]).length > 0 && (
                     <div className="small">
                       <b>{t('Seeded into the groups')}</b>

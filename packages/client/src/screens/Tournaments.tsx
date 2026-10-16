@@ -4,6 +4,7 @@ import { getApi, toast, useProfile } from '../store.ts';
 import { t } from '../i18n.ts';
 import { Countdown } from '../ui/components.tsx';
 import { Icon } from '../ui/Icon.tsx';
+import { BracketTree } from '../ui/BracketTree.tsx';
 
 export interface BMatch {
   id: string;
@@ -242,49 +243,7 @@ export function SwissView({ standings, matches, names, nav }: { standings: Swiss
   );
 }
 
-/** Columns per round; winners bracket, losers bracket and grand final rows. */
+/** The knockout stage as a tree (see ui/BracketTree.tsx). */
 export function BracketView({ matches, names, nav }: { matches: BMatch[]; names: Record<string, string>; nav: Nav }) {
-  const groups: [string, BMatch[]][] = [
-    ['Winners bracket', matches.filter((m) => m.bracket === 'W')],
-    ['Losers bracket', matches.filter((m) => m.bracket === 'L')],
-    ['Finals', matches.filter((m) => m.bracket === 'GF' || m.bracket === 'GF2' || m.bracket === '3RD')],
-  ];
-  return (
-    <div className="col">
-      {groups
-        .filter(([, list]) => list.length)
-        .map(([title, list]) => {
-          const rounds = [...new Set(list.map((m) => m.round))].sort((a, b) => a - b);
-          return (
-            <div key={title} className="col">
-              <b className="small">{title}</b>
-              <div className="row scroll-x" style={{ alignItems: 'stretch', gap: 14, paddingBottom: 6 }}>
-                {rounds.map((r) => (
-                  <div key={r} className="col" style={{ justifyContent: 'space-around', minWidth: 170 }}>
-                    <span className="small muted">Round {r}</span>
-                    {list
-                      .filter((m) => m.round === r)
-                      .map((m) => (
-                        <div key={m.id} className="paper small" style={{ padding: '4px 8px', opacity: m.status === 'void' ? 0.35 : 1 }}>
-                          <div style={{ fontWeight: m.winner && m.winner === m.a ? 700 : 400 }}>
-                            {m.a ? names[m.a] ?? m.a : m.status === 'void' || m.bye ? '—' : 'TBD'} <span className="num" style={{ float: 'right' }}>{m.status === 'done' && !m.bye ? m.scoreA : ''}</span>
-                          </div>
-                          <div style={{ fontWeight: m.winner && m.winner === m.b ? 700 : 400 }}>
-                            {m.b ? names[m.b] ?? m.b : m.bye ? 'bye' : m.status === 'void' ? '—' : 'TBD'} <span className="num" style={{ float: 'right' }}>{m.status === 'done' && !m.bye ? m.scoreB : ''}</span>
-                          </div>
-                          {m.status === 'live' && m.roomId && (
-                            <button className="btn secondary small" style={{ minHeight: 24, padding: '0 6px' }} onClick={() => nav({ name: 'spectate', match: m.roomId })}>
-                              <Icon name="ui/eye" size={16} /> live
-                            </button>
-                          )}
-                        </div>
-                      ))}
-                  </div>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-    </div>
-  );
+  return <BracketTree matches={matches} names={names} nav={nav} />;
 }
