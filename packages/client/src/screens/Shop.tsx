@@ -92,7 +92,7 @@ export function ShopScreen({ nav }: { nav?: Nav }) {
           ))}
         </div>
       </div>
-      <div className="panel small muted">{t('Drop shares: Common 45% · Uncommon 28% · Rare 16% · Epic 8% · Legendary 3%. New areas (Graveyard, Bog, Toy Room, Haunted Forest, Tomb) add their cards to the pool at trophy milestones.')}</div>
+      <div className="panel small muted">{t('Drop shares: Common 45% · Uncommon 28% · Rare 16% · Epic 8% · Legendary 3%. New areas (Bog, Toy Room, Haunted Forest, Tomb) add their cards to the pool at trophy milestones.')}</div>
 
       {opening && (
         <Modal title={CHESTS[opening.size].name} onClose={() => opening.result && setOpening(null)}>
